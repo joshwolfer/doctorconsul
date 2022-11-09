@@ -1,0 +1,15 @@
+{
+    "OIDCDiscoveryURL": "https://dev-kua61hs5.us.auth0.com/",
+    "OIDCClientID": "0qG6RUtcamK5Xsa6sBk81PdsEqblWh0T",
+    "OIDCClientSecret": "OxjoeYLWTi7BtJI88P56iZN0q3Gflt4TnfFYhKry0t20jskuKDPlz1U5Zd_qYPRb",
+    "BoundAudiences": ["0qG6RUtcamK5Xsa6sBk81PdsEqblWh0T"],
+    "AllowedRedirectURIs": [
+      "http://127.0.0.1:8550/oidc/callback",
+      "http://127.0.0.1:8500/ui/oidc/callback",
+      "http://localhost:8550/oidc/callback",
+      "http://localhost:8500/ui/oidc/callback"
+    ],
+    "ListClaimMappings": {
+      "http://consul.internal/groups": "groups"
+    }
+  }

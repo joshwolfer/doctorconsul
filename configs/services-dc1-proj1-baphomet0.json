@@ -1,0 +1,13 @@
+{
+  "Address": "notreal.local",
+  "Node": "virtual",
+  "partition": "proj1",
+  "Service": {
+    "ID": "baphomet-0",
+    "Service": "virtual-baphomet",
+    "address": "12.0.0.1",
+    "partition": "proj1",
+    "Port": 80
+  }
+}
+
