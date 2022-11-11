@@ -12,7 +12,7 @@ Details:
   * Mesh additions coming soon.
 
 Architecture:
-![](assets/20221111_171834_architecture.png)
+![](readme-images/architecture.png)
 
 # Initialization Pre-Requirements
 
