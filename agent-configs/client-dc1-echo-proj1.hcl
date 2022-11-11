@@ -1,4 +1,4 @@
-node_name = "consul-client-dc1-echo-proj1"
+node_name = "client-dc1-echo-proj1"
 datacenter = "dc1"
 partition = "proj1"
 

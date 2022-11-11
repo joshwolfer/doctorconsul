@@ -11,6 +11,9 @@ Details:
 * Currently only configures Service Discovery
   * Mesh additions coming soon.
 
+Architecture:
+![](assets/20221111_171834_architecture.png)
+
 # Initialization Pre-Requirements
 
 * Environment requires Docker-Compose
@@ -64,7 +67,7 @@ Details:
 * Consul Servers (1)
   * `consul-server1-dc2`
 * UI exposed on local port 8501: `http://127.0.0.1:8501/ui/_default/dc2/services`
-* Gossip Encryption: `dznVKWl1ri975FUJiddzAPM+3eNP9iXDad2c8hghsKA=
+* Gossip Encryption: `dznVKWl1ri975FUJiddzAPM+3eNP9iXDad2c8hghsKA=`
 
 ## Admin Partitions & Namespaces
 
@@ -300,3 +303,5 @@ Vault will eventually be implemented in the future as the Certificate Authority 
 
 * Add local UI metrics
   * I think this will require setting up a local prometheus pod.
+
+# Staging Notes

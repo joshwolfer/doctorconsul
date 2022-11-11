@@ -125,8 +125,8 @@ consul acl binding-rule create \
 #             Cluster Peering
 # ==========================================
 
-consul peering generate-token -name DC2 -http-addr="$DC1" > tokens/peering-dc1_default-DC2.token
-consul peering establish -name DC1 -http-addr="$DC2" -peering-token $(cat tokens/peering-dc1_default-DC2.token)
+consul peering generate-token -name DC2-default -http-addr="$DC1" > tokens/peering-dc1_default-DC2.token
+consul peering establish -name DC1-default -http-addr="$DC2" -peering-token $(cat tokens/peering-dc1_default-DC2.token)
 
   # ------------------------------------------
   # Export services across Peers
@@ -141,7 +141,16 @@ consul config write -http-addr="$DC2" ./configs/exported-services-dc2-default.hc
 # Test STUFF
 # ------------------------------------------
 
+# Going to try peering some services to the non-default partition across the peer
+
 consul partition create -name heimdall -http-addr="$DC2"
+
+consul peering generate-token -name DC2-heimdall -partition="default" -http-addr="$DC1" > tokens/peering-dc1_default-DC2-heimdall.token
+consul peering establish -name DC1-default -partition="heimdall" -http-addr="$DC2" -peering-token $(cat tokens/peering-dc1_default-DC2-heimdall.token)
+
+consul config write -http-addr="$DC1" ./configs/exported-services-dc1-joshlong-dc2-heimdall.hcl
+
+
 
 
 

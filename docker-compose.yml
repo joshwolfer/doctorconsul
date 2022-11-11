@@ -22,7 +22,7 @@ services:
 # ==========================================
 
   consul-server1-dc1:
-    image: hashicorp/consul-enterprise:1.13.2-ent
+    image: hashicorp/consul-enterprise:1.13.3-ent
     container_name: consul-server1-dc1
     restart: always
     volumes:
@@ -42,7 +42,7 @@ services:
 # ------------------------------------------
 
   consul-client-dc1-alpha:
-    image: hashicorp/consul-enterprise:1.13.2-ent
+    image: hashicorp/consul-enterprise:1.13.3-ent
     container_name: consul-client-dc1-alpha
     restart: always
     volumes:
@@ -55,7 +55,7 @@ services:
     command: "agent"
 
   consul-client-dc1-charlie-ap1:
-    image: hashicorp/consul-enterprise:1.13.2-ent
+    image: hashicorp/consul-enterprise:1.13.3-ent
     container_name: consul-client-dc1-charlie-ap1
     restart: always
     volumes:
@@ -67,7 +67,7 @@ services:
     command: "agent"
 
   consul-client-dc1-delta-ap2:
-    image: hashicorp/consul-enterprise:1.13.2-ent
+    image: hashicorp/consul-enterprise:1.13.3-ent
     container_name: consul-client-dc1-delta-ap2
     restart: always
     volumes:
@@ -79,11 +79,11 @@ services:
     command: "agent"
 
   consul-client-dc1-echo-proj1:
-    image: hashicorp/consul-enterprise:1.13.2-ent
+    image: hashicorp/consul-enterprise:1.13.3-ent
     container_name: consul-client-dc1-echo-proj1
     restart: always
     volumes:
-     - ./agent-configs/consul-client-dc1-echo-proj1.hcl:/consul/config/consul-client-dc1-echo-proj1.hcl
+     - ./agent-configs/client-dc1-echo-proj1.hcl:/consul/config/client-dc1-echo-proj1.hcl
      - ./certs/:/consul/config/certs/
      - ./configs/services-dc1-proj1-baphomet.hcl:/consul/config/services-dc1-proj1-baphomet.hcl
     networks:
@@ -96,7 +96,7 @@ services:
   # ==========================================
 
   consul-server1-dc2:
-    image: hashicorp/consul-enterprise:1.13.2-ent
+    image: hashicorp/consul-enterprise:1.13.3-ent
     container_name: consul-server1-dc2
     restart: always
     volumes:
@@ -110,7 +110,7 @@ services:
     command: "agent -bootstrap-expect=1"
 
   consul-client-dc2-bravo:
-    image: hashicorp/consul-enterprise:1.13.2-ent
+    image: hashicorp/consul-enterprise:1.13.3-ent
     container_name: consul-client-dc2-bravo
     restart: always
     volumes:
