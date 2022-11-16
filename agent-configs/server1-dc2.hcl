@@ -13,6 +13,7 @@ data_dir = "/consul/data"
 addresses = {
   http = "0.0.0.0"
   grpc = "0.0.0.0"
+  grpc_tls = "0.0.0.0"
 }
 
 ports = {
@@ -47,9 +48,6 @@ tls {
 
     verify_incoming = true
     verify_outgoing = true
-  }
-  grpc {
-    verify_incoming =false
   }
   internal_rpc {
     verify_server_hostname = true

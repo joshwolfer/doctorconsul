@@ -2,7 +2,6 @@
 
 set -v
 
-
 CONSUL_HTTP_TOKEN=root
 CONSUL_HTTP_ADDR="http://127.0.0.1:8500"
 DC1="http://127.0.0.1:8500"
@@ -13,6 +12,9 @@ consul partition create -name donkey -http-addr="$DC1"
 consul partition create -name unicorn -http-addr="$DC1"
 consul partition create -name proj1 -http-addr="$DC1"
 consul partition create -name proj2 -http-addr="$DC1"
+
+# Create APs in DC2
+consul partition create -name heimdall -http-addr="$DC2"
 
 # Create Unicorn NSs in DC1
 consul namespace create -name frontend -partition=unicorn -http-addr="$DC1"
@@ -125,8 +127,18 @@ consul acl binding-rule create \
 #             Cluster Peering
 # ==========================================
 
-consul peering generate-token -name DC2-default -http-addr="$DC1" > tokens/peering-dc1_default-DC2.token
-consul peering establish -name DC1-default -http-addr="$DC2" -peering-token $(cat tokens/peering-dc1_default-DC2.token)
+
+
+# Peer DC1/default <> DC2/default
+
+consul peering generate-token -name DC2-default -http-addr="$DC1" > tokens/peering-dc1_default-DC2-default.token
+consul peering establish -name DC1-default -http-addr="$DC2" -peering-token $(cat tokens/peering-dc1_default-DC2-default.token)
+
+
+# Peer DC1/default <> DC2/heimdall
+
+consul peering generate-token -name DC2-heimdall -partition="default" -http-addr="$DC1" > tokens/peering-dc1_default-DC2-heimdall.token
+consul peering establish -name DC1-default -partition="heimdall" -http-addr="$DC2" -peering-token $(cat tokens/peering-dc1_default-DC2-heimdall.token)
 
   # ------------------------------------------
   # Export services across Peers
@@ -135,23 +147,12 @@ consul peering establish -name DC1-default -http-addr="$DC2" -peering-token $(ca
 consul config write -http-addr="$DC1" ./configs/exported-services-dc1-default.hcl
 consul config write -http-addr="$DC2" ./configs/exported-services-dc2-default.hcl
 
+consul config write -http-addr="$DC1" ./configs/exported-services-dc1-joshlong-dc2-heimdall.hcl
 
 
 # ------------------------------------------
 # Test STUFF
 # ------------------------------------------
-
-# Going to try peering some services to the non-default partition across the peer
-
-consul partition create -name heimdall -http-addr="$DC2"
-
-consul peering generate-token -name DC2-heimdall -partition="default" -http-addr="$DC1" > tokens/peering-dc1_default-DC2-heimdall.token
-consul peering establish -name DC1-default -partition="heimdall" -http-addr="$DC2" -peering-token $(cat tokens/peering-dc1_default-DC2-heimdall.token)
-
-consul config write -http-addr="$DC1" ./configs/exported-services-dc1-joshlong-dc2-heimdall.hcl
-
-
-
 
 
 

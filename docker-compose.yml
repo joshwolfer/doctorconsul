@@ -37,9 +37,14 @@ services:
       - "8600:8600/udp"
     command: "agent -bootstrap-expect=1"
 
-# ------------------------------------------
-#                DC1 Clients
-# ------------------------------------------
+# --------------------------------
+#         DC1 Gateways
+# --------------------------------
+
+
+# --------------------------------
+#         DC1 Clients
+# --------------------------------
 
   consul-client-dc1-alpha:
     image: hashicorp/consul-enterprise:1.14.0-ent
@@ -108,6 +113,15 @@ services:
     ports:
       - "8501:8500"
     command: "agent -bootstrap-expect=1"
+
+# --------------------------------
+#         DC1 Gateways
+# --------------------------------
+
+
+# --------------------------------
+#         DC1 Clients
+# --------------------------------
 
   consul-client-dc2-bravo:
     image: hashicorp/consul-enterprise:1.14.0-ent
