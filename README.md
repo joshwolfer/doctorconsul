@@ -327,6 +327,10 @@ Vault will eventually be implemented in the future as the Certificate Authority 
 
 * Add FakeService applications working in the Consul Mesh.
 
+### ACLs
+
+* Mesh Gateways are currently using root ACL tokens - switch them to least privileges.
+
 ### Authentication Methods
 
 * Add JWT authentication
