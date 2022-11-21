@@ -25,6 +25,7 @@ consul partition create -name proj2 -http-addr="$DC1"
 
 # Create APs in DC2
 consul partition create -name heimdall -http-addr="$DC2"
+consul partition create -name chunky -http-addr="$DC2"
 
 # Create Unicorn NSs in DC1
 consul namespace create -name frontend -partition=unicorn -http-addr="$DC1"
@@ -152,6 +153,9 @@ consul peering establish -name DC1-default -http-addr="$DC2" -peering-token $(ca
 consul peering generate-token -name DC2-heimdall -partition="default" -http-addr="$DC1" > tokens/peering-dc1_default-DC2-heimdall.token
 consul peering establish -name DC1-default -partition="heimdall" -http-addr="$DC2" -peering-token $(cat tokens/peering-dc1_default-DC2-heimdall.token)
 
+consul peering generate-token -name DC1-default -partition="chunky" -http-addr="$DC2" > tokens/peering-dc2_chunky-DC1-default.token
+consul peering establish -name DC2-chunky -partition="default" -http-addr="$DC1" -peering-token $(cat tokens/peering-dc2_chunky-DC1-default.token)
+
   # ------------------------------------------
   # Export services across Peers
   # ------------------------------------------
@@ -167,13 +171,13 @@ consul config write -http-addr="$DC2" ./configs/exported-services/exported-servi
 consul config write -http-addr="$DC1" ./configs/service-defaults/web-defaults.hcl
 consul config write -http-addr="$DC1" ./configs/service-defaults/web-upstream-defaults.hcl
 
+consul config write -http-addr="$DC2" ./configs/service-defaults/web-chunky-defaults.hcl
+
   # ------------------------------------------
   #              Intentions
   # ------------------------------------------
 
 consul config write -http-addr="$DC1" ./configs/intentions/web_upstream-allow.hcl
-
-
 
 
 
