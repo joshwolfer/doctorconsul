@@ -7,6 +7,16 @@ CONSUL_HTTP_ADDR="http://127.0.0.1:8500"
 DC1="http://127.0.0.1:8500"
 DC2="http://127.0.0.1:8501"
 
+
+# Block traffic from consul-server1-dc1 to consul-server1-dc2
+docker exec -i -t consul-server1-dc1 sh -c "/sbin/iptables -I OUTPUT -d 192.169.7.4 -j DROP"
+
+# Block traffic from consul-server1-dc2 to consul-server-dc1
+docker exec -i -t consul-server1-dc2 sh -c "/sbin/iptables -I OUTPUT -d 192.169.7.2 -j DROP"
+
+# ^^^ This is to insure that cluster peering is indeed working over mesh gateways.
+
+
 # Create APs in DC1
 consul partition create -name donkey -http-addr="$DC1"
 consul partition create -name unicorn -http-addr="$DC1"
