@@ -20,11 +20,18 @@ DC1 MGW:    10.5.0.5 / 192.169.7.3
 * consul-client-dc1-charlie-ap1:  10.5.0.11
 * consul-client-dc1-delta-ap2:    10.5.0.12
 * consul-client-dc1-echo-proj1:   10.5.0.13
+* web-v1:                         10.5.0.100
 
 DC2 server: 10.6.0.2 / 192.169.7.4
 DC2 MGW:    10.6.0.5 / 192.169.7.5
 
 * consul-client-dc2-bravo:          10.6.0.10
+
+### Local Listeners
+
+* Consul Server1 DC1 UI: http://127.0.0.1:8500/ui/
+* Consul Server1 DC2 UI: http://127.0.0.1:8501/ui/
+* Web Service UI: http://127.0.0.1:9000/ui
 
 Architecture:
 ![](readme-images/architecture.png)
@@ -225,6 +232,41 @@ Vault will eventually be implemented in the future as the Certificate Authority 
 * **ACL Token**: `root`
 * **Notes**:
   * This `josh` service is exported to the `DC1` peer (`default`).
+
+# Consul Service Mesh Details
+
+* Environment variables for the FakeService:
+  * [https://hub.docker.com/r/nicholasjackson/fake-service](https://hub.docker.com/r/nicholasjackson/fake-servicehttps:/)
+
+### Most useful Variables
+
+#### Service Listener
+
+
+| **Variable**              | **Meaning**                                                                             |
+| --------------------------- | ----------------------------------------------------------------------------------------- |
+| LISTEN_ADDR: 0.0.0.0:9090 | IP address and port to bind service to                                                  |
+| MESSAGE: "Hello World"    | Message to be returned from service, can either be a string or valid JSON               |
+| SERVER_TYPE: "http"       | Service type: [http or grpc], default:http. Determines the type of service HTTP or gRPC |
+| NAME: "Service_name"      | Name of the service                                                                     |
+
+### Fault Injection
+
+
+| **Variable**             | **Meaning**                                                                              |
+| -------------------------- | ------------------------------------------------------------------------------------------ |
+| ERROR_RATE: "0"          | Decimal percentage of request where handler will report an error. (0.1 = 10% will error) |
+| ERROR_TYPE: "http_error" | Type of error [http_error, delay]                                                        |
+| ERROR_CODE: "500"        | Error code to return on error                                                            |
+
+#### Upstream Settings
+
+
+| **Variable**                         | **Meaning**                                           |
+| -------------------------------------- | ------------------------------------------------------- |
+| UPSTREAM_URIS: http://localhost:9091 | Comma separated URIs of the upstream services to call |
+| HTTP_CLIENT_KEEP_ALIVES: "false"     | Enable HTTP connection keep alives for upstream calls |
+| HTTP_CLIENT_REQUEST_TIMEOUT: "30s"   | Maximum duration for upstream service requests        |
 
 # ACL Auth / Policies / Roles / Tokens
 

@@ -90,3 +90,10 @@ consul peering read -http-addr="$DC1" -name DC2-heimdall
 
 consul peering read -http-addr="$DC2" -name DC1-default
 
+
+# ==========================================
+#           Services and Configs
+# ==========================================
+
+consul config read -http-addr="$DC1" -kind service-defaults -name web2
+

@@ -131,6 +131,74 @@ services:
         ipv4_address: 10.5.0.13
     command: "agent"
 
+# --------------------------------
+#       DC1 Service Mesh
+# --------------------------------
+
+  # Service "Web" and Sidecar proxy
+  # Eventually Put this in Proj2
+  web:
+    image: nicholasjackson/fake-service:v0.24.2
+    container_name: web
+    environment:
+      NAME: Web
+      LISTEN_ADDR: 0.0.0.0:9090
+      MESSAGE: "Hello World"
+      SERVER_TYPE: "http"
+      UPSTREAM_URIS: http://localhost:9091
+      HTTP_CLIENT_KEEP_ALIVES: "false"
+    networks:
+      dc1:
+        ipv4_address: 10.5.0.100
+    ports:
+      - 9000:9090
+  web_envoy:
+    image: joshwolfer/consul-envoy:v1.14.1-ent_v1.24.0
+    environment:
+      CONSUL_HTTP_ADDR: 10.5.0.2:8500
+      CONSUL_GRPC_ADDR: 10.5.0.2:8502
+      CONSUL_LICENSE_PATH: "/consul/config/license"
+      CONSUL_HTTP_TOKEN: "root"
+      CONSUL_CACERT: "/consul/config/certs/consul-agent-ca.pem"
+      SERVICE_CONFIG: /consul/config/services-dc1-web_v1.hcl
+    volumes:
+      - ./license:/consul/config/license
+      - ./certs/:/consul/config/certs/
+      - "./configs/services-dc1-web_v1.hcl:/consul/config/services-dc1-web_v1.hcl"
+    command: ["consul", "connect", "envoy",
+      "-sidecar-for", "web-v1",
+      "-partition=default"]
+    network_mode: "service:web"
+
+  # Service "Web-upstream" and Sidecar proxy
+  web-upstream:
+    image: nicholasjackson/fake-service:v0.24.2
+    container_name: web-upstream
+    environment:
+      NAME: Web Upstream
+      LISTEN_ADDR: 0.0.0.0:8000
+      MESSAGE: "I am your upstream service. Yay."
+      SERVER_TYPE: "http"
+    networks:
+      dc1:
+        ipv4_address: 10.5.0.101
+  web-upstream_envoy:
+    image: joshwolfer/consul-envoy:v1.14.1-ent_v1.24.0
+    environment:
+      CONSUL_HTTP_ADDR: 10.5.0.2:8500
+      CONSUL_GRPC_ADDR: 10.5.0.2:8502
+      CONSUL_LICENSE_PATH: "/consul/config/license"
+      CONSUL_HTTP_TOKEN: "root"
+      CONSUL_CACERT: "/consul/config/certs/consul-agent-ca.pem"
+      SERVICE_CONFIG: /consul/config/services-dc1-web-upstream_v1.hcl
+    volumes:
+      - ./license:/consul/config/license
+      - ./certs/:/consul/config/certs/
+      - "./configs/services-dc1-web-upstream_v1.hcl:/consul/config/services-dc1-web-upstream_v1.hcl"
+    command: ["consul", "connect", "envoy",
+      "-sidecar-for", "web-upstream-v1",
+      "-partition=default"]
+    network_mode: "service:web-upstream"
 
   # ==========================================
   #                DC2 Config

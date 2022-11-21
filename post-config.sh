@@ -160,6 +160,21 @@ consul peering establish -name DC1-default -partition="heimdall" -http-addr="$DC
 consul config write -http-addr="$DC1" ./configs/exported-services/exported-services-dc1-default.hcl
 consul config write -http-addr="$DC2" ./configs/exported-services/exported-services-dc2-default.hcl
 
+# ==========================================
+#          Service Mesh Configs
+# ==========================================
+
+consul config write -http-addr="$DC1" ./configs/service-defaults/web-defaults.hcl
+consul config write -http-addr="$DC1" ./configs/service-defaults/web-upstream-defaults.hcl
+
+  # ------------------------------------------
+  #              Intentions
+  # ------------------------------------------
+
+consul config write -http-addr="$DC1" ./configs/intentions/web_upstream-allow.hcl
+
+
+
 
 
 # ------------------------------------------
