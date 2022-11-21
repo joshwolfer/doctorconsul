@@ -11,8 +11,25 @@ Details:
 * Currently only configures Service Discovery
   * Mesh additions coming soon.
 
+### Network Quick Chart
+
+DC1 server: 10.5.0.2 / 192.169.7.2
+DC1 MGW:    10.5.0.5 / 192.169.7.3
+
+* consul-client-dc1-alpha:        10.5.0.10
+* consul-client-dc1-charlie-ap1:  10.5.0.11
+* consul-client-dc1-delta-ap2:    10.5.0.12
+* consul-client-dc1-echo-proj1:   10.5.0.13
+
+DC2 server: 10.6.0.2 / 192.169.7.4
+DC2 MGW:    10.6.0.5 / 192.169.7.5
+
+* consul-client-dc2-bravo:          10.6.0.10
+
 Architecture:
 ![](readme-images/architecture.png)
+
+^^^ The Architecture now includes Mesh Gateways + Cluster Peering over Mesh Gateway. Picture will be updated in the future.
 
 # Initialization Pre-Requirements
 
@@ -69,6 +86,20 @@ Architecture:
 * UI exposed on local port 8501: `http://127.0.0.1:8501/ui/_default/dc2/services`
 * Gossip Encryption: `dznVKWl1ri975FUJiddzAPM+3eNP9iXDad2c8hghsKA=`
 
+## Consul Mesh Gateways
+
+### DC1
+
+* gateway-dc1
+  * Internal listener: 10.5.0.5:443
+  * Public listener: 192.169.7.3:443
+
+### DC2
+
+* gateway-dc2
+  * Internal listener: 10.6.0.5:443
+  * Public listener: 192.169.7.5:443
+
 ## Admin Partitions & Namespaces
 
 ### DC1
@@ -88,18 +119,26 @@ Architecture:
 
 ## Cluster Peering Relationships & Exported Services
 
-* `DC1` <> `DC2` peered on `default` partitions
+### Configuration
+
+* Cluster Peering over Mesh Gateways enabled
+
+### Peering Relationships
+
+* `DC1`/`default` <> `DC2`/`default`
+* `DC1`/`default` <> `DC2`/`heimdall`
 
 ### Exported Services
 
 #### DC1
 
-* DC1 `donkey(AP)/donkey` > DC1 `default` (AP)
-* DC1 `default(AP)/joshs-obnoxiously-long-service-name-gonna-take-awhile` > `DC2` (Peer)
+* `DC1`/`donkey(AP)/donkey` > `DC1`/`default(AP)` (local)
+* `DC1`/`default(AP)/joshs-obnoxiously-long-service-name-gonna-take-awhile`>`DC2`/`default(AP)` (Peer)
+* `DC1`/`default(AP)/joshs-obnoxiously-long-service-name-gonna-take-awhile`>`DC2`/`heimdall(AP)` (Peer)
 
 #### DC2
 
-* DC2 `default(AP)/josh` > `DC1` (Peer)
+* `DC2`/`default(AP)/josh`>`DC1`/`default` (Peer)
 
 ## HashiCorp Vault
 
@@ -278,10 +317,6 @@ Vault will eventually be implemented in the future as the Certificate Authority 
 * Add ECS cluster
   * Need to figure out how to expose local networking to ECS. This may not be practical for a DC lab. We'll see.
 
-### Cluster Peering & Exported Services
-
-* Add `non-default` partition peering relationships and see how cumbersome the management is.
-
 ### PKI / Certificates
 
 * Add Vault as the ConnectCA
@@ -291,9 +326,6 @@ Vault will eventually be implemented in the future as the Certificate Authority 
 ### Service Mesh
 
 * Add FakeService applications working in the Consul Mesh.
-* Split DC1 and DC2 into completely separate IP networks.
-  * Requires adding Mesh Gateways into the DC1 and DC2 perimeters.
-  * See Network examples from [Nic Jackson](https://github.com/nicholasjackson/demo-consul-service-mesh/blob/master/gateways/docker-compose.yml)
 
 ### Authentication Methods
 
