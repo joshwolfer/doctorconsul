@@ -144,11 +144,14 @@ consul peering establish -name DC1-default -partition="heimdall" -http-addr="$DC
   # Export services across Peers
   # ------------------------------------------
 
+sleep 2      # The last run didn't work and it appeared to only be a timing issue. Let's see if this fixes it.
 consul config write -http-addr="$DC1" ./configs/exported-services-dc1-default.hcl
+
+sleep 2
 consul config write -http-addr="$DC2" ./configs/exported-services-dc2-default.hcl
 
+sleep 2
 consul config write -http-addr="$DC1" ./configs/exported-services-dc1-joshlong-dc2-heimdall.hcl
-
 
 # ------------------------------------------
 # Test STUFF
