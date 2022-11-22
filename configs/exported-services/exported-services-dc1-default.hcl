@@ -7,7 +7,7 @@ Services = [
     Namespace = "default"
     Consumers = [
       {
-        Peer = "DC2-default"
+        Peer = "dc2-default"
       }
     ]
   },
@@ -16,7 +16,7 @@ Services = [
     Namespace = "default"
     Consumers = [
       {
-        Peer = "DC2-heimdall"
+        Peer = "dc2-heimdall"
       }
     ]
   }

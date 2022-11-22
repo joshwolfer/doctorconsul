@@ -22,7 +22,7 @@ service {
         }
         upstreams {
             destination_name = "web-chunky"
-            destination_peer = "DC2-chunky"
+            destination_peer = "dc2-chunky"
             local_bind_address = "127.0.0.1"
             local_bind_port = 9092
         }

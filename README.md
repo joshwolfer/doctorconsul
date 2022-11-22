@@ -13,8 +13,8 @@ Details:
 
 ### Network Quick Chart
 
-DC1 server: 10.5.0.2 / 192.169.7.2
-DC1 MGW:    10.5.0.5 / 192.169.7.3
+DC1 server:                        10.5.0.2 / 192.169.7.2
+DC1 MGW:                           10.5.0.5 / 192.169.7.3
 
 * consul-client-dc1-alpha:        10.5.0.10
 * consul-client-dc1-charlie-ap1:  10.5.0.11
@@ -23,8 +23,9 @@ DC1 MGW:    10.5.0.5 / 192.169.7.3
 * web-v1:                         10.5.0.100
 * web-upstream:                   10.5.0.101
 
-DC2 server: 10.6.0.2 / 192.169.7.4
-DC2 MGW:    10.6.0.5 / 192.169.7.5
+DC2 server:                          10.6.0.2 / 192.169.7.4
+DC2 MGW:                             10.6.0.5 / 192.169.7.5
+DC2 MGW (chunky):                    10.6.0.6 / 192.169.7.6
 
 * consul-client-dc2-bravo:          10.6.0.10
 * consul-client-dc2-foxtrot:        10.6.0.11
@@ -44,6 +45,8 @@ Architecture:
 # Initialization Pre-Requirements
 
 * Environment requires Docker-Compose
+  * **!! MAC M1 USERS !!** : The Docker images referenced in the `docker-compose.yml` are AMD64, not ARM64.
+  * M1 user will need to build your own ARM64 consul+envoy images using [https://github.com/joshwolfer/convoy-build](https://github.com/joshwolfer/convoy-build) and modify the `docker-compose.yml` file to reflect these new images.
 * HashiCorp Consul Enterprise license required.
   * Place in `./license`
 * Generate Consul PKI Root certs and Consul Server RPC certs

@@ -4,7 +4,7 @@ partition = "chunky"
 Sources = [
   {
     Name   = "web"
-    peer   = "DC1-default"
+    peer   = "dc1-default"
     Action = "allow"
   }
 ]

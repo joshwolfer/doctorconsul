@@ -7,6 +7,7 @@ CONSUL_HTTP_ADDR="http://127.0.0.1:8500"
 DC1="http://127.0.0.1:8500"
 DC2="http://127.0.0.1:8501"
 
+mkdir -p ./tokens
 
 # Block traffic from consul-server1-dc1 to consul-server1-dc2
 docker exec -i -t consul-server1-dc1 sh -c "/sbin/iptables -I OUTPUT -d 192.169.7.4 -j DROP"
@@ -145,16 +146,16 @@ consul config write -http-addr="$DC2" ./configs/mgw/dc2-mgw.hcl
 
 # Peer DC1/default <> DC2/default
 
-consul peering generate-token -name DC2-default -http-addr="$DC1" > tokens/peering-dc1_default-DC2-default.token
-consul peering establish -name DC1-default -http-addr="$DC2" -peering-token $(cat tokens/peering-dc1_default-DC2-default.token)
+consul peering generate-token -name dc2-default -http-addr="$DC1" > tokens/peering-dc1_default-dc2-default.token
+consul peering establish -name dc1-default -http-addr="$DC2" -peering-token $(cat tokens/peering-dc1_default-dc2-default.token)
 
 # Peer DC1/default <> DC2/heimdall
 
-consul peering generate-token -name DC2-heimdall -partition="default" -http-addr="$DC1" > tokens/peering-dc1_default-DC2-heimdall.token
-consul peering establish -name DC1-default -partition="heimdall" -http-addr="$DC2" -peering-token $(cat tokens/peering-dc1_default-DC2-heimdall.token)
+consul peering generate-token -name dc2-heimdall -partition="default" -http-addr="$DC1" > tokens/peering-dc1_default-dc2-heimdall.token
+consul peering establish -name dc1-default -partition="heimdall" -http-addr="$DC2" -peering-token $(cat tokens/peering-dc1_default-dc2-heimdall.token)
 
-consul peering generate-token -name DC1-default -partition="chunky" -http-addr="$DC2" > tokens/peering-dc2_chunky-DC1-default.token
-consul peering establish -name DC2-chunky -partition="default" -http-addr="$DC1" -peering-token $(cat tokens/peering-dc2_chunky-DC1-default.token)
+consul peering generate-token -name dc1-default -partition="chunky" -http-addr="$DC2" > tokens/peering-dc2_chunky-dc1-default.token
+consul peering establish -name dc2-chunky -partition="default" -http-addr="$DC1" -peering-token $(cat tokens/peering-dc2_chunky-dc1-default.token)
 
   # ------------------------------------------
   # Export services across Peers

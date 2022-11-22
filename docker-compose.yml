@@ -261,6 +261,35 @@ services:
       wan:
         ipv4_address: 192.169.7.5
 
+  gateway-dc2-chunky:
+    image: joshwolfer/consul-envoy:v1.14.1-ent_v1.24.0
+    container_name: gateway-dc2-chunky
+    environment:
+      CONSUL_HTTP_ADDR: 10.6.0.11:8500   # Address of consul-server1-dc2
+      CONSUL_GRPC_ADDR: 10.6.0.11:8502   # Address of consul-server1-dc2
+      CONSUL_LICENSE_PATH: "/consul/config/license"
+      CONSUL_CACERT: "/consul/config/certs/consul-agent-ca.pem"
+      CONSUL_HTTP_TOKEN: "root"
+    command: [
+      "consul",
+      "connect", "envoy",
+      "-mesh-gateway",
+      "-register",
+      "-service", "dc2-chunky-mgw",
+      "-partition=chunky",
+      "-address", "10.6.0.6:443",
+      "-wan-address", "192.169.7.6:443" ]
+      # "--",
+      # "-l", "debug"]
+    volumes:
+      - ./license:/consul/config/license
+      - ./certs/:/consul/config/certs/
+    networks:
+      dc2:
+        ipv4_address: 10.6.0.6
+      wan:
+        ipv4_address: 192.169.7.6
+
 # --------------------------------
 #         DC2 Clients
 # --------------------------------
