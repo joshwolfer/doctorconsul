@@ -16,6 +16,9 @@ addresses = {
   grpc_tls = "0.0.0.0"
 }
 
+advertise_addr = "10.5.0.2"
+advertise_addr_wan = "192.169.7.2"
+
 ports = {
   grpc = 8502
   grpc_tls = 8503

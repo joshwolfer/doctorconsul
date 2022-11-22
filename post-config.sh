@@ -21,7 +21,7 @@ consul namespace create -name frontend -partition=unicorn -http-addr="$DC1"
 consul namespace create -name backend -partition=unicorn -http-addr="$DC1"
 
 # Export the DC1/Donkey/default/Donkey service to DC1/default/default
-consul config write ./configs/exported-services-donkey.hcl
+consul config write ./configs/exported-services/exported-services-donkey.hcl
 
 # ==========================================
 #       Register External Services
@@ -127,13 +127,15 @@ consul acl binding-rule create \
 #             Cluster Peering
 # ==========================================
 
+# Set peering to use Mesh Gateways for peering control plane traffic. This must be set BEFORE peering tokens are created.
 
+consul config write -http-addr="$DC1" ./configs/mgw/dc1-mgw.hcl
+consul config write -http-addr="$DC2" ./configs/mgw/dc2-mgw.hcl
 
 # Peer DC1/default <> DC2/default
 
 consul peering generate-token -name DC2-default -http-addr="$DC1" > tokens/peering-dc1_default-DC2-default.token
 consul peering establish -name DC1-default -http-addr="$DC2" -peering-token $(cat tokens/peering-dc1_default-DC2-default.token)
-
 
 # Peer DC1/default <> DC2/heimdall
 
@@ -144,10 +146,10 @@ consul peering establish -name DC1-default -partition="heimdall" -http-addr="$DC
   # Export services across Peers
   # ------------------------------------------
 
-consul config write -http-addr="$DC1" ./configs/exported-services-dc1-default.hcl
-consul config write -http-addr="$DC2" ./configs/exported-services-dc2-default.hcl
 
-consul config write -http-addr="$DC1" ./configs/exported-services-dc1-joshlong-dc2-heimdall.hcl
+consul config write -http-addr="$DC1" ./configs/exported-services/exported-services-dc1-default.hcl
+consul config write -http-addr="$DC2" ./configs/exported-services/exported-services-dc2-default.hcl
+
 
 
 # ------------------------------------------

@@ -80,3 +80,13 @@ cat tokens/peering-dc1_default-DC2-heimdall.token | base64 -d | jq
 
 # Display CA cert details
 cat tokens/peering-dc1_default-DC2-heimdall.token | base64 -d | jq -r '.CA[0]' | openssl x509 -text -noout
+
+# Verify peering state / details
+
+consul peering list
+
+consul peering read -http-addr="$DC1" -name DC2-default
+consul peering read -http-addr="$DC1" -name DC2-heimdall
+
+consul peering read -http-addr="$DC2" -name DC1-default
+

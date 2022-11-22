@@ -22,7 +22,7 @@ services:
 # ==========================================
 
   consul-server1-dc1:
-    image: hashicorp/consul-enterprise:1.14.0-ent
+    image: hashicorp/consul-enterprise:1.14.1-ent
     container_name: consul-server1-dc1
     restart: always
     volumes:
@@ -30,7 +30,10 @@ services:
      - ./certs/:/consul/config/certs/
      - ./license:/consul/config/license
     networks:
-      - consul
+      dc1:
+        ipv4_address: 10.5.0.2
+      wan:
+        ipv4_address: 192.169.7.2
     ports:
       - "8500:8500"
       - "8600:8600/tcp"
@@ -41,13 +44,41 @@ services:
 #         DC1 Gateways
 # --------------------------------
 
+  gateway-dc1:
+    image: joshwolfer/consul-envoy:v1.14.1-ent_v1.24.0
+    container_name: gateway-dc1
+    environment:
+      CONSUL_HTTP_ADDR: 10.5.0.2:8500   # Address of consul-server1-dc1
+      CONSUL_GRPC_ADDR: 10.5.0.2:8502   # Address of consul-server1-dc1
+      CONSUL_LICENSE_PATH: "/consul/config/license"
+      CONSUL_CACERT: "/consul/config/certs/consul-agent-ca.pem"
+      CONSUL_HTTP_TOKEN: "root"
+    command: [
+      "consul",
+      "connect", "envoy",
+      "-mesh-gateway",
+      "-register",
+      "-service", "dc1-mgw",
+      "-partition=default",
+      "-address", "10.5.0.5:443",
+      "-wan-address", "192.169.7.3:443" ]
+      # "--",
+      # "-l", "debug"]
+    volumes:
+      - ./license:/consul/config/license
+      - ./certs/:/consul/config/certs/
+    networks:
+      dc1:
+        ipv4_address: 10.5.0.5
+      wan:
+        ipv4_address: 192.169.7.3
 
 # --------------------------------
 #         DC1 Clients
 # --------------------------------
 
   consul-client-dc1-alpha:
-    image: hashicorp/consul-enterprise:1.14.0-ent
+    image: hashicorp/consul-enterprise:1.14.1-ent
     container_name: consul-client-dc1-alpha
     restart: always
     volumes:
@@ -56,11 +87,12 @@ services:
      - ./configs/services-dc1-josh-long.hcl:/consul/config/services-dc1-josh-long.hcl
      - ./configs/services-dc1-josh.hcl:/consul/config/services-dc1-josh.hcl
     networks:
-      - consul
+      dc1:
+        ipv4_address: 10.5.0.10
     command: "agent"
 
   consul-client-dc1-charlie-ap1:
-    image: hashicorp/consul-enterprise:1.14.0-ent
+    image: hashicorp/consul-enterprise:1.14.1-ent
     container_name: consul-client-dc1-charlie-ap1
     restart: always
     volumes:
@@ -68,11 +100,12 @@ services:
      - ./certs/:/consul/config/certs/
      - ./configs/services-donkey-ap1.hcl:/consul/config/services-donkey-ap1.hcl
     networks:
-      - consul
+      dc1:
+        ipv4_address: 10.5.0.11
     command: "agent"
 
   consul-client-dc1-delta-ap2:
-    image: hashicorp/consul-enterprise:1.14.0-ent
+    image: hashicorp/consul-enterprise:1.14.1-ent
     container_name: consul-client-dc1-delta-ap2
     restart: always
     volumes:
@@ -80,11 +113,12 @@ services:
      - ./certs/:/consul/config/certs/
      - ./configs/services-unicorn-ap2.hcl:/consul/config/services-unicorn-ap2.hcl
     networks:
-      - consul
+      dc1:
+        ipv4_address: 10.5.0.12
     command: "agent"
 
   consul-client-dc1-echo-proj1:
-    image: hashicorp/consul-enterprise:1.14.0-ent
+    image: hashicorp/consul-enterprise:1.14.1-ent
     container_name: consul-client-dc1-echo-proj1
     restart: always
     volumes:
@@ -92,7 +126,8 @@ services:
      - ./certs/:/consul/config/certs/
      - ./configs/services-dc1-proj1-baphomet.hcl:/consul/config/services-dc1-proj1-baphomet.hcl
     networks:
-      - consul
+      dc1:
+        ipv4_address: 10.5.0.13
     command: "agent"
 
 
@@ -101,7 +136,7 @@ services:
   # ==========================================
 
   consul-server1-dc2:
-    image: hashicorp/consul-enterprise:1.14.0-ent
+    image: hashicorp/consul-enterprise:1.14.1-ent
     container_name: consul-server1-dc2
     restart: always
     volumes:
@@ -109,22 +144,53 @@ services:
      - ./certs/:/consul/config/certs/
      - ./license:/consul/config/license
     networks:
-      - consul
+      dc2:
+        ipv4_address: 10.6.0.2
+      wan:
+        ipv4_address: 192.169.7.4
     ports:
       - "8501:8500"
     command: "agent -bootstrap-expect=1"
 
 # --------------------------------
-#         DC1 Gateways
+#         DC2 Gateways
 # --------------------------------
 
+  gateway-dc2:
+    image: joshwolfer/consul-envoy:v1.14.1-ent_v1.24.0
+    container_name: gateway-dc2
+    environment:
+      CONSUL_HTTP_ADDR: 10.6.0.2:8500   # Address of consul-server1-dc2
+      CONSUL_GRPC_ADDR: 10.6.0.2:8502   # Address of consul-server1-dc2
+      CONSUL_LICENSE_PATH: "/consul/config/license"
+      CONSUL_CACERT: "/consul/config/certs/consul-agent-ca.pem"
+      CONSUL_HTTP_TOKEN: "root"
+    command: [
+      "consul",
+      "connect", "envoy",
+      "-mesh-gateway",
+      "-register",
+      "-service", "dc2-mgw",
+      "-partition=default",
+      "-address", "10.6.0.5:443",
+      "-wan-address", "192.169.7.5:443" ]
+      # "--",
+      # "-l", "debug"]
+    volumes:
+      - ./license:/consul/config/license
+      - ./certs/:/consul/config/certs/
+    networks:
+      dc2:
+        ipv4_address: 10.6.0.5
+      wan:
+        ipv4_address: 192.169.7.5
 
 # --------------------------------
-#         DC1 Clients
+#         DC2 Clients
 # --------------------------------
 
   consul-client-dc2-bravo:
-    image: hashicorp/consul-enterprise:1.14.0-ent
+    image: hashicorp/consul-enterprise:1.14.1-ent
     container_name: consul-client-dc2-bravo
     restart: always
     volumes:
@@ -132,13 +198,46 @@ services:
      - ./certs/:/consul/config/certs/
      - ./configs/services-dc2-josh.hcl:/consul/config/services-dc2-josh.hcl
     networks:
-      - consul
+      dc2:
+        ipv4_address: 10.6.0.10
     command: "agent"
 
 # ==========================================
 #             Network Config
 # ==========================================
 
+# ---------------------------------
+#       Network Quick Chart
+# ---------------------------------
+
+# DC1 server: 10.5.0.2 / 192.169.7.2
+# DC1 MGW:    10.5.0.5 / 192.169.7.3
+
+  # consul-client-dc1-alpha:        10.5.0.10
+  # consul-client-dc1-charlie-ap1:  10.5.0.11
+  # consul-client-dc1-delta-ap2:    10.5.0.12
+  # consul-client-dc1-echo-proj1:   10.5.0.13
+
+# DC2 server: 10.6.0.2 / 192.169.7.4
+# DC2 MGW:    10.6.0.5 / 192.169.7.5
+
+# consul-client-dc2-bravo:          10.6.0.10
+
 networks:
-  consul:
+  dc1:
     driver: bridge
+    ipam:
+     config:
+       - subnet: 10.5.0.0/16
+  dc2:
+    driver: bridge
+    ipam:
+     config:
+       - subnet: 10.6.0.0/16
+  wan:
+    driver: bridge
+    ipam:
+     config:
+       - subnet: 192.169.7.0/24
+
+
