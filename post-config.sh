@@ -164,6 +164,8 @@ consul peering establish -name DC2-chunky -partition="default" -http-addr="$DC1"
 consul config write -http-addr="$DC1" ./configs/exported-services/exported-services-dc1-default.hcl
 consul config write -http-addr="$DC2" ./configs/exported-services/exported-services-dc2-default.hcl
 
+consul config write -http-addr="$DC2" ./configs/exported-services/exported-services-dc2-webchunky.hcl
+
 # ==========================================
 #          Service Mesh Configs
 # ==========================================
@@ -178,6 +180,9 @@ consul config write -http-addr="$DC2" ./configs/service-defaults/web-chunky-defa
   # ------------------------------------------
 
 consul config write -http-addr="$DC1" ./configs/intentions/web_upstream-allow.hcl
+consul config write -http-addr="$DC2" ./configs/intentions/web_chunky-allow.hcl
+
+
 
 
 
@@ -186,4 +191,22 @@ consul config write -http-addr="$DC1" ./configs/intentions/web_upstream-allow.hc
 # ------------------------------------------
 
 
+
+
+# You can specify config entries in the agent config. This might simplify some of the config.
+
+# config_entries {
+#    bootstrap {
+#       kind = "proxy-defaults"
+#       name = "global"
+#       config {
+#          envoy_dogstatsd_url = "udp://127.0.0.1:9125"
+#       }
+#    }
+#    bootstrap {
+#       kind = "service-defaults"
+#       name = "foo"
+#       protocol = "tcp"
+#    }
+# }
 

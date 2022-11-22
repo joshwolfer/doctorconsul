@@ -21,11 +21,14 @@ DC1 MGW:    10.5.0.5 / 192.169.7.3
 * consul-client-dc1-delta-ap2:    10.5.0.12
 * consul-client-dc1-echo-proj1:   10.5.0.13
 * web-v1:                         10.5.0.100
+* web-upstream:                   10.5.0.101
 
 DC2 server: 10.6.0.2 / 192.169.7.4
 DC2 MGW:    10.6.0.5 / 192.169.7.5
 
 * consul-client-dc2-bravo:          10.6.0.10
+* consul-client-dc2-foxtrot:        10.6.0.11
+* web-chunky:                       10.6.0.100
 
 ### Local Listeners
 
