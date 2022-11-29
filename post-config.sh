@@ -7,6 +7,7 @@ CONSUL_HTTP_ADDR="http://127.0.0.1:8500"
 DC1="http://127.0.0.1:8500"
 DC2="http://127.0.0.1:8501"
 
+mkdir -p ./tokens
 
 # Block traffic from consul-server1-dc1 to consul-server1-dc2
 docker exec -i -t consul-server1-dc1 sh -c "/sbin/iptables -I OUTPUT -d 192.169.7.4 -j DROP"
@@ -25,6 +26,7 @@ consul partition create -name proj2 -http-addr="$DC1"
 
 # Create APs in DC2
 consul partition create -name heimdall -http-addr="$DC2"
+consul partition create -name chunky -http-addr="$DC2"
 
 # Create Unicorn NSs in DC1
 consul namespace create -name frontend -partition=unicorn -http-addr="$DC1"
@@ -144,13 +146,16 @@ consul config write -http-addr="$DC2" ./configs/mgw/dc2-mgw.hcl
 
 # Peer DC1/default <> DC2/default
 
-consul peering generate-token -name DC2-default -http-addr="$DC1" > tokens/peering-dc1_default-DC2-default.token
-consul peering establish -name DC1-default -http-addr="$DC2" -peering-token $(cat tokens/peering-dc1_default-DC2-default.token)
+consul peering generate-token -name dc2-default -http-addr="$DC1" > tokens/peering-dc1_default-dc2-default.token
+consul peering establish -name dc1-default -http-addr="$DC2" -peering-token $(cat tokens/peering-dc1_default-dc2-default.token)
 
 # Peer DC1/default <> DC2/heimdall
 
-consul peering generate-token -name DC2-heimdall -partition="default" -http-addr="$DC1" > tokens/peering-dc1_default-DC2-heimdall.token
-consul peering establish -name DC1-default -partition="heimdall" -http-addr="$DC2" -peering-token $(cat tokens/peering-dc1_default-DC2-heimdall.token)
+consul peering generate-token -name dc2-heimdall -partition="default" -http-addr="$DC1" > tokens/peering-dc1_default-dc2-heimdall.token
+consul peering establish -name dc1-default -partition="heimdall" -http-addr="$DC2" -peering-token $(cat tokens/peering-dc1_default-dc2-heimdall.token)
+
+consul peering generate-token -name dc1-default -partition="chunky" -http-addr="$DC2" > tokens/peering-dc2_chunky-dc1-default.token
+consul peering establish -name dc2-chunky -partition="default" -http-addr="$DC1" -peering-token $(cat tokens/peering-dc2_chunky-dc1-default.token)
 
   # ------------------------------------------
   # Export services across Peers
@@ -160,6 +165,8 @@ consul peering establish -name DC1-default -partition="heimdall" -http-addr="$DC
 consul config write -http-addr="$DC1" ./configs/exported-services/exported-services-dc1-default.hcl
 consul config write -http-addr="$DC2" ./configs/exported-services/exported-services-dc2-default.hcl
 
+consul config write -http-addr="$DC2" ./configs/exported-services/exported-services-dc2-webchunky.hcl
+
 # ==========================================
 #          Service Mesh Configs
 # ==========================================
@@ -167,11 +174,14 @@ consul config write -http-addr="$DC2" ./configs/exported-services/exported-servi
 consul config write -http-addr="$DC1" ./configs/service-defaults/web-defaults.hcl
 consul config write -http-addr="$DC1" ./configs/service-defaults/web-upstream-defaults.hcl
 
+consul config write -http-addr="$DC2" ./configs/service-defaults/web-chunky-defaults.hcl
+
   # ------------------------------------------
   #              Intentions
   # ------------------------------------------
 
 consul config write -http-addr="$DC1" ./configs/intentions/web_upstream-allow.hcl
+consul config write -http-addr="$DC2" ./configs/intentions/web_chunky-allow.hcl
 
 
 
@@ -182,4 +192,22 @@ consul config write -http-addr="$DC1" ./configs/intentions/web_upstream-allow.hc
 # ------------------------------------------
 
 
+
+
+# You can specify config entries in the agent config. This might simplify some of the config.
+
+# config_entries {
+#    bootstrap {
+#       kind = "proxy-defaults"
+#       name = "global"
+#       config {
+#          envoy_dogstatsd_url = "udp://127.0.0.1:9125"
+#       }
+#    }
+#    bootstrap {
+#       kind = "service-defaults"
+#       name = "foo"
+#       protocol = "tcp"
+#    }
+# }
 

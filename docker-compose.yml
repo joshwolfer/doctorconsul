@@ -78,6 +78,7 @@ services:
 #         DC1 Clients
 # --------------------------------
 
+# (Partition: default)
   consul-client-dc1-alpha:
     image: hashicorp/consul-enterprise:1.14.1-ent
     container_name: consul-client-dc1-alpha
@@ -92,6 +93,7 @@ services:
         ipv4_address: 10.5.0.10
     command: "agent"
 
+# (Partition: donkey)
   consul-client-dc1-charlie-ap1:
     image: hashicorp/consul-enterprise:1.14.1-ent
     container_name: consul-client-dc1-charlie-ap1
@@ -105,6 +107,7 @@ services:
         ipv4_address: 10.5.0.11
     command: "agent"
 
+# (Partition: unicorn)
   consul-client-dc1-delta-ap2:
     image: hashicorp/consul-enterprise:1.14.1-ent
     container_name: consul-client-dc1-delta-ap2
@@ -118,6 +121,7 @@ services:
         ipv4_address: 10.5.0.12
     command: "agent"
 
+# (Partition: proj1)
   consul-client-dc1-echo-proj1:
     image: hashicorp/consul-enterprise:1.14.1-ent
     container_name: consul-client-dc1-echo-proj1
@@ -141,11 +145,11 @@ services:
     image: nicholasjackson/fake-service:v0.24.2
     container_name: web
     environment:
-      NAME: Web
+      NAME: Web (DC1)
       LISTEN_ADDR: 0.0.0.0:9090
       MESSAGE: "Hello World"
       SERVER_TYPE: "http"
-      UPSTREAM_URIS: http://localhost:9091
+      UPSTREAM_URIS: "http://localhost:9091,http://localhost:9092"
       HTTP_CLIENT_KEEP_ALIVES: "false"
     networks:
       dc1:
@@ -154,6 +158,7 @@ services:
       - 9000:9090
   web_envoy:
     image: joshwolfer/consul-envoy:v1.14.1-ent_v1.24.0
+    container_name: web_envoy
     environment:
       CONSUL_HTTP_ADDR: 10.5.0.2:8500
       CONSUL_GRPC_ADDR: 10.5.0.2:8502
@@ -175,7 +180,7 @@ services:
     image: nicholasjackson/fake-service:v0.24.2
     container_name: web-upstream
     environment:
-      NAME: Web Upstream
+      NAME: Web Upstream (DC1)
       LISTEN_ADDR: 0.0.0.0:8000
       MESSAGE: "I am your upstream service. Yay."
       SERVER_TYPE: "http"
@@ -184,6 +189,7 @@ services:
         ipv4_address: 10.5.0.101
   web-upstream_envoy:
     image: joshwolfer/consul-envoy:v1.14.1-ent_v1.24.0
+    container_name: web-upstream_envoy
     environment:
       CONSUL_HTTP_ADDR: 10.5.0.2:8500
       CONSUL_GRPC_ADDR: 10.5.0.2:8502
@@ -255,10 +261,40 @@ services:
       wan:
         ipv4_address: 192.169.7.5
 
+  gateway-dc2-chunky:
+    image: joshwolfer/consul-envoy:v1.14.1-ent_v1.24.0
+    container_name: gateway-dc2-chunky
+    environment:
+      CONSUL_HTTP_ADDR: 10.6.0.11:8500   # Address of consul-server1-dc2
+      CONSUL_GRPC_ADDR: 10.6.0.11:8502   # Address of consul-server1-dc2
+      CONSUL_LICENSE_PATH: "/consul/config/license"
+      CONSUL_CACERT: "/consul/config/certs/consul-agent-ca.pem"
+      CONSUL_HTTP_TOKEN: "root"
+    command: [
+      "consul",
+      "connect", "envoy",
+      "-mesh-gateway",
+      "-register",
+      "-service", "dc2-chunky-mgw",
+      "-partition=chunky",
+      "-address", "10.6.0.6:443",
+      "-wan-address", "192.169.7.6:443" ]
+      # "--",
+      # "-l", "debug"]
+    volumes:
+      - ./license:/consul/config/license
+      - ./certs/:/consul/config/certs/
+    networks:
+      dc2:
+        ipv4_address: 10.6.0.6
+      wan:
+        ipv4_address: 192.169.7.6
+
 # --------------------------------
 #         DC2 Clients
 # --------------------------------
 
+# (Partition: default)
   consul-client-dc2-bravo:
     image: hashicorp/consul-enterprise:1.14.1-ent
     container_name: consul-client-dc2-bravo
@@ -272,26 +308,58 @@ services:
         ipv4_address: 10.6.0.10
     command: "agent"
 
-# ==========================================
-#             Network Config
-# ==========================================
+# (Partition: chunky)
+  consul-client-dc2-foxtrot:
+    image: hashicorp/consul-enterprise:1.14.1-ent
+    container_name: consul-client-dc2-foxtrot
+    restart: always
+    volumes:
+     - ./agent-configs/client-dc2-foxtrot.hcl:/consul/config/client-dc2-foxtrot.hcl
+     - ./certs/:/consul/config/certs/
+    networks:
+      dc2:
+        ipv4_address: 10.6.0.11
+    command: "agent"
 
-# ---------------------------------
-#       Network Quick Chart
-# ---------------------------------
 
-# DC1 server: 10.5.0.2 / 192.169.7.2
-# DC1 MGW:    10.5.0.5 / 192.169.7.3
+# --------------------------------
+#       DC2 Service Mesh
+# --------------------------------
 
-  # consul-client-dc1-alpha:        10.5.0.10
-  # consul-client-dc1-charlie-ap1:  10.5.0.11
-  # consul-client-dc1-delta-ap2:    10.5.0.12
-  # consul-client-dc1-echo-proj1:   10.5.0.13
+  # Service "Web-chunky" and Sidecar proxy
+  web-chunky:
+    image: nicholasjackson/fake-service:v0.24.2
+    container_name: web-chunky
+    environment:
+      NAME: Web Chunky (DC2)
+      LISTEN_ADDR: 0.0.0.0:8000
+      MESSAGE: "I am Web Chunky!"
+      SERVER_TYPE: "http"
+    networks:
+      dc2:
+        ipv4_address: 10.6.0.100
+  web-chunky_envoy:
+    image: joshwolfer/consul-envoy:v1.14.1-ent_v1.24.0
+    container_name: web-chunky_envoy
+    environment:
+      CONSUL_HTTP_ADDR: consul-client-dc2-foxtrot:8500
+      CONSUL_GRPC_ADDR: consul-client-dc2-foxtrot:8502
+      CONSUL_LICENSE_PATH: "/consul/config/license"
+      CONSUL_HTTP_TOKEN: "root"
+      CONSUL_CACERT: "/consul/config/certs/consul-agent-ca.pem"
+      SERVICE_CONFIG: /consul/config/services-dc2-web-chunky_v1.hcl
+    volumes:
+      - ./license:/consul/config/license
+      - ./certs/:/consul/config/certs/
+      - ./configs/services-dc2-web-chunky_v1.hcl:/consul/config/services-dc2-web-chunky_v1.hcl
+    command: ["consul", "connect", "envoy",
+      "-sidecar-for", "web-chunky-v1",
+      "-partition=chunky"]
+    network_mode: "service:web-chunky"
 
-# DC2 server: 10.6.0.2 / 192.169.7.4
-# DC2 MGW:    10.6.0.5 / 192.169.7.5
-
-# consul-client-dc2-bravo:          10.6.0.10
+  # ==========================================
+  #              Network Config
+  # ==========================================
 
 networks:
   dc1:

@@ -11,7 +11,6 @@
 *.log
 *.out
 *.p7b
-*.pem
 *.swp
 *.tfstate
 *.tfstate.*
@@ -26,7 +25,7 @@
 *snap
 *tfplan*
 *tmp*
-*token
+*.token
 .init.json
 .init.out
 .init.txt

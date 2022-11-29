@@ -1,9 +1,9 @@
 Kind = "exported-services"
-Partition = "default"
-Name = "default"
+Partition = "chunky"
+Name = "chunky"
 Services = [
   {
-    Name = "josh"
+    Name = "web-chunky"
     Namespace = "default"
     Consumers = [
       {
