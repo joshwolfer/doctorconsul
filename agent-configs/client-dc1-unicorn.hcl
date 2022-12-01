@@ -1,10 +1,19 @@
-node_name = "client-dc1-delta-ap2"
+node_name = "client-dc1-unicorn"
 datacenter = "dc1"
 partition = "unicorn"
 
 data_dir = "/consul/data"
 log_level = "INFO"
 retry_join = ["consul-server1-dc1"]
+
+addresses = {
+  grpc = "0.0.0.0"
+  http = "0.0.0.0"
+}
+
+ports = {
+  grpc = 8502
+}
 
 encrypt = "aPuGh+5UDskRAbkLaXRzFoSOcSM+5vAK+NEYOWHJH7w="
 

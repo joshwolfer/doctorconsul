@@ -68,11 +68,44 @@ services:
     volumes:
       - ./license:/consul/config/license
       - ./certs/:/consul/config/certs/
+    ports:
+      - "19006:19000"
     networks:
       dc1:
         ipv4_address: 10.5.0.5
       wan:
         ipv4_address: 192.169.7.3
+
+  gateway-dc1-unicorn:
+    image: joshwolfer/consul-envoy:v1.14.1-ent_v1.24.0
+    container_name: gateway-dc1-unicorn
+    environment:
+      CONSUL_HTTP_ADDR: 10.5.0.12:8500   # Address of consul-server1-dc1
+      CONSUL_GRPC_ADDR: 10.5.0.12:8502   # Address of consul-server1-dc1
+      CONSUL_LICENSE_PATH: "/consul/config/license"
+      CONSUL_CACERT: "/consul/config/certs/consul-agent-ca.pem"
+      CONSUL_HTTP_TOKEN: "root"
+    command: [
+      "consul",
+      "connect", "envoy",
+      "-mesh-gateway",
+      "-register",
+      "-service", "dc1-unicorn-mgw",
+      "-partition=unicorn",
+      "-address", "10.5.0.6:443",
+      "-wan-address", "192.169.7.7:443" ]
+      # "--",
+      # "-l", "debug"]
+    volumes:
+      - ./license:/consul/config/license
+      - ./certs/:/consul/config/certs/
+    ports:
+      - "19001:19000"
+    networks:
+      dc1:
+        ipv4_address: 10.5.0.6
+      wan:
+        ipv4_address: 192.169.7.7
 
 # --------------------------------
 #         DC1 Clients
@@ -108,14 +141,14 @@ services:
     command: "agent"
 
 # (Partition: unicorn)
-  consul-client-dc1-delta-ap2:
+  consul-client-dc1-unicorn:
     image: hashicorp/consul-enterprise:1.14.1-ent
-    container_name: consul-client-dc1-delta-ap2
+    container_name: consul-client-dc1-unicorn
     restart: always
     volumes:
-     - ./agent-configs/client-dc1-delta-ap2.hcl:/consul/config/client-dc1-delta-ap2.hcl
+     - ./agent-configs/client-dc1-unicorn.hcl:/consul/config/client-dc1-unicorn.hcl
      - ./certs/:/consul/config/certs/
-     - ./configs/services-unicorn-ap2.hcl:/consul/config/services-unicorn-ap2.hcl
+    #  - ./configs/services-unicorn-ap2.hcl:/consul/config/services-unicorn-ap2.hcl
     networks:
       dc1:
         ipv4_address: 10.5.0.12
@@ -139,8 +172,7 @@ services:
 #       DC1 Service Mesh
 # --------------------------------
 
-  # Service "Web" and Sidecar proxy
-  # Eventually Put this in Proj2
+  # Service "Web" (DC1) and Sidecar proxy
   web:
     image: nicholasjackson/fake-service:v0.24.2
     container_name: web
@@ -156,6 +188,7 @@ services:
         ipv4_address: 10.5.0.100
     ports:
       - 9000:9090
+      - "19002:19000"
   web_envoy:
     image: joshwolfer/consul-envoy:v1.14.1-ent_v1.24.0
     container_name: web_envoy
@@ -175,7 +208,7 @@ services:
       "-partition=default"]
     network_mode: "service:web"
 
-  # Service "Web-upstream" and Sidecar proxy
+  # Service "Web-upstream" (DC1) and Sidecar proxy
   web-upstream:
     image: nicholasjackson/fake-service:v0.24.2
     container_name: web-upstream
@@ -187,6 +220,8 @@ services:
     networks:
       dc1:
         ipv4_address: 10.5.0.101
+    ports:
+      - "19003:19000"
   web-upstream_envoy:
     image: joshwolfer/consul-envoy:v1.14.1-ent_v1.24.0
     container_name: web-upstream_envoy
@@ -205,6 +240,77 @@ services:
       "-sidecar-for", "web-upstream-v1",
       "-partition=default"]
     network_mode: "service:web-upstream"
+
+  # Service "unicorn-frontend" (DC1) and Sidecar proxy
+  unicorn-frontend:
+    image: nicholasjackson/fake-service:v0.24.2
+    container_name: unicorn-frontend
+    environment:
+      NAME: unicorn-frontend (DC1)
+      LISTEN_ADDR: 0.0.0.0:10000
+      MESSAGE: "Hello World"
+      SERVER_TYPE: "http"
+      UPSTREAM_URIS: "http://localhost:11000,http://localhost:11001"
+      HTTP_CLIENT_KEEP_ALIVES: "false"
+    networks:
+      dc1:
+        ipv4_address: 10.5.0.110
+    ports:
+      - 10000:10000
+      - "19004:19000"
+  unicorn-frontend_envoy:
+    image: joshwolfer/consul-envoy:v1.14.1-ent_v1.24.0
+    container_name: unicorn-frontend_envoy
+    environment:
+      CONSUL_HTTP_ADDR: 10.5.0.12:8500
+      CONSUL_GRPC_ADDR: 10.5.0.12:8502
+      CONSUL_LICENSE_PATH: "/consul/config/license"
+      CONSUL_HTTP_TOKEN: "root"
+      CONSUL_CACERT: "/consul/config/certs/consul-agent-ca.pem"
+      SERVICE_CONFIG: /consul/config/services-dc1-unicorn-frontend.hcl
+    volumes:
+      - ./license:/consul/config/license
+      - ./certs/:/consul/config/certs/
+      - "./configs/services-dc1-unicorn-frontend.hcl:/consul/config/services-dc1-unicorn-frontend.hcl"
+    command: ["consul", "connect", "envoy",
+      "-sidecar-for", "unicorn-frontend-1",
+      "-partition=unicorn", "-namespace=frontend"]
+    network_mode: "service:unicorn-frontend"
+
+  # Service "unicorn-backend" (DC1) and Sidecar proxy
+  unicorn-backend-dc1:
+    image: nicholasjackson/fake-service:v0.24.2
+    container_name: unicorn-backend-dc1
+    environment:
+      NAME: unicorn-backend (DC1)
+      LISTEN_ADDR: 0.0.0.0:10001
+      MESSAGE: "Hello World"
+      SERVER_TYPE: "http"
+      UPSTREAM_URIS: ""
+      HTTP_CLIENT_KEEP_ALIVES: "false"
+    networks:
+      dc1:
+        ipv4_address: 10.5.0.111
+    ports:
+      - "19005:19000"
+  unicorn-backend-dc1_envoy:
+    image: joshwolfer/consul-envoy:v1.14.1-ent_v1.24.0
+    container_name: unicorn-backend-dc1_envoy
+    environment:
+      CONSUL_HTTP_ADDR: 10.5.0.12:8500
+      CONSUL_GRPC_ADDR: 10.5.0.12:8502
+      CONSUL_LICENSE_PATH: "/consul/config/license"
+      CONSUL_HTTP_TOKEN: "root"
+      CONSUL_CACERT: "/consul/config/certs/consul-agent-ca.pem"
+      SERVICE_CONFIG: /consul/config/services-dc1-unicorn-backend.hcl
+    volumes:
+      - ./license:/consul/config/license
+      - ./certs/:/consul/config/certs/
+      - "./configs/services-dc1-unicorn-backend.hcl:/consul/config/services-dc1-unicorn-backend.hcl"
+    command: ["consul", "connect", "envoy",
+      "-sidecar-for", "unicorn-backend-1",
+      "-partition=unicorn", "-namespace=backend"]
+    network_mode: "service:unicorn-backend-dc1"
 
   # ==========================================
   #                DC2 Config
@@ -255,6 +361,8 @@ services:
     volumes:
       - ./license:/consul/config/license
       - ./certs/:/consul/config/certs/
+    ports:
+      - "19007:19000"
     networks:
       dc2:
         ipv4_address: 10.6.0.5
@@ -284,11 +392,44 @@ services:
     volumes:
       - ./license:/consul/config/license
       - ./certs/:/consul/config/certs/
+    ports:
+      - "19008:19000"
     networks:
       dc2:
         ipv4_address: 10.6.0.6
       wan:
         ipv4_address: 192.169.7.6
+
+  gateway-dc2-unicorn:
+    image: joshwolfer/consul-envoy:v1.14.1-ent_v1.24.0
+    container_name: gateway-dc2-unicorn
+    environment:
+      CONSUL_HTTP_ADDR: 10.6.0.12:8500   # Address of consul-server1-dc2
+      CONSUL_GRPC_ADDR: 10.6.0.12:8502   # Address of consul-server1-dc2
+      CONSUL_LICENSE_PATH: "/consul/config/license"
+      CONSUL_CACERT: "/consul/config/certs/consul-agent-ca.pem"
+      CONSUL_HTTP_TOKEN: "root"
+    command: [
+      "consul",
+      "connect", "envoy",
+      "-mesh-gateway",
+      "-register",
+      "-service", "dc2-unicorn-mgw",
+      "-partition=unicorn",
+      "-address", "10.6.0.7:443",
+      "-wan-address", "192.169.7.8:443" ]
+      # "--",
+      # "-l", "debug"]
+    volumes:
+      - ./license:/consul/config/license
+      - ./certs/:/consul/config/certs/
+    ports:
+      - "19009:19000"
+    networks:
+      dc2:
+        ipv4_address: 10.6.0.7
+      wan:
+        ipv4_address: 192.169.7.8
 
 # --------------------------------
 #         DC2 Clients
@@ -321,12 +462,25 @@ services:
         ipv4_address: 10.6.0.11
     command: "agent"
 
+# (Partition: unicorn)
+  consul-client-dc2-unicorn:
+    image: hashicorp/consul-enterprise:1.14.1-ent
+    container_name: consul-client-dc2-unicorn
+    restart: always
+    volumes:
+     - ./agent-configs/client-dc2-unicorn.hcl:/consul/config/client-dc2-unicorn.hcl
+     - ./certs/:/consul/config/certs/
+    networks:
+      dc2:
+        ipv4_address: 10.6.0.12
+    command: "agent"
+
 
 # --------------------------------
 #       DC2 Service Mesh
 # --------------------------------
 
-  # Service "Web-chunky" and Sidecar proxy
+  # Service "Web-chunky" (DC2) and Sidecar proxy
   web-chunky:
     image: nicholasjackson/fake-service:v0.24.2
     container_name: web-chunky
@@ -352,10 +506,48 @@ services:
       - ./license:/consul/config/license
       - ./certs/:/consul/config/certs/
       - ./configs/services-dc2-web-chunky_v1.hcl:/consul/config/services-dc2-web-chunky_v1.hcl
+    ports:
+      - "19010:19000"
     command: ["consul", "connect", "envoy",
       "-sidecar-for", "web-chunky-v1",
       "-partition=chunky"]
     network_mode: "service:web-chunky"
+
+  # Service "unicorn-backend" (DC2) and Sidecar proxy
+  unicorn-backend-dc2:
+    image: nicholasjackson/fake-service:v0.24.2
+    container_name: unicorn-backend-dc2
+    environment:
+      NAME: unicorn-backend (DC2)
+      LISTEN_ADDR: 0.0.0.0:10001
+      MESSAGE: "Hello World"
+      SERVER_TYPE: "http"
+      UPSTREAM_URIS: ""
+      HTTP_CLIENT_KEEP_ALIVES: "false"
+    networks:
+      dc2:
+        ipv4_address: 10.6.0.111
+  unicorn-backend-dc2_envoy:
+    image: joshwolfer/consul-envoy:v1.14.1-ent_v1.24.0
+    container_name: unicorn-backend-dc2_envoy
+    environment:
+      CONSUL_HTTP_ADDR: 10.6.0.12:8500
+      CONSUL_GRPC_ADDR: 10.6.0.12:8502
+      CONSUL_LICENSE_PATH: "/consul/config/license"
+      CONSUL_HTTP_TOKEN: "root"
+      CONSUL_CACERT: "/consul/config/certs/consul-agent-ca.pem"
+      SERVICE_CONFIG: /consul/config/services-dc2-unicorn-backend.hcl
+    volumes:
+      - ./license:/consul/config/license
+      - ./certs/:/consul/config/certs/
+      - "./configs/services-dc2-unicorn-backend.hcl:/consul/config/services-dc2-unicorn-backend.hcl"
+    ports:
+      - "19011:19000"
+    command: ["consul", "connect", "envoy",
+      "-sidecar-for", "unicorn-backend-1",
+      "-partition=unicorn", "-namespace=backend"]
+    network_mode: "service:unicorn-backend-dc2"
+
 
   # ==========================================
   #              Network Config
@@ -377,5 +569,8 @@ networks:
     ipam:
      config:
        - subnet: 192.169.7.0/24
+
+
+
 
 

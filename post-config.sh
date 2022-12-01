@@ -17,6 +17,9 @@ docker exec -i -t consul-server1-dc2 sh -c "/sbin/iptables -I OUTPUT -d 192.169.
 
 # ^^^ This is to insure that cluster peering is indeed working over mesh gateways.
 
+# ==========================================
+#            Admin Partitions
+# ==========================================
 
 # Create APs in DC1
 consul partition create -name donkey -http-addr="$DC1"
@@ -25,15 +28,21 @@ consul partition create -name proj1 -http-addr="$DC1"
 consul partition create -name proj2 -http-addr="$DC1"
 
 # Create APs in DC2
+consul partition create -name unicorn -http-addr="$DC2"
 consul partition create -name heimdall -http-addr="$DC2"
 consul partition create -name chunky -http-addr="$DC2"
+
+# ==========================================
+#                Namespaces
+# ==========================================
 
 # Create Unicorn NSs in DC1
 consul namespace create -name frontend -partition=unicorn -http-addr="$DC1"
 consul namespace create -name backend -partition=unicorn -http-addr="$DC1"
 
-# Export the DC1/Donkey/default/Donkey service to DC1/default/default
-consul config write ./configs/exported-services/exported-services-donkey.hcl
+# Create Unicorn NSs in DC2
+consul namespace create -name frontend -partition=unicorn -http-addr="$DC2"
+consul namespace create -name backend -partition=unicorn -http-addr="$DC2"
 
 # ==========================================
 #       Register External Services
@@ -157,15 +166,10 @@ consul peering establish -name dc1-default -partition="heimdall" -http-addr="$DC
 consul peering generate-token -name dc1-default -partition="chunky" -http-addr="$DC2" > tokens/peering-dc2_chunky-dc1-default.token
 consul peering establish -name dc2-chunky -partition="default" -http-addr="$DC1" -peering-token $(cat tokens/peering-dc2_chunky-dc1-default.token)
 
-  # ------------------------------------------
-  # Export services across Peers
-  # ------------------------------------------
+# Peer DC1/unicorn <> DC2/unicorn
 
-
-consul config write -http-addr="$DC1" ./configs/exported-services/exported-services-dc1-default.hcl
-consul config write -http-addr="$DC2" ./configs/exported-services/exported-services-dc2-default.hcl
-
-consul config write -http-addr="$DC2" ./configs/exported-services/exported-services-dc2-webchunky.hcl
+consul peering generate-token -name dc2-unicorn -partition="unicorn" -http-addr="$DC1" > tokens/peering-dc1_unicorn-dc2-unicorn.token
+consul peering establish -name dc1-unicorn -partition="unicorn" -http-addr="$DC2" -peering-token $(cat tokens/peering-dc1_unicorn-dc2-unicorn.token)
 
 # ==========================================
 #          Service Mesh Configs
@@ -173,8 +177,36 @@ consul config write -http-addr="$DC2" ./configs/exported-services/exported-servi
 
 consul config write -http-addr="$DC1" ./configs/service-defaults/web-defaults.hcl
 consul config write -http-addr="$DC1" ./configs/service-defaults/web-upstream-defaults.hcl
-
 consul config write -http-addr="$DC2" ./configs/service-defaults/web-chunky-defaults.hcl
+
+
+      # Something funky is going on with service-defaults. Must enable the first to get static peer connections working. Can't get service-resolver to work
+      # Will leave these commented out for now.
+
+# consul config write -http-addr="$DC1" ./configs/service-defaults/unicorn-frontend-defaults.hcl
+# consul config write -http-addr="$DC1" ./configs/service-defaults/unicorn-backend-failover-defaults.hcl
+# consul config write -http-addr="$DC1" ./configs/service-defaults/unicorn-backend-defaults.hcl
+# consul config write -http-addr="$DC2" ./configs/service-defaults/unicorn-backend-defaults.hcl
+
+  # ------------------------------------------
+  # Export services across Peers
+  # ------------------------------------------
+
+# Export the DC1/Donkey/default/Donkey service to DC1/default/default
+consul config write ./configs/exported-services/exported-services-donkey.hcl
+
+# Export the default partition services to various peers
+consul config write -http-addr="$DC1" ./configs/exported-services/exported-services-dc1-default.hcl
+consul config write -http-addr="$DC2" ./configs/exported-services/exported-services-dc2-default.hcl
+
+consul config write -http-addr="$DC2" ./configs/exported-services/exported-services-dc2-webchunky.hcl
+
+# Export the DC1/unicorn/backend/unicorn-backend service to DC1/unicorn/backend
+
+consul config write -http-addr="$DC2" ./configs/exported-services/exported-services-dc2-unicorn_backend.hcl
+
+
+
 
   # ------------------------------------------
   #              Intentions
@@ -183,9 +215,16 @@ consul config write -http-addr="$DC2" ./configs/service-defaults/web-chunky-defa
 consul config write -http-addr="$DC1" ./configs/intentions/web_upstream-allow.hcl
 consul config write -http-addr="$DC2" ./configs/intentions/web_chunky-allow.hcl
 
+consul config write -http-addr="$DC1" ./configs/intentions/dc1-unicorn_frontend-allow.hcl
+consul config write -http-addr="$DC2" ./configs/intentions/dc2-unicorn_frontend-allow.hcl
 
+consul config write -http-addr="$DC1" ./configs/intentions/dc1-unicorn_backend_failover-allow.hcl
 
+  # ------------------------------------------
+  #            Service-Resolvers
+  # ------------------------------------------
 
+consul config write -http-addr="$DC1" ./configs/service-resolver/dc1-unicorn-backend-failover.hcl
 
 # ------------------------------------------
 # Test STUFF
