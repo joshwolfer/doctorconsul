@@ -11,6 +11,12 @@ Details:
 * Currently only configures Service Discovery
   * Mesh additions coming soon.
 
+### Software Versions used in this environment
+
+Consul: 1.14.2 (Enterprise)
+Envoy: 1.24.0
+FakeService: 0.24.2
+
 ### Network Quick Chart
 
 DC1 server:                        10.5.0.2 / 192.169.7.2
