@@ -121,8 +121,8 @@ services:
     volumes:
      - ./agent-configs/client-dc1-alpha.hcl:/consul/config/client-dc1-alpha.hcl
      - ./certs/:/consul/config/certs/
-     - ./configs/services-dc1-josh-long.hcl:/consul/config/services-dc1-josh-long.hcl
-     - ./configs/services-dc1-josh.hcl:/consul/config/services-dc1-josh.hcl
+     - ./configs/services/dc1-josh-long.hcl:/consul/config/services-dc1-josh-long.hcl
+     - ./configs/services/dc1-josh.hcl:/consul/config/services-dc1-josh.hcl
     networks:
       dc1:
         ipv4_address: 10.5.0.10
@@ -136,7 +136,7 @@ services:
     volumes:
      - ./agent-configs/client-dc1-charlie-ap1.hcl:/consul/config/dc1-client-charlie-ap1.hcl
      - ./certs/:/consul/config/certs/
-     - ./configs/services-donkey-ap1.hcl:/consul/config/services-donkey-ap1.hcl
+     - ./configs/services/donkey-ap1.hcl:/consul/config/services-donkey-ap1.hcl
     networks:
       dc1:
         ipv4_address: 10.5.0.11
@@ -150,7 +150,6 @@ services:
     volumes:
      - ./agent-configs/client-dc1-unicorn.hcl:/consul/config/client-dc1-unicorn.hcl
      - ./certs/:/consul/config/certs/
-    #  - ./configs/services-unicorn-ap2.hcl:/consul/config/services-unicorn-ap2.hcl
     networks:
       dc1:
         ipv4_address: 10.5.0.12
@@ -164,7 +163,7 @@ services:
     volumes:
      - ./agent-configs/client-dc1-echo-proj1.hcl:/consul/config/client-dc1-echo-proj1.hcl
      - ./certs/:/consul/config/certs/
-     - ./configs/services-dc1-proj1-baphomet.hcl:/consul/config/services-dc1-proj1-baphomet.hcl
+     - ./configs/services/dc1-proj1-baphomet.hcl:/consul/config/services-dc1-proj1-baphomet.hcl
     networks:
       dc1:
         ipv4_address: 10.5.0.13
@@ -204,7 +203,7 @@ services:
     volumes:
       - ./license:/consul/config/license
       - ./certs/:/consul/config/certs/
-      - "./configs/services-dc1-web_v1.hcl:/consul/config/services-dc1-web_v1.hcl"
+      - "./configs/services/dc1-web_v1.hcl:/consul/config/services-dc1-web_v1.hcl"
     command: ["consul", "connect", "envoy",
       "-sidecar-for", "web-v1",
       "-partition=default",
@@ -238,7 +237,7 @@ services:
     volumes:
       - ./license:/consul/config/license
       - ./certs/:/consul/config/certs/
-      - "./configs/services-dc1-web-upstream_v1.hcl:/consul/config/services-dc1-web-upstream_v1.hcl"
+      - "./configs/services/dc1-web-upstream_v1.hcl:/consul/config/services-dc1-web-upstream_v1.hcl"
     command: ["consul", "connect", "envoy",
       "-sidecar-for", "web-upstream-v1",
       "-partition=default",
@@ -275,7 +274,7 @@ services:
     volumes:
       - ./license:/consul/config/license
       - ./certs/:/consul/config/certs/
-      - "./configs/services-dc1-unicorn-frontend.hcl:/consul/config/services-dc1-unicorn-frontend.hcl"
+      - "./configs/services/dc1-unicorn-frontend.hcl:/consul/config/services-dc1-unicorn-frontend.hcl"
     command: ["consul", "connect", "envoy",
       "-sidecar-for", "unicorn-frontend-1",
       "-partition=unicorn", "-namespace=frontend",
@@ -311,7 +310,7 @@ services:
     volumes:
       - ./license:/consul/config/license
       - ./certs/:/consul/config/certs/
-      - "./configs/services-dc1-unicorn-backend.hcl:/consul/config/services-dc1-unicorn-backend.hcl"
+      - "./configs/services/dc1-unicorn-backend.hcl:/consul/config/services-dc1-unicorn-backend.hcl"
     command: ["consul", "connect", "envoy",
       "-sidecar-for", "unicorn-backend-1",
       "-partition=unicorn", "-namespace=backend",
@@ -452,7 +451,7 @@ services:
     volumes:
      - ./agent-configs/client-dc2-bravo.hcl:/consul/config/client-dc2-bravo.hcl
      - ./certs/:/consul/config/certs/
-     - ./configs/services-dc2-josh.hcl:/consul/config/services-dc2-josh.hcl
+     - ./configs/services/dc2-josh.hcl:/consul/config/services-dc2-josh.hcl
     networks:
       dc2:
         ipv4_address: 10.6.0.10
@@ -516,7 +515,7 @@ services:
     volumes:
       - ./license:/consul/config/license
       - ./certs/:/consul/config/certs/
-      - ./configs/services-dc2-web-chunky_v1.hcl:/consul/config/services-dc2-web-chunky_v1.hcl
+      - ./configs/services/dc2-web-chunky_v1.hcl:/consul/config/services-dc2-web-chunky_v1.hcl
     command: ["consul", "connect", "envoy",
       "-sidecar-for", "web-chunky-v1",
       "-partition=chunky",
@@ -552,11 +551,10 @@ services:
     volumes:
       - ./license:/consul/config/license
       - ./certs/:/consul/config/certs/
-      - "./configs/services-dc2-unicorn-backend.hcl:/consul/config/services-dc2-unicorn-backend.hcl"
+      - "./configs/services/dc2-unicorn-backend.hcl:/consul/config/services-dc2-unicorn-backend.hcl"
     command: ["consul", "connect", "envoy",
       "-sidecar-for", "unicorn-backend-1",
-      "-partition=unicorn", "-namespace=backend",
-      "-admin-bind=0.0.0.0:19000"]
+      "-partition=unicorn", "-namespace=backend"]
     network_mode: "service:unicorn-backend-dc2"
 
 
