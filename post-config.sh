@@ -200,10 +200,9 @@ consul config write -http-addr="$DC2" ./configs/service-defaults/web-chunky-defa
       # Something funky is going on with service-defaults. Must enable the first to get static peer connections working. Can't get service-resolver to work
       # Will leave these commented out for now.
 
-# consul config write -http-addr="$DC1" ./configs/service-defaults/unicorn-frontend-defaults.hcl
-# consul config write -http-addr="$DC1" ./configs/service-defaults/unicorn-backend-failover-defaults.hcl
-# consul config write -http-addr="$DC1" ./configs/service-defaults/unicorn-backend-defaults.hcl
-# consul config write -http-addr="$DC2" ./configs/service-defaults/unicorn-backend-defaults.hcl
+consul config write -http-addr="$DC1" ./configs/service-defaults/unicorn-frontend-defaults.hcl
+consul config write -http-addr="$DC1" ./configs/service-defaults/unicorn-backend-defaults.hcl
+consul config write -http-addr="$DC2" ./configs/service-defaults/unicorn-backend-defaults.hcl
 
   # ------------------------------------------
   # Export services across Peers

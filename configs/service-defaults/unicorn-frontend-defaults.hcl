@@ -3,7 +3,7 @@ Name = "unicorn-frontend"
 Partition = "unicorn"
 Namespace = "frontend"
 
-Protocol = "http"
+Protocol = "tcp"
 
 MeshGateway = {
   Mode = "local"
