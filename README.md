@@ -4,6 +4,8 @@ This repo contains a full featured environment for setting up and testing HashiC
 
 It is a constant Work-in-progress.
 
+**NOTE**: Due to a bug (already file), service-resolver failover is broken. The config in this repo should be valid though. Will validate after the fix is pushed through.
+
 Details:
 
 * Heavy focus on implementing and testing the latest Consul features.
