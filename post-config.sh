@@ -2,8 +2,9 @@
 
 set -v
 
-CONSUL_HTTP_TOKEN=root
-CONSUL_HTTP_ADDR="http://127.0.0.1:8500"
+# export the variable to be used by the commands below
+export CONSUL_HTTP_TOKEN=root
+
 DC1="http://127.0.0.1:8500"
 DC2="http://127.0.0.1:8501"
 
@@ -17,6 +18,17 @@ docker exec -i -t consul-server1-dc2 sh -c "/sbin/iptables -I OUTPUT -d 192.169.
 
 # ^^^ This is to insure that cluster peering is indeed working over mesh gateways.
 
+
+# Wait for both DCs to electer a leader before starting resource provisioning
+until curl -s -k ${DC1}/v1/status/leader | grep 8300; do
+  echo "Waiting for DC1 Consul to start"
+  sleep 1
+done
+
+until curl -s -k ${DC2}/v1/status/leader | grep 8300; do
+  echo "Waiting for DC2 Consul to start"
+  sleep 1
+done
 
 # Create APs in DC1
 consul partition create -name donkey -http-addr="$DC1"
@@ -33,7 +45,7 @@ consul namespace create -name frontend -partition=unicorn -http-addr="$DC1"
 consul namespace create -name backend -partition=unicorn -http-addr="$DC1"
 
 # Export the DC1/Donkey/default/Donkey service to DC1/default/default
-consul config write ./configs/exported-services/exported-services-donkey.hcl
+consul config write -http-addr="$DC1" ./configs/exported-services/exported-services-donkey.hcl
 
 # ==========================================
 #       Register External Services
@@ -41,9 +53,9 @@ consul config write ./configs/exported-services/exported-services-donkey.hcl
 
 # DC1/proj1/virtual-baphomet
 
-curl --request PUT --data @./configs/services-dc1-proj1-baphomet0.json --header "X-Consul-Token: root" localhost:8500/v1/catalog/register
-curl --request PUT --data @./configs/services-dc1-proj1-baphomet1.json --header "X-Consul-Token: root" localhost:8500/v1/catalog/register
-curl --request PUT --data @./configs/services-dc1-proj1-baphomet2.json --header "X-Consul-Token: root" localhost:8500/v1/catalog/register
+curl --request PUT --data @./configs/services-dc1-proj1-baphomet0.json --header "X-Consul-Token: root" "${DC1}/v1/catalog/register"
+curl --request PUT --data @./configs/services-dc1-proj1-baphomet1.json --header "X-Consul-Token: root" "${DC1}/v1/catalog/register"
+curl --request PUT --data @./configs/services-dc1-proj1-baphomet2.json --header "X-Consul-Token: root" "${DC1}/v1/catalog/register"
 
 
 # ==========================================
