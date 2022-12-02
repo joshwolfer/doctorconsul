@@ -62,7 +62,8 @@ services:
       "-service", "dc1-mgw",
       "-partition=default",
       "-address", "10.5.0.5:443",
-      "-wan-address", "192.169.7.3:443" ]
+      "-wan-address", "192.169.7.3:443",
+      "-admin-bind=0.0.0.0:19000" ]
       # "--",
       # "-l", "debug"]
     volumes:
@@ -93,7 +94,8 @@ services:
       "-service", "dc1-unicorn-mgw",
       "-partition=unicorn",
       "-address", "10.5.0.6:443",
-      "-wan-address", "192.169.7.7:443" ]
+      "-wan-address", "192.169.7.7:443",
+      "-admin-bind=0.0.0.0:19000" ]
       # "--",
       # "-l", "debug"]
     volumes:
@@ -205,7 +207,8 @@ services:
       - "./configs/services-dc1-web_v1.hcl:/consul/config/services-dc1-web_v1.hcl"
     command: ["consul", "connect", "envoy",
       "-sidecar-for", "web-v1",
-      "-partition=default"]
+      "-partition=default",
+      "-admin-bind=0.0.0.0:19000"]
     network_mode: "service:web"
 
   # Service "Web-upstream" (DC1) and Sidecar proxy
@@ -238,7 +241,8 @@ services:
       - "./configs/services-dc1-web-upstream_v1.hcl:/consul/config/services-dc1-web-upstream_v1.hcl"
     command: ["consul", "connect", "envoy",
       "-sidecar-for", "web-upstream-v1",
-      "-partition=default"]
+      "-partition=default",
+      "-admin-bind=0.0.0.0:19000"]
     network_mode: "service:web-upstream"
 
   # Service "unicorn-frontend" (DC1) and Sidecar proxy
@@ -274,7 +278,8 @@ services:
       - "./configs/services-dc1-unicorn-frontend.hcl:/consul/config/services-dc1-unicorn-frontend.hcl"
     command: ["consul", "connect", "envoy",
       "-sidecar-for", "unicorn-frontend-1",
-      "-partition=unicorn", "-namespace=frontend"]
+      "-partition=unicorn", "-namespace=frontend",
+      "-admin-bind=0.0.0.0:19000"]
     network_mode: "service:unicorn-frontend"
 
   # Service "unicorn-backend" (DC1) and Sidecar proxy
@@ -309,7 +314,8 @@ services:
       - "./configs/services-dc1-unicorn-backend.hcl:/consul/config/services-dc1-unicorn-backend.hcl"
     command: ["consul", "connect", "envoy",
       "-sidecar-for", "unicorn-backend-1",
-      "-partition=unicorn", "-namespace=backend"]
+      "-partition=unicorn", "-namespace=backend",
+      "-admin-bind=0.0.0.0:19000"]
     network_mode: "service:unicorn-backend-dc1"
 
   # ==========================================
@@ -355,7 +361,8 @@ services:
       "-service", "dc2-mgw",
       "-partition=default",
       "-address", "10.6.0.5:443",
-      "-wan-address", "192.169.7.5:443" ]
+      "-wan-address", "192.169.7.5:443",
+      "-admin-bind=0.0.0.0:19000" ]
       # "--",
       # "-l", "debug"]
     volumes:
@@ -386,7 +393,8 @@ services:
       "-service", "dc2-chunky-mgw",
       "-partition=chunky",
       "-address", "10.6.0.6:443",
-      "-wan-address", "192.169.7.6:443" ]
+      "-wan-address", "192.169.7.6:443",
+      "-admin-bind=0.0.0.0:19000" ]
       # "--",
       # "-l", "debug"]
     volumes:
@@ -417,7 +425,8 @@ services:
       "-service", "dc2-unicorn-mgw",
       "-partition=unicorn",
       "-address", "10.6.0.7:443",
-      "-wan-address", "192.169.7.8:443" ]
+      "-wan-address", "192.169.7.8:443",
+      "-admin-bind=0.0.0.0:19000" ]
       # "--",
       # "-l", "debug"]
     volumes:
@@ -510,7 +519,8 @@ services:
       - ./configs/services-dc2-web-chunky_v1.hcl:/consul/config/services-dc2-web-chunky_v1.hcl
     command: ["consul", "connect", "envoy",
       "-sidecar-for", "web-chunky-v1",
-      "-partition=chunky"]
+      "-partition=chunky",
+      "-admin-bind=0.0.0.0:19000"]
     network_mode: "service:web-chunky"
 
   # Service "unicorn-backend" (DC2) and Sidecar proxy
@@ -545,7 +555,8 @@ services:
       - "./configs/services-dc2-unicorn-backend.hcl:/consul/config/services-dc2-unicorn-backend.hcl"
     command: ["consul", "connect", "envoy",
       "-sidecar-for", "unicorn-backend-1",
-      "-partition=unicorn", "-namespace=backend"]
+      "-partition=unicorn", "-namespace=backend",
+      "-admin-bind=0.0.0.0:19000"]
     network_mode: "service:unicorn-backend-dc2"
 
 
