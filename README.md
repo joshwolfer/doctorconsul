@@ -132,12 +132,21 @@ Architecture:
 * gateway-dc1
   * Internal listener: 10.5.0.5:443
   * Public listener: 192.169.7.3:443
+* dc1-unicorn-mgw
+  * Internal listener: 10.5.0.6:443
+  * Public listener: 192.169.7.7:443
 
 ### DC2
 
 * gateway-dc2
   * Internal listener: 10.6.0.5:443
   * Public listener: 192.169.7.5:443
+* dc2-chunky-mgw
+  * Internal listener: 10.6.0.6:443
+  * Public listener: 192.169.7.6:443
+* dc2-unicorn-mgw
+  * Internal listener: 10.6.0.7:443
+  * Public listener: 192.169.7.8:443
 
 ## Admin Partitions & Namespaces
 
@@ -155,6 +164,9 @@ Architecture:
 
 * `default`
 * `heimdall`
+* `unicorn`
+  * `frontend` (NS)
+  * `backend` (NS)
 
 ## Cluster Peering Relationships & Exported Services
 
@@ -166,18 +178,20 @@ Architecture:
 
 * `DC1`/`default` <> `DC2`/`default`
 * `DC1`/`default` <> `DC2`/`heimdall`
+* `DC1`/`unicorn` <> `DC2`/`unicorn`
 
 ### Exported Services
 
 #### DC1
 
-* `DC1`/`donkey(AP)/donkey` > `DC1`/`default(AP)` (local)
+* `DC1`/`donkey(AP)/donkey` > `DC1`/`default(AP)` (local partition)
 * `DC1`/`default(AP)/joshs-obnoxiously-long-service-name-gonna-take-awhile`>`DC2`/`default(AP)` (Peer)
 * `DC1`/`default(AP)/joshs-obnoxiously-long-service-name-gonna-take-awhile`>`DC2`/`heimdall(AP)` (Peer)
 
 #### DC2
 
 * `DC2`/`default(AP)/josh`>`DC1`/`default` (Peer)
+* `DC2`/`unicorn(AP)/unicorn-backend` > `DC1`/`unicorn` (Peer)
 
 ## HashiCorp Vault
 
@@ -218,7 +232,7 @@ Vault will eventually be implemented in the future as the Certificate Authority 
 * **ACL Token**: `root`
 * **Notes**:
 
-### consul-client-dc1-delta-ap2 (DC1)
+### consul-client-dc1-unicorn (DC1)
 
 * **DC**: `DC1`
 * **Partition**: `unicorn`
@@ -265,12 +279,21 @@ Vault will eventually be implemented in the future as the Certificate Authority 
 * **Notes**:
   * This `josh` service is exported to the `DC1` peer (`default`).
 
+### consul-client-dc2-foxtrot (DC2)
+
+* **DC**: `DC2`
+* **Partition**: `chunky`
+* **Services**:
+  * `web-chunky` (in-mesh)
+* **ACL Token**: `root`
+* **Notes**:
+
 # Consul Service Mesh Details
 
 * Environment variables for the FakeService:
   * [https://hub.docker.com/r/nicholasjackson/fake-service](https://hub.docker.com/r/nicholasjackson/fake-servicehttps:/)
 
-### Most useful Variables
+### Most useful FakeService Variables
 
 #### Service Listener
 
