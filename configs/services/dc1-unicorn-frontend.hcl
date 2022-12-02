@@ -21,14 +21,14 @@ service {
             destination_name = "unicorn-backend"  // This points to the service-resolver of the same name (SR: unicorn-backend)
             destination_namespace = "backend"
             local_bind_address = "127.0.0.1"
-            local_bind_port = 11001
+            local_bind_port = 11000
         }
         upstreams {
             destination_name = "unicorn-backend"
             destination_peer = "dc2-unicorn"
             destination_namespace = "backend"
             local_bind_address = "127.0.0.1"
-            local_bind_port = 11002
+            local_bind_port = 11001
         }
       }
     }
