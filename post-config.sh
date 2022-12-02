@@ -2,8 +2,9 @@
 
 set -v
 
-CONSUL_HTTP_TOKEN=root
-CONSUL_HTTP_ADDR="http://127.0.0.1:8500"
+# export the variable to be used by the commands below
+export CONSUL_HTTP_TOKEN=root
+
 DC1="http://127.0.0.1:8500"
 DC2="http://127.0.0.1:8501"
 
@@ -16,6 +17,18 @@ docker exec -i -t consul-server1-dc1 sh -c "/sbin/iptables -I OUTPUT -d 192.169.
 docker exec -i -t consul-server1-dc2 sh -c "/sbin/iptables -I OUTPUT -d 192.169.7.2 -j DROP"
 
 # ^^^ This is to insure that cluster peering is indeed working over mesh gateways.
+
+
+# Wait for both DCs to electer a leader before starting resource provisioning
+until curl -s -k ${DC1}/v1/status/leader | grep 8300; do
+  echo "Waiting for DC1 Consul to start"
+  sleep 1
+done
+
+until curl -s -k ${DC2}/v1/status/leader | grep 8300; do
+  echo "Waiting for DC2 Consul to start"
+  sleep 1
+done
 
 # ==========================================
 #            Admin Partitions
@@ -50,10 +63,9 @@ consul namespace create -name backend -partition=unicorn -http-addr="$DC2"
 
 # DC1/proj1/virtual-baphomet
 
-curl --request PUT --data @./configs/services-dc1-proj1-baphomet0.json --header "X-Consul-Token: root" localhost:8500/v1/catalog/register
-curl --request PUT --data @./configs/services-dc1-proj1-baphomet1.json --header "X-Consul-Token: root" localhost:8500/v1/catalog/register
-curl --request PUT --data @./configs/services-dc1-proj1-baphomet2.json --header "X-Consul-Token: root" localhost:8500/v1/catalog/register
-
+curl --request PUT --data @./configs/services-dc1-proj1-baphomet0.json --header "X-Consul-Token: root" "${DC1}/v1/catalog/register"
+curl --request PUT --data @./configs/services-dc1-proj1-baphomet1.json --header "X-Consul-Token: root" "${DC1}/v1/catalog/register"
+curl --request PUT --data @./configs/services-dc1-proj1-baphomet2.json --header "X-Consul-Token: root" "${DC1}/v1/catalog/register"
 
 # ==========================================
 #             ACLs / Auth N/Z
@@ -175,10 +187,15 @@ consul peering establish -name dc1-unicorn -partition="unicorn" -http-addr="$DC2
 #          Service Mesh Configs
 # ==========================================
 
+# Service Defaults are first, then exports. Per Derek, it's better to set the default before exporting services.
+
+  # ------------------------------------------
+  #           service-defaults
+  # ------------------------------------------
+
 consul config write -http-addr="$DC1" ./configs/service-defaults/web-defaults.hcl
 consul config write -http-addr="$DC1" ./configs/service-defaults/web-upstream-defaults.hcl
 consul config write -http-addr="$DC2" ./configs/service-defaults/web-chunky-defaults.hcl
-
 
       # Something funky is going on with service-defaults. Must enable the first to get static peer connections working. Can't get service-resolver to work
       # Will leave these commented out for now.
@@ -193,7 +210,7 @@ consul config write -http-addr="$DC2" ./configs/service-defaults/web-chunky-defa
   # ------------------------------------------
 
 # Export the DC1/Donkey/default/Donkey service to DC1/default/default
-consul config write ./configs/exported-services/exported-services-donkey.hcl
+consul config write -http-addr="$DC1" ./configs/exported-services/exported-services-donkey.hcl
 
 # Export the default partition services to various peers
 consul config write -http-addr="$DC1" ./configs/exported-services/exported-services-dc1-default.hcl
@@ -230,7 +247,11 @@ consul config write -http-addr="$DC1" ./configs/service-resolver/dc1-unicorn-bac
 # Test STUFF
 # ------------------------------------------
 
+# curl -sL --header "X-Consul-Token: root" "localhost:8500/v1/discovery-chain/unicorn-backend?ns=backend&partition=unicorn" | jq
+# curl -sL --header "X-Consul-Token: root" "localhost:8500/v1/discovery-chain/unicorn-backend?ns=frontend&partition=unicorn" | jq
 
+# curl -sL --header "X-Consul-Token: root" "$DC1/v1/discovery-chain/unicorn-backend?ns=backend&partition=unicorn" | jq
+# curl -sL --header "X-Consul-Token: root" "$DC2/v1/discovery-chain/unicorn-backend?ns=backend&partition=unicorn" | jq
 
 
 # You can specify config entries in the agent config. This might simplify some of the config.
