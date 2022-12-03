@@ -21,9 +21,9 @@ Details:
 
 #### (DC1) Consul Core
 
-* DC1 server:                        10.5.0.2 / 192.169.7.2
-* DC1 MGW:                           10.5.0.5 / 192.169.7.3
-* DC1 MGW (unicorn):                 10.5.0.6 / 192.169.7.7
+* DC1 server:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;10.5.0.2 / 192.169.7.2
+* DC1 MGW:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;10.5.0.5 / 192.169.7.3
+* DC1 MGW (unicorn):&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;10.5.0.6 / 192.169.7.7
 
 #### (DC1) Consul Clients
 
