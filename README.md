@@ -10,6 +10,7 @@ Details:
 * Rapidly changing.
 * Currently only configures Service Discovery
   * Mesh additions coming soon.
+* [Doctor Consul Helper](https://github.com/joshwolfer/doctorconsul-helper) tool for easily collecting troubleshooting data.
 
 ### Software Versions used in this environment
 
