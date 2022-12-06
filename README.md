@@ -10,6 +10,13 @@ Details:
 * Rapidly changing.
 * Currently only configures Service Discovery
   * Mesh additions coming soon.
+* [Doctor Consul Helper](https://github.com/joshwolfer/doctorconsul-helper) tool for easily collecting troubleshooting data.
+
+### Software Versions used in this environment
+
+* Consul: 1.14.2 (Enterprise)
+* Envoy: 1.24.0
+* FakeService: 0.24.2
 
 ### Software Versions used in this environment
 
@@ -19,27 +26,41 @@ FakeService: 0.24.2
 
 ### Network Quick Chart
 
-DC1 server:                        10.5.0.2 / 192.169.7.2
-DC1 MGW:                           10.5.0.5 / 192.169.7.3
-DC1 MGW (unicorn):                 10.5.0.6 / 192.169.7.7
+#### (DC1) Consul Core
+
+* DC1 server: 10.5.0.2 / 192.169.7.2
+* DC1 MGW: 10.5.0.5 / 192.169.7.3
+* DC1 MGW (unicorn): 10.5.0.6 / 192.169.7.7
+
+#### (DC1) Consul Clients
 
 * consul-client-dc1-alpha (default):        10.5.0.10
 * consul-client-dc1-charlie-ap1 (donkey):   10.5.0.11
 * consul-client-dc1-delta-ap2 (unicorn):    10.5.0.12
 * consul-client-dc1-echo-proj1 (proj1):     10.5.0.13
+
+#### (DC1) Applications
+
 * web-v1:                         10.5.0.100
 * web-upstream:                   10.5.0.101
 * unicorn-frontend:               10.5.0.110
 * unicorn-backend:                10.5.0.111
 
-DC2 server:                          10.6.0.2 / 192.169.7.4
-DC2 MGW:                             10.6.0.5 / 192.169.7.5
-DC2 MGW (chunky):                    10.6.0.6 / 192.169.7.6
-DC2 MGW (unicorn):                   10.6.0.7 / 192.169.7.8
+#### (DC2) Consul Core
+
+* DC2 server:                          10.6.0.2 / 192.169.7.4
+* DC2 MGW:                             10.6.0.5 / 192.169.7.5
+* DC2 MGW (chunky):                    10.6.0.6 / 192.169.7.6
+* DC2 MGW (unicorn):                   10.6.0.7 / 192.169.7.8
+
+#### (DC2) Consul Clients
 
 * consul-client-dc2-bravo   (default):      10.6.0.10
 * consul-client-dc2-foxtrot (chunky):       10.6.0.11
 * consul-client-dc2-unicorn (unicorn):      10.6.0.12
+
+#### (DC2) Applications
+
 * web-chunky:                               10.6.0.100
 * unicorn-backend:                          10.6.0.111
 
