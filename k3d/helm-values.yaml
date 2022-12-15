@@ -1,0 +1,86 @@
+global:
+  name: consul
+  domain: consul
+  datacenter: dc3
+  image: hashicorp/consul-enterprise:1.14.2-ent    # Select an image from: https://hub.docker.com/r/hashicorp/consul-enterprise/tags
+  imageEnvoy: "envoyproxy/envoy:v1.24.0"
+  # imageK8S: docker.mirror.hashicorp.services/hashicorp/consul-k8s-control-plane:1.0.1     # What's this for?
+  imageConsulDataplane: "hashicorp/consul-dataplane:1.0.0"
+
+  gossipEncryption:
+    secretName: consul-gossip-encryption-key
+    secretKey: key
+
+  acls:
+    manageSystemACLs: true
+    bootstrapToken:
+      secretName: consul-bootstrap-acl-token         # This is set to "root" in the doctorconsul deployment.
+      secretKey: key
+
+  tls:
+    enabled: true                                 # Required for Peering
+    httpsOnly: false                              # Turns on the HTTP UI
+    # caCert:                                     # In case we want to provide a root CA
+    #   secretName: consul-ca-cert
+    #   secretKey: tls.crt
+
+  enableConsulNamespaces: true                        # CRDs won't setup Consul namespaces correctly if this is false (default)
+
+  peering:
+    enabled: true
+
+  adminPartitions:
+    enabled: true
+    name: "default"
+
+  federation:
+    enabled: false
+
+  enterpriseLicense:
+    secretName: consul-license
+    secretKey: key
+    enableLicenseAutoload: true
+
+server:
+  replicas: 1
+  bootstrapExpect: 1
+  connect: true
+
+client:
+  enabled: true
+  grpc: true
+
+meshGateway:
+  enabled: True
+  replicas: 1
+  wanAddress:
+    source: "Service"
+    port: 8443
+  service:
+    type: LoadBalancer
+    port: 8443
+
+ui:
+  enabled: true
+  service:
+    type: LoadBalancer
+    port:
+      http: 80
+      # https: 443
+
+apiGateway:
+  enabled: false
+
+connectInject:
+  enabled: true
+  cni:
+    enabled: false
+
+syncCatalog:
+  enabled: true
+  k8sDenyNamespaces: ["kube-system", "kube-public"]
+
+controller:       # Enabled CRDs
+  enabled: true
+
+
