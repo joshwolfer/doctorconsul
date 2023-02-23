@@ -4,8 +4,6 @@ This repo contains a full featured environment for setting up and testing HashiC
 
 It is a constant Work-in-progress.
 
-**NOTE**: Due to a bug (already file), service-resolver failover is broken. The config in this repo should be valid though. Will validate after the fix is pushed through.
-
 Details:
 
 * Heavy focus on implementing and testing the latest Consul features.
@@ -71,6 +69,7 @@ FakeService: 0.24.2
 * Consul Server1 DC1 UI: http://127.0.0.1:8500/ui/
 * Consul Server1 DC2 UI: http://127.0.0.1:8501/ui/
 * Web Service UI: http://127.0.0.1:9000/ui
+* Unicorn-frontend (unicorn) UI: http://127.0.0.1:10000/ui
 
 #### Local Listeners for Envoy troubleshooting
 
@@ -86,16 +85,21 @@ FakeService: 0.24.2
 * 19010: (dc2) web-chunky
 * 19011: (dc2) unicorn-backend-dc2
 
-Architecture:
+Architecture: (Needs to be updated to show new k3d cluster)
 ![](readme-images/architecture.png)
 
 ^^^ The Architecture now includes Mesh Gateways + Cluster Peering over Mesh Gateway. Picture will be updated in the future.
 
 # Initialization Pre-Requirements
 
+### Docker Compose
+
 * Environment requires Docker-Compose
   * **!! MAC M1 USERS !!** : The Docker images referenced in the `docker-compose.yml` are AMD64, not ARM64.
   * M1 user will need to build your own ARM64 consul+envoy images using [https://github.com/joshwolfer/convoy-build](https://github.com/joshwolfer/convoy-build) and modify the `docker-compose.yml` file to reflect these new images.
+
+### HashiCorp Consul Enterprise
+
 * HashiCorp Consul Enterprise license required.
   * Place in `./license`
 * Generate Consul PKI Root certs and Consul Server RPC certs
@@ -108,6 +112,9 @@ Architecture:
       consul tls cert create -server -dc=dc2 -additional-dnsname=consul-server1-dc2 -days=1825
       chmod 644 *
       ```
+
+### Auth0 (Optional)
+
 * Create Auth0 account with appropriate configuration
   * Required only for the OIDC authentication in this Consul environment.
   * Details on how to do that will come later. For now reference this [Learn Guide](https://https://developer.hashicorp.com/consul/tutorials/datacenter-operations/single-sign-on-auth0?in=consul%2Fdatacenter-operations).
@@ -115,17 +122,35 @@ Architecture:
       * `Applications` > `Applications` > Default
       * `Auth Pipeline` > `Rules`
 
+### K3d
+
+* K3d is a dockerized version of K3s, which is a simple version of Rancher Kubernetes.
+* K3d is used for the platform Consul on Kubernetes portion of this environment.
+* Installation instructions [HERE](https://github.com/k3d-io/k3d#get)
+
+### Kubectl
+
+### Helm
+
+### k9s (Optional)
+
+* Highly recommended to get k9s to make navigating Kubernetes a lot easier.
+* [https://github.com/derailed/k9s/releases](https://github.com/derailed/k9s/releases)
+
 # Instructions to Execute Environment
 
 * Launch docker-compose environment:
   * `docker-compose up`
-* Configure the environment using the `post-config.sh` script:
+* Configure the core environment using the `post-config.sh` script:
   * `./post-config.sh`
+* Build K3d Kubernetes cluster using the `k3d-config.sh` script:
+  * `./k3d-config.sh`
 
 # Tear down and Re-build Environment
 
 * Delete all docker resources except the images:
   * `docker ps -a | grep -v CONTAINER | awk '{print \$1}' | xargs docker stop; docker ps -a | grep -v CONTAINER | awk '{print \$1}' | xargs docker rm; docker volume ls | grep -v DRIVER | awk '{print \$2}' | xargs docker volume rm; docker network prune -f`
+  * `k3d cluster delete doctorconsul`
   * `docker-compose up`
 
 # Architecture Overview
@@ -134,19 +159,26 @@ Architecture:
 
 * 2x single-node Consul Clusters
 
-### DC1
+### DC1 (VM)
 
 * Servers (1)
   * `consul-server1-dc1`
   * UI exposed on local port 8500: `http://127.0.0.1:8500/ui/_default/dc1/services`
 * Gossip Encryption: `aPuGh+5UDskRAbkLaXRzFoSOcSM+5vAK+NEYOWHJH7w=`
 
-### DC2
+### DC2 (VM)
 
 * Consul Servers (1)
   * `consul-server1-dc2`
 * UI exposed on local port 8501: `http://127.0.0.1:8501/ui/_default/dc2/services`
 * Gossip Encryption: `dznVKWl1ri975FUJiddzAPM+3eNP9iXDad2c8hghsKA=`
+
+### DC3 (K3d Kubernetes)
+
+* Servers (1)
+  * `consul-server-0`
+* UI exposed on local port 8502: `http://127.0.0.1:8502/ui/_default/dc3/services`
+* Gossip Encryption: Randomly generated into a Kube secret.
 
 ## Consul Mesh Gateways
 
@@ -170,6 +202,15 @@ Architecture:
 * dc2-unicorn-mgw
   * Internal listener: 10.6.0.7:443
   * Public listener: 192.169.7.8:443
+
+### DC3 (K3d)
+
+* mesh-gateway
+  * Kube loadbalancer: 192.168.7.9:8443 (NOTE! This is dynamically assigned, it could change...)
+
+# Kubernetes (K3d)
+
+* Local Kube API listner: 127.0.0.1:6443
 
 ## Admin Partitions & Namespaces
 

@@ -7,6 +7,7 @@ export CONSUL_HTTP_TOKEN=root
 
 DC1="http://127.0.0.1:8500"
 DC2="http://127.0.0.1:8501"
+DC3="http://127.0.0.1:8502"
 
 mkdir -p ./tokens
 

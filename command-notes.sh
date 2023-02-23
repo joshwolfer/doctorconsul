@@ -22,6 +22,12 @@ curl --request PUT --data @./configs/services-dc1-proj1-baphomet2.json --header 
 
 curl --request PUT --data @./configs/services-dc1-proj1-baphomet-dereg.json --header "X-Consul-Token: root" localhost:8500/v1/catalog/deregister
 
+
+# Resolving the IP for docker containers, including k3d ingress
+
+docker network inspect doctorconsul_wan | jq -r '.[].Containers' | jq -r '.[] | .Name + ":" + .IPv4Address' | grep k3d-doctorconsul-serverlb | cut -d: -f2 | cut -d/ -f1
+
+
 # ==========================================
 #       Admin Partition Management
 # ==========================================
