@@ -85,7 +85,7 @@ FakeService: 0.24.2
 * 19010: (dc2) web-chunky
 * 19011: (dc2) unicorn-backend-dc2
 
-Architecture: (Needs to be updated to show new k3d cluster)
+Architecture: 
 ![](readme-images/architecture.png)
 
 ^^^ The Architecture now includes Mesh Gateways + Cluster Peering over Mesh Gateway. Picture will be updated in the future.
