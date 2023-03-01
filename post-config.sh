@@ -9,6 +9,21 @@ DC1="http://127.0.0.1:8500"
 DC2="http://127.0.0.1:8501"
 DC3="http://127.0.0.1:8502"
 
+RED='\033[0;31m'
+BLUE='\033[1;34m'
+NC='\033[0m' # No Color
+
+# Black        0;30     Dark Gray     1;30
+# Red          0;31     Light Red     1;31
+# Green        0;32     Light Green   1;32
+# Brown/Orange 0;33     Yellow        1;33
+# Blue         0;34     Light Blue    1;34
+# Purple       0;35     Light Purple  1;35
+# Cyan         0;36     Light Cyan    1;36
+# Light Gray   0;37     White         1;37
+
+# echo -e "  Consul versions: ${LINK}https://hub.docker.com/r/hashicorp/consul-enterprise/tags${NC}"
+
 mkdir -p ./tokens
 
 # Block traffic from consul-server1-dc1 to consul-server1-dc2
@@ -64,9 +79,9 @@ consul namespace create -name backend -partition=unicorn -http-addr="$DC2"
 
 # DC1/proj1/virtual-baphomet
 
-curl --request PUT --data @./configs/services-dc1-proj1-baphomet0.json --header "X-Consul-Token: root" "${DC1}/v1/catalog/register"
-curl --request PUT --data @./configs/services-dc1-proj1-baphomet1.json --header "X-Consul-Token: root" "${DC1}/v1/catalog/register"
-curl --request PUT --data @./configs/services-dc1-proj1-baphomet2.json --header "X-Consul-Token: root" "${DC1}/v1/catalog/register"
+curl --request PUT --data @./configs/services/dc1-proj1-baphomet0.json --header "X-Consul-Token: root" "${DC1}/v1/catalog/register"
+curl --request PUT --data @./configs/services/dc1-proj1-baphomet1.json --header "X-Consul-Token: root" "${DC1}/v1/catalog/register"
+curl --request PUT --data @./configs/services/dc1-proj1-baphomet2.json --header "X-Consul-Token: root" "${DC1}/v1/catalog/register"
 
 # ==========================================
 #             ACLs / Auth N/Z
