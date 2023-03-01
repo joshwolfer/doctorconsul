@@ -85,10 +85,8 @@ FakeService: 0.24.2
 * 19010: (dc2) web-chunky
 * 19011: (dc2) unicorn-backend-dc2
 
-Architecture: 
+Architecture:
 ![](readme-images/architecture.png)
-
-^^^ The Architecture now includes Mesh Gateways + Cluster Peering over Mesh Gateway. Picture will be updated in the future.
 
 # Initialization Pre-Requirements
 
@@ -139,10 +137,10 @@ Architecture:
 
 # Instructions to Execute Environment
 
-* Launch docker-compose environment:
-  * `docker-compose up`
+* Startup script (Cleans out previous containers, k3d clusters, and peering tokens)
+  * `./start.sh`
 * Configure the core environment using the `post-config.sh` script:
-  * `./post-config.sh`
+* * `./post-config.sh`
 * Build K3d Kubernetes cluster using the `k3d-config.sh` script:
   * `./k3d-config.sh`
 
@@ -157,7 +155,7 @@ Architecture:
 
 ## Consul Servers
 
-* 2x single-node Consul Clusters
+* 3x single-node Consul Clusters (2 in VM, 1 in Kubernetes)
 
 ### DC1 (VM)
 
