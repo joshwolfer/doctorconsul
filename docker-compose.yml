@@ -63,6 +63,7 @@ services:
       "-partition=default",
       "-address", "10.5.0.5:443",
       "-wan-address", "192.169.7.3:443",
+      "--ignore-envoy-compatibility",
       "-admin-bind=0.0.0.0:19000" ]
       # "--",
       # "-l", "debug"]
@@ -95,6 +96,7 @@ services:
       "-partition=unicorn",
       "-address", "10.5.0.6:443",
       "-wan-address", "192.169.7.7:443",
+      "--ignore-envoy-compatibility",
       "-admin-bind=0.0.0.0:19000" ]
       # "--",
       # "-l", "debug"]
@@ -207,6 +209,7 @@ services:
     command: ["consul", "connect", "envoy",
       "-sidecar-for", "web-v1",
       "-partition=default",
+      "--ignore-envoy-compatibility",
       "-admin-bind=0.0.0.0:19000"]
     network_mode: "service:web"
 
@@ -241,6 +244,7 @@ services:
     command: ["consul", "connect", "envoy",
       "-sidecar-for", "web-upstream-v1",
       "-partition=default",
+      "--ignore-envoy-compatibility",
       "-admin-bind=0.0.0.0:19000"]
     network_mode: "service:web-upstream"
 
@@ -278,6 +282,7 @@ services:
     command: ["consul", "connect", "envoy",
       "-sidecar-for", "unicorn-frontend-1",
       "-partition=unicorn", "-namespace=frontend",
+      "--ignore-envoy-compatibility",
       "-admin-bind=0.0.0.0:19000"]
     network_mode: "service:unicorn-frontend"
 
@@ -314,6 +319,7 @@ services:
     command: ["consul", "connect", "envoy",
       "-sidecar-for", "unicorn-backend-1",
       "-partition=unicorn", "-namespace=backend",
+      "--ignore-envoy-compatibility",
       "-admin-bind=0.0.0.0:19000"]
     network_mode: "service:unicorn-backend-dc1"
 
@@ -356,6 +362,7 @@ services:
       "consul",
       "connect", "envoy",
       "-mesh-gateway",
+      "--ignore-envoy-compatibility",
       "-register",
       "-service", "dc2-mgw",
       "-partition=default",
@@ -388,6 +395,7 @@ services:
       "consul",
       "connect", "envoy",
       "-mesh-gateway",
+      "--ignore-envoy-compatibility",
       "-register",
       "-service", "dc2-chunky-mgw",
       "-partition=chunky",
@@ -420,6 +428,7 @@ services:
       "consul",
       "connect", "envoy",
       "-mesh-gateway",
+      "--ignore-envoy-compatibility",
       "-register",
       "-service", "dc2-unicorn-mgw",
       "-partition=unicorn",
@@ -519,6 +528,7 @@ services:
     command: ["consul", "connect", "envoy",
       "-sidecar-for", "web-chunky-v1",
       "-partition=chunky",
+      "--ignore-envoy-compatibility",
       "-admin-bind=0.0.0.0:19000"]
     network_mode: "service:web-chunky"
 
@@ -554,6 +564,7 @@ services:
       - "./configs/services/dc2-unicorn-backend.hcl:/consul/config/services-dc2-unicorn-backend.hcl"
     command: ["consul", "connect", "envoy",
       "-sidecar-for", "unicorn-backend-1",
+      "--ignore-envoy-compatibility",
       "-partition=unicorn", "-namespace=backend"]
     network_mode: "service:unicorn-backend-dc2"
 

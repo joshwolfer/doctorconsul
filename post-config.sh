@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -v
+set -e
 
 # export the variable to be used by the commands below
 export CONSUL_HTTP_TOKEN=root
@@ -9,15 +9,15 @@ DC1="http://127.0.0.1:8500"
 DC2="http://127.0.0.1:8501"
 DC3="http://127.0.0.1:8502"
 
-RED='\033[0;31m'
+RED='\033[1;31m'
 BLUE='\033[1;34m'
+DGRN='\033[0;32m'
+GRN='\033[1;32m'
 NC='\033[0m' # No Color
 
-# Black        0;30     Dark Gray     1;30
-# Red          0;31     Light Red     1;31
-# Green        0;32     Light Green   1;32
+# Dark Gray     1;30
+# Light Red     1;31
 # Brown/Orange 0;33     Yellow        1;33
-# Blue         0;34     Light Blue    1;34
 # Purple       0;35     Light Purple  1;35
 # Cyan         0;36     Light Cyan    1;36
 # Light Gray   0;37     White         1;37
@@ -25,6 +25,9 @@ NC='\033[0m' # No Color
 # echo -e "  Consul versions: ${LINK}https://hub.docker.com/r/hashicorp/consul-enterprise/tags${NC}"
 
 mkdir -p ./tokens
+
+echo -e ""
+echo -e "${GRN}iptables: Blocking direct server to server access${NC}"
 
 # Block traffic from consul-server1-dc1 to consul-server1-dc2
 docker exec -i -t consul-server1-dc1 sh -c "/sbin/iptables -I OUTPUT -d 192.169.7.4 -j DROP"
@@ -36,13 +39,16 @@ docker exec -i -t consul-server1-dc2 sh -c "/sbin/iptables -I OUTPUT -d 192.169.
 
 
 # Wait for both DCs to electer a leader before starting resource provisioning
+echo -e ""
+echo -e "${GRN}Wait for both DCs to electer a leader before starting resource provisioning${NC}"
+
 until curl -s -k ${DC1}/v1/status/leader | grep 8300; do
-  echo "Waiting for DC1 Consul to start"
+  echo -e "${RED}Waiting for DC1 Consul to start${NC}"
   sleep 1
 done
 
 until curl -s -k ${DC2}/v1/status/leader | grep 8300; do
-  echo "Waiting for DC2 Consul to start"
+  echo -e "${RED}Waiting for DC2 Consul to start${NC}"
   sleep 1
 done
 
@@ -50,13 +56,22 @@ done
 #            Admin Partitions
 # ==========================================
 
+echo -e "${GRN}"
+echo -e "=========================================="
+echo -e "            Admin Partitions"
+echo -e "==========================================${NC}"
+
 # Create APs in DC1
+echo -e ""
+echo -e "${GRN}Create Admin Partitions in DC1${NC}"
 consul partition create -name donkey -http-addr="$DC1"
 consul partition create -name unicorn -http-addr="$DC1"
 consul partition create -name proj1 -http-addr="$DC1"
 consul partition create -name proj2 -http-addr="$DC1"
 
 # Create APs in DC2
+echo -e ""
+echo -e "${GRN}Create Admin Partitions in DC2${NC}"
 consul partition create -name unicorn -http-addr="$DC2"
 consul partition create -name heimdall -http-addr="$DC2"
 consul partition create -name chunky -http-addr="$DC2"
@@ -65,10 +80,19 @@ consul partition create -name chunky -http-addr="$DC2"
 #                Namespaces
 # ==========================================
 
+echo -e "${GRN}"
+echo -e "=========================================="
+echo -e "                Namespaces"
+echo -e "==========================================${NC}"
+
+echo -e ""
+echo -e "${GRN}Create Unicorn NSs in DC1${NC}"
 # Create Unicorn NSs in DC1
 consul namespace create -name frontend -partition=unicorn -http-addr="$DC1"
 consul namespace create -name backend -partition=unicorn -http-addr="$DC1"
 
+echo -e ""
+echo -e "${GRN}Create Unicorn NSs in DC2${NC}"
 # Create Unicorn NSs in DC2
 consul namespace create -name frontend -partition=unicorn -http-addr="$DC2"
 consul namespace create -name backend -partition=unicorn -http-addr="$DC2"
@@ -77,17 +101,39 @@ consul namespace create -name backend -partition=unicorn -http-addr="$DC2"
 #       Register External Services
 # ==========================================
 
+echo -e "${GRN}"
+echo -e "=========================================="
+echo -e "      Register External Services"
+echo -e "==========================================${NC}"
+
 # DC1/proj1/virtual-baphomet
 
+echo -e ""
+echo -e "${GRN}DC1/Proj1/default/baphomet0${NC}"
 curl --request PUT --data @./configs/services/dc1-proj1-baphomet0.json --header "X-Consul-Token: root" "${DC1}/v1/catalog/register"
+
+echo -e ""
+echo -e "${GRN}DC1/Proj1/default/baphomet1${NC}"
 curl --request PUT --data @./configs/services/dc1-proj1-baphomet1.json --header "X-Consul-Token: root" "${DC1}/v1/catalog/register"
+
+echo -e ""
+echo -e "${GRN}DC1/Proj1/default/baphomet2${NC}"
 curl --request PUT --data @./configs/services/dc1-proj1-baphomet2.json --header "X-Consul-Token: root" "${DC1}/v1/catalog/register"
 
 # ==========================================
 #             ACLs / Auth N/Z
 # ==========================================
 
+echo -e ""
+echo -e "${GRN}"
+echo -e "=========================================="
+echo -e "            ACLs / Auth N/Z"
+echo -e "==========================================${NC}"
+
 # Create ACL tokens in DC1
+echo -e ""
+echo -e "${GRN}ACL Token: 000000001111:${NC}"
+
 consul acl token create \
     -node-identity=client-dc1-alpha:dc1 \
     -service-identity=joshs-obnoxiously-long-service-name-gonna-take-awhile:dc1 \
@@ -97,8 +143,15 @@ consul acl token create \
     -secret="00000000-0000-0000-0000-000000001111" \
     -http-addr="$DC1"
 
+echo -e ""
+echo -e "${GRN}ACL Policy+Role: DC1-read${NC}"
+
 consul acl policy create -name dc1-read -rules @./acl/dc1-read.hcl -http-addr="$DC1"
 consul acl role create -name dc1-read -policy-name dc1-read -http-addr="$DC1"
+
+echo -e ""
+echo -e "${GRN}ACL Token: 000000003333${NC}"
+
 consul acl token create \
     -role-name=dc1-read \
     -partition=default \
@@ -110,13 +163,28 @@ consul acl token create \
 #          Partition proj1 RBAC
 # ------------------------------------------
 
+echo -e "${GRN}"
+echo -e "------------------------------------------"
+echo -e "         Partition proj1 RBAC"
+echo -e "------------------------------------------${NC}"
+echo -e ""
+
+echo -e "${GRN}ACL Policy+Role: DC1/proj1/team-proj1-rw${NC}"
 consul acl policy create -name team-proj1-rw -rules @./acl/team-proj1-rw.hcl -http-addr="$DC1"
 consul acl role create -name team-proj1-rw -policy-name team-proj1-rw -http-addr="$DC1"
+echo -e ""
+echo -e "${GRN}ACL Token: 000000002222${NC}"
 consul acl token create -partition=default -role-name=team-proj1-rw -secret="00000000-0000-0000-0000-000000002222" -http-addr="$DC1"
 
 # ------------------------------------------
 #             Consul-Admins
 # ------------------------------------------
+
+echo -e "${GRN}"
+echo -e "------------------------------------------"
+echo -e "         Consul-Admins"
+echo -e "------------------------------------------${NC}"
+echo -e ""
 
 consul acl role create -name consul-admins -policy-name global-management -http-addr="$DC1"
 
@@ -124,7 +192,14 @@ consul acl role create -name consul-admins -policy-name global-management -http-
 #              OIDC Auth
 # ==========================================
 
+echo -e "${GRN}"
+echo -e "=========================================="
+echo -e "            OIDC Auth"
+echo -e "==========================================${NC}"
+
 # Enable OIDC in Consul
+echo -e ""
+echo -e "${GRN}Enable OIDC in Consul w/ Auth0 ${NC}"
 
 consul acl auth-method create -type oidc \
   -name auth0 \
@@ -136,7 +211,15 @@ consul acl auth-method create -type oidc \
 # Binding rule to map Auth0 groups to Consul roles
 # ------------------------------------------
 
+echo -e "${GRN}"
+echo -e "------------------------------------------"
+echo -e "Binding rules to map Auth0 groups to Consul roles"
+echo -e "------------------------------------------${NC}"
+
 # DC1/Proj1 Admins
+
+echo -e ""
+echo -e "${GRN}DC1 team-proj1-rw${NC}"
 
 consul acl binding-rule create \
   -method=auth0 \
@@ -146,6 +229,9 @@ consul acl binding-rule create \
   -http-addr="$DC1"
 
 # DC1 Admins
+
+echo -e ""
+echo -e "${GRN}DC1 consul-admins${NC}"
 
 consul acl binding-rule create \
   -method=auth0 \
@@ -176,25 +262,48 @@ consul acl binding-rule create \
 #             Cluster Peering
 # ==========================================
 
+echo -e "${GRN}"
+echo -e "=========================================="
+echo -e "            Cluster Peering"
+echo -e "==========================================${NC}"
+
+
 # Set peering to use Mesh Gateways for peering control plane traffic. This must be set BEFORE peering tokens are created.
+
+echo -e ""
+echo -e "${GRN}Set peering to use Mesh Gateways for peering control plane traffic.${NC}"
 
 consul config write -http-addr="$DC1" ./configs/mgw/dc1-mgw.hcl
 consul config write -http-addr="$DC2" ./configs/mgw/dc2-mgw.hcl
 
-# Peer DC1/default <> DC2/default
+# Peer DC1/default <- DC2/default
+
+echo -e ""
+echo -e "${GRN}Peer DC1/default <- DC2/default${NC}"
 
 consul peering generate-token -name dc2-default -http-addr="$DC1" > tokens/peering-dc1_default-dc2-default.token
 consul peering establish -name dc1-default -http-addr="$DC2" -peering-token $(cat tokens/peering-dc1_default-dc2-default.token)
 
-# Peer DC1/default <> DC2/heimdall
+# Peer DC1/default <- DC2/heimdall
+
+echo -e ""
+echo -e "${GRN}Peer DC1/default <- DC2/heimdall${NC}"
 
 consul peering generate-token -name dc2-heimdall -partition="default" -http-addr="$DC1" > tokens/peering-dc1_default-dc2-heimdall.token
 consul peering establish -name dc1-default -partition="heimdall" -http-addr="$DC2" -peering-token $(cat tokens/peering-dc1_default-dc2-heimdall.token)
 
+# Peer DC1/default -> DC2/chunky
+
+echo -e ""
+echo -e "${GRN}Peer DC1/default -> DC2/chunky${NC}"
+
 consul peering generate-token -name dc1-default -partition="chunky" -http-addr="$DC2" > tokens/peering-dc2_chunky-dc1-default.token
 consul peering establish -name dc2-chunky -partition="default" -http-addr="$DC1" -peering-token $(cat tokens/peering-dc2_chunky-dc1-default.token)
 
-# Peer DC1/unicorn <> DC2/unicorn
+# Peer DC1/unicorn <- DC2/unicorn
+
+echo -e ""
+echo -e "${GRN}Peer DC1/unicorn <- DC2/unicorn${NC}"
 
 consul peering generate-token -name dc2-unicorn -partition="unicorn" -http-addr="$DC1" > tokens/peering-dc1_unicorn-dc2-unicorn.token
 consul peering establish -name dc1-unicorn -partition="unicorn" -http-addr="$DC2" -peering-token $(cat tokens/peering-dc1_unicorn-dc2-unicorn.token)
@@ -203,11 +312,19 @@ consul peering establish -name dc1-unicorn -partition="unicorn" -http-addr="$DC2
 #          Service Mesh Configs
 # ==========================================
 
+echo -e "${GRN}"
+echo -e "=========================================="
+echo -e "          Service Mesh Configs"
+echo -e "==========================================${NC}"
+
 # Service Defaults are first, then exports. Per Derek, it's better to set the default before exporting services.
 
   # ------------------------------------------
   #           service-defaults
   # ------------------------------------------
+
+echo -e ""
+echo -e "${GRN}service-defaults:${NC}"
 
 consul config write -http-addr="$DC1" ./configs/service-defaults/web-defaults.hcl
 consul config write -http-addr="$DC1" ./configs/service-defaults/web-upstream-defaults.hcl
@@ -224,6 +341,9 @@ consul config write -http-addr="$DC2" ./configs/service-defaults/unicorn-backend
   # Export services across Peers
   # ------------------------------------------
 
+echo -e ""
+echo -e "${GRN}exported-services:${NC}"
+
 # Export the DC1/Donkey/default/Donkey service to DC1/default/default
 consul config write -http-addr="$DC1" ./configs/exported-services/exported-services-donkey.hcl
 
@@ -239,10 +359,12 @@ consul config write -http-addr="$DC2" ./configs/exported-services/exported-servi
 
 
 
-
   # ------------------------------------------
   #              Intentions
   # ------------------------------------------
+
+echo -e ""
+echo -e "${GRN}Service Intentions:${NC}"
 
 consul config write -http-addr="$DC1" ./configs/intentions/web_upstream-allow.hcl
 consul config write -http-addr="$DC2" ./configs/intentions/web_chunky-allow.hcl
@@ -255,6 +377,9 @@ consul config write -http-addr="$DC1" ./configs/intentions/dc1-unicorn_backend_f
   # ------------------------------------------
   #            Service-Resolvers
   # ------------------------------------------
+
+echo -e ""
+echo -e "${GRN}Service-resolvers:${NC}"
 
 consul config write -http-addr="$DC1" ./configs/service-resolver/dc1-unicorn-backend-failover.hcl
 
