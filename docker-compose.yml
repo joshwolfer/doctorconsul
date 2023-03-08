@@ -22,7 +22,7 @@ services:
 # ==========================================
 
   consul-server1-dc1:
-    image: hashicorp/consul-enterprise:1.14.4-ent
+    image: hashicorp/consul-enterprise:1.15.1-ent
     container_name: consul-server1-dc1
     restart: always
     volumes:
@@ -46,7 +46,7 @@ services:
 # --------------------------------
 
   gateway-dc1:
-    image: joshwolfer/consul-envoy:v1.14.4-ent_v1.24.0
+    image: joshwolfer/consul-envoy:v1.15.1-ent_v1.25.1
     container_name: gateway-dc1
     environment:
       CONSUL_HTTP_ADDR: 10.5.0.2:8500   # Address of consul-server1-dc1
@@ -63,6 +63,7 @@ services:
       "-partition=default",
       "-address", "10.5.0.5:443",
       "-wan-address", "192.169.7.3:443",
+      # "--ignore-envoy-compatibility",
       "-admin-bind=0.0.0.0:19000" ]
       # "--",
       # "-l", "debug"]
@@ -78,7 +79,7 @@ services:
         ipv4_address: 192.169.7.3
 
   gateway-dc1-unicorn:
-    image: joshwolfer/consul-envoy:v1.14.4-ent_v1.24.0
+    image: joshwolfer/consul-envoy:v1.15.1-ent_v1.25.1
     container_name: gateway-dc1-unicorn
     environment:
       CONSUL_HTTP_ADDR: 10.5.0.12:8500   # Address of consul-server1-dc1
@@ -95,6 +96,7 @@ services:
       "-partition=unicorn",
       "-address", "10.5.0.6:443",
       "-wan-address", "192.169.7.7:443",
+      # "--ignore-envoy-compatibility",
       "-admin-bind=0.0.0.0:19000" ]
       # "--",
       # "-l", "debug"]
@@ -115,7 +117,7 @@ services:
 
 # (Partition: default)
   consul-client-dc1-alpha:
-    image: hashicorp/consul-enterprise:1.14.4-ent
+    image: hashicorp/consul-enterprise:1.15.1-ent
     container_name: consul-client-dc1-alpha
     restart: always
     volumes:
@@ -130,7 +132,7 @@ services:
 
 # (Partition: donkey)
   consul-client-dc1-charlie-ap1:
-    image: hashicorp/consul-enterprise:1.14.4-ent
+    image: hashicorp/consul-enterprise:1.15.1-ent
     container_name: consul-client-dc1-charlie-ap1
     restart: always
     volumes:
@@ -144,7 +146,7 @@ services:
 
 # (Partition: unicorn)
   consul-client-dc1-unicorn:
-    image: hashicorp/consul-enterprise:1.14.4-ent
+    image: hashicorp/consul-enterprise:1.15.1-ent
     container_name: consul-client-dc1-unicorn
     restart: always
     volumes:
@@ -157,7 +159,7 @@ services:
 
 # (Partition: proj1)
   consul-client-dc1-echo-proj1:
-    image: hashicorp/consul-enterprise:1.14.4-ent
+    image: hashicorp/consul-enterprise:1.15.1-ent
     container_name: consul-client-dc1-echo-proj1
     restart: always
     volumes:
@@ -191,7 +193,7 @@ services:
       - 9000:9090
       - "19002:19000"
   web_envoy:
-    image: joshwolfer/consul-envoy:v1.14.4-ent_v1.24.0
+    image: joshwolfer/consul-envoy:v1.15.1-ent_v1.25.1
     container_name: web_envoy
     environment:
       CONSUL_HTTP_ADDR: 10.5.0.2:8500
@@ -207,6 +209,7 @@ services:
     command: ["consul", "connect", "envoy",
       "-sidecar-for", "web-v1",
       "-partition=default",
+      # "--ignore-envoy-compatibility",
       "-admin-bind=0.0.0.0:19000"]
     network_mode: "service:web"
 
@@ -225,7 +228,7 @@ services:
     ports:
       - "19003:19000"
   web-upstream_envoy:
-    image: joshwolfer/consul-envoy:v1.14.4-ent_v1.24.0
+    image: joshwolfer/consul-envoy:v1.15.1-ent_v1.25.1
     container_name: web-upstream_envoy
     environment:
       CONSUL_HTTP_ADDR: 10.5.0.2:8500
@@ -241,6 +244,7 @@ services:
     command: ["consul", "connect", "envoy",
       "-sidecar-for", "web-upstream-v1",
       "-partition=default",
+      # "--ignore-envoy-compatibility",
       "-admin-bind=0.0.0.0:19000"]
     network_mode: "service:web-upstream"
 
@@ -262,7 +266,7 @@ services:
       - 10000:10000
       - "19004:19000"
   unicorn-frontend_envoy:
-    image: joshwolfer/consul-envoy:v1.14.4-ent_v1.24.0
+    image: joshwolfer/consul-envoy:v1.15.1-ent_v1.25.1
     container_name: unicorn-frontend_envoy
     environment:
       CONSUL_HTTP_ADDR: 10.5.0.12:8500
@@ -278,6 +282,7 @@ services:
     command: ["consul", "connect", "envoy",
       "-sidecar-for", "unicorn-frontend-1",
       "-partition=unicorn", "-namespace=frontend",
+      # "--ignore-envoy-compatibility",
       "-admin-bind=0.0.0.0:19000"]
     network_mode: "service:unicorn-frontend"
 
@@ -298,7 +303,7 @@ services:
     ports:
       - "19005:19000"
   unicorn-backend-dc1_envoy:
-    image: joshwolfer/consul-envoy:v1.14.4-ent_v1.24.0
+    image: joshwolfer/consul-envoy:v1.15.1-ent_v1.25.1
     container_name: unicorn-backend-dc1_envoy
     environment:
       CONSUL_HTTP_ADDR: 10.5.0.12:8500
@@ -314,6 +319,7 @@ services:
     command: ["consul", "connect", "envoy",
       "-sidecar-for", "unicorn-backend-1",
       "-partition=unicorn", "-namespace=backend",
+      # "--ignore-envoy-compatibility",
       "-admin-bind=0.0.0.0:19000"]
     network_mode: "service:unicorn-backend-dc1"
 
@@ -322,7 +328,7 @@ services:
   # ==========================================
 
   consul-server1-dc2:
-    image: hashicorp/consul-enterprise:1.14.4-ent
+    image: hashicorp/consul-enterprise:1.15.1-ent
     container_name: consul-server1-dc2
     restart: always
     volumes:
@@ -344,7 +350,7 @@ services:
 # --------------------------------
 
   gateway-dc2:
-    image: joshwolfer/consul-envoy:v1.14.4-ent_v1.24.0
+    image: joshwolfer/consul-envoy:v1.15.1-ent_v1.25.1
     container_name: gateway-dc2
     environment:
       CONSUL_HTTP_ADDR: 10.6.0.2:8500   # Address of consul-server1-dc2
@@ -356,6 +362,7 @@ services:
       "consul",
       "connect", "envoy",
       "-mesh-gateway",
+      # "--ignore-envoy-compatibility",
       "-register",
       "-service", "dc2-mgw",
       "-partition=default",
@@ -376,7 +383,7 @@ services:
         ipv4_address: 192.169.7.5
 
   gateway-dc2-chunky:
-    image: joshwolfer/consul-envoy:v1.14.4-ent_v1.24.0
+    image: joshwolfer/consul-envoy:v1.15.1-ent_v1.25.1
     container_name: gateway-dc2-chunky
     environment:
       CONSUL_HTTP_ADDR: 10.6.0.11:8500   # Address of consul-server1-dc2
@@ -388,6 +395,7 @@ services:
       "consul",
       "connect", "envoy",
       "-mesh-gateway",
+      # "--ignore-envoy-compatibility",
       "-register",
       "-service", "dc2-chunky-mgw",
       "-partition=chunky",
@@ -408,7 +416,7 @@ services:
         ipv4_address: 192.169.7.6
 
   gateway-dc2-unicorn:
-    image: joshwolfer/consul-envoy:v1.14.4-ent_v1.24.0
+    image: joshwolfer/consul-envoy:v1.15.1-ent_v1.25.1
     container_name: gateway-dc2-unicorn
     environment:
       CONSUL_HTTP_ADDR: 10.6.0.12:8500   # Address of consul-server1-dc2
@@ -420,6 +428,7 @@ services:
       "consul",
       "connect", "envoy",
       "-mesh-gateway",
+      # "--ignore-envoy-compatibility",
       "-register",
       "-service", "dc2-unicorn-mgw",
       "-partition=unicorn",
@@ -445,7 +454,7 @@ services:
 
 # (Partition: default)
   consul-client-dc2-bravo:
-    image: hashicorp/consul-enterprise:1.14.4-ent
+    image: hashicorp/consul-enterprise:1.15.1-ent
     container_name: consul-client-dc2-bravo
     restart: always
     volumes:
@@ -459,7 +468,7 @@ services:
 
 # (Partition: chunky)
   consul-client-dc2-foxtrot:
-    image: hashicorp/consul-enterprise:1.14.4-ent
+    image: hashicorp/consul-enterprise:1.15.1-ent
     container_name: consul-client-dc2-foxtrot
     restart: always
     volumes:
@@ -472,7 +481,7 @@ services:
 
 # (Partition: unicorn)
   consul-client-dc2-unicorn:
-    image: hashicorp/consul-enterprise:1.14.4-ent
+    image: hashicorp/consul-enterprise:1.15.1-ent
     container_name: consul-client-dc2-unicorn
     restart: always
     volumes:
@@ -503,7 +512,7 @@ services:
     ports:
       - "19010:19000"
   web-chunky_envoy:
-    image: joshwolfer/consul-envoy:v1.14.4-ent_v1.24.0
+    image: joshwolfer/consul-envoy:v1.15.1-ent_v1.25.1
     container_name: web-chunky_envoy
     environment:
       CONSUL_HTTP_ADDR: consul-client-dc2-foxtrot:8500
@@ -519,6 +528,7 @@ services:
     command: ["consul", "connect", "envoy",
       "-sidecar-for", "web-chunky-v1",
       "-partition=chunky",
+      # "--ignore-envoy-compatibility",
       "-admin-bind=0.0.0.0:19000"]
     network_mode: "service:web-chunky"
 
@@ -539,7 +549,7 @@ services:
     ports:
       - "19011:19000"
   unicorn-backend-dc2_envoy:
-    image: joshwolfer/consul-envoy:v1.14.4-ent_v1.24.0
+    image: joshwolfer/consul-envoy:v1.15.1-ent_v1.25.1
     container_name: unicorn-backend-dc2_envoy
     environment:
       CONSUL_HTTP_ADDR: 10.6.0.12:8500
@@ -554,6 +564,7 @@ services:
       - "./configs/services/dc2-unicorn-backend.hcl:/consul/config/services-dc2-unicorn-backend.hcl"
     command: ["consul", "connect", "envoy",
       "-sidecar-for", "unicorn-backend-1",
+      # "--ignore-envoy-compatibility",
       "-partition=unicorn", "-namespace=backend"]
     network_mode: "service:unicorn-backend-dc2"
 
