@@ -38,7 +38,7 @@ docker exec -i -t consul-server1-dc2 sh -c "/sbin/iptables -I OUTPUT -d 192.169.
 # ^^^ This is to insure that cluster peering is indeed working over mesh gateways.
 
 
-# Wait for both DCs to electer a leader before starting resource provisioning
+# Wait for both DCs to electe a leader before starting resource provisioning
 echo -e ""
 echo -e "${GRN}Wait for both DCs to electer a leader before starting resource provisioning${NC}"
 
