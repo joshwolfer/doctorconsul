@@ -117,7 +117,7 @@ UnicornDemo () {
     echo -e "            Unicorn Demo"
     echo -e "=========================================="
     echo -e "${NC}"
-    echo -e "${YELL}The Unicorn Web UI is accessed from http://127.0.0.1:10000/ui/ ${NC}"
+    echo -e "${YELL}The Unicorn-Frontend (DC1) Web UI is accessed from http://127.0.0.1:10000/ui/ ${NC}"
     echo ""
     PS3=$'\n\033[1;31mChoose an option: \033[0m'
     options=("Nuke Unicorn-Backend (DC1) Container" "Restart Unicorn-Backend (DC1) Container" "Do Kube stuff (later)" "Go Back")

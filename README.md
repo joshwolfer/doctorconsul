@@ -8,21 +8,13 @@ Details:
 
 * Heavy focus on implementing and testing the latest Consul features.
 * Rapidly changing.
-* Currently only configures Service Discovery
-  * Mesh additions coming soon.
 * [Doctor Consul Helper](https://github.com/joshwolfer/doctorconsul-helper) tool for easily collecting troubleshooting data.
 
 ### Software Versions used in this environment
 
-* Consul: 1.14.2 (Enterprise)
-* Envoy: 1.24.0
+* Consul: 1.15.1 (Enterprise)
+* Envoy: 1.25.1
 * FakeService: 0.24.2
-
-### Software Versions used in this environment
-
-Consul: 1.14.2 (Enterprise)
-Envoy: 1.24.0
-FakeService: 0.24.2
 
 ### Network Quick Chart
 

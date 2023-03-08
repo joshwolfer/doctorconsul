@@ -130,7 +130,10 @@ echo -e "=========================================="
 echo -e "            ACLs / Auth N/Z"
 echo -e "==========================================${NC}"
 
-# Create ACL tokens in DC1
+# ------------------------------------------
+#         Create ACL tokens in DC1
+# ------------------------------------------
+
 echo -e ""
 echo -e "${GRN}ACL Token: 000000001111:${NC}"
 
@@ -142,6 +145,8 @@ consul acl token create \
     -namespace=default \
     -secret="00000000-0000-0000-0000-000000001111" \
     -http-addr="$DC1"
+
+# DC1 Policy + Role + Token
 
 echo -e ""
 echo -e "${GRN}ACL Policy+Role: DC1-read${NC}"
@@ -157,6 +162,38 @@ consul acl token create \
     -partition=default \
     -namespace=default \
     -secret="00000000-0000-0000-0000-000000003333" \
+    -http-addr="$DC1"
+
+# Service Token for Node: client-dc1-unicorn
+
+echo -e ""
+echo -e "${GRN}ACL Token: 000000004444:${NC}"
+
+consul acl token create \
+    -node-identity=client-dc1-alpha:dc1 \
+    -service-identity=joshs-obnoxiously-long-service-name-gonna-take-awhile:dc1 \
+    -service-identity=josh:dc1 \
+    -partition=default \
+    -namespace=default \
+    -secret="00000000-0000-0000-0000-000000004444" \
+    -http-addr="$DC1"
+
+# ------------------------------------------
+#        Create ACL tokens in DC2
+# ------------------------------------------
+
+# Service Token for Node: client-dc1-unicorn
+
+echo -e ""
+echo -e "${GRN}ACL Token: 000000005555:${NC}"
+
+consul acl token create \
+    -node-identity=client-dc1-alpha:dc1 \
+    -service-identity=joshs-obnoxiously-long-service-name-gonna-take-awhile:dc1 \
+    -service-identity=josh:dc1 \
+    -partition=default \
+    -namespace=default \
+    -secret="00000000-0000-0000-0000-000000004444" \
     -http-addr="$DC1"
 
 # ------------------------------------------
