@@ -16,6 +16,46 @@ NC='\033[0m' # No Color
 clear
 
 # ==========================================
+#           1.1 Donkey Discovery
+# ==========================================
+
+DonkeyDiscovery () {
+
+    echo -e "${GRN}"
+    echo -e "=========================================="
+    echo -e "    DC1/donkey/donkey (local AP export) "
+    echo -e "==========================================${NC}"
+    echo ""
+    echo -e "${YELL}DC1/Default Read-Only Token: 00000000-0000-0000-0000-000000003333${NC}"
+    echo -e "${YELL}DC1/donkey/default/donkey is exported to the default AP${NC}"
+    echo ""
+    PS3=$'\n\033[1;31mChoose an option: \033[0m'
+    options=("API Discovery (health + catalog endpoints)" "Go Back")
+    select option in "${options[@]}"; do
+        case $option in
+            "API Discovery (health + catalog endpoints)")
+                echo ""
+                echo -e "${YELL} Resolving DC1/donkey/donkey using the 'service' API: ${NC}"
+                echo -e "${GRN} curl -s "$DC1"/v1/health/service/donkey?partition=donkey | jq -r '.[].Service.ID'${NC}"
+                curl -s --header "X-Consul-Token: 00000000-0000-0000-0000-000000003333" "$DC1"/v1/health/service/donkey?partition=donkey | jq -r '.[].Service.ID'
+                echo ""
+                echo -e "${YELL} Resolving DC1/donkey/donkey using the 'catalog' API: ${NC}"
+                echo -e "${GRN} curl -s "$DC1"/v1/catalog/service/donkey?partition=donkey | jq -r '.[].ServiceID' ${NC}"
+                curl -s --header "X-Consul-Token: 00000000-0000-0000-0000-000000003333" "$DC1"/v1/catalog/service/donkey?partition=donkey | jq -r '.[].ServiceID'
+                echo ""
+                REPLY=
+                ;;
+            "Go Back")
+                echo ""
+                clear
+                break
+                ;;
+            *) echo "invalid option $REPLY";;
+        esac
+    done
+}
+
+# ==========================================
 #           1 Service Discovery
 # ==========================================
 
@@ -25,24 +65,13 @@ ServiceDiscovery () {
     echo -e "=========================================="
     echo -e "            Service Discovery "
     echo -e "==========================================${NC}"
+    echo ""
     PS3=$'\n\033[1;31mChoose an option: \033[0m'
-    options=("1" "2" "3" "Go Back")
+    options=("DC1/donkey/donkey (local AP export)" "Go Back")
     select option in "${options[@]}"; do
         case $option in
-            "1")
-                echo ""
-                echo "Option 1"
-
-                ;;
-            "2")
-                echo ""
-                echo "Option 2"
-
-                ;;
-            "3")
-                echo ""
-                echo "Option 3"
-
+            "DC1/donkey/donkey (local AP export)")
+                DonkeyDiscovery
                 ;;
             "Go Back")
                 echo ""
@@ -51,6 +80,7 @@ ServiceDiscovery () {
                 ;;
             *) echo "invalid option $REPLY";;
         esac
+        REPLY=
     done
 }
 
@@ -66,7 +96,7 @@ ManipulateServices () {
     echo -e "=========================================="
     echo -e "${NC}"
     PS3=$'\n\033[1;31mChoose an option: \033[0m'
-    options=("Register Virtual-Baphomet" "De-register Virtual-Baphomet Node" "3" "Go Back")
+    options=("Register Virtual-Baphomet" "De-register Virtual-Baphomet Node" "Go Back")
     select option in "${options[@]}"; do
         case $option in
             "Register Virtual-Baphomet")
@@ -78,6 +108,7 @@ ManipulateServices () {
                 curl --request PUT --data @./configs/services/dc1-proj1-baphomet2.json --header "X-Consul-Token: root" localhost:8500/v1/catalog/register
 
                 echo ""
+                echo ""
                 REPLY=
                 ;;
             "De-register Virtual-Baphomet Node")
@@ -86,6 +117,7 @@ ManipulateServices () {
 
                 curl --request PUT --data @./configs/services/dc1-proj1-baphomet-dereg.json --header "X-Consul-Token: root" localhost:8500/v1/catalog/deregister
 
+                echo ""
                 echo ""
                 REPLY=
                 ;;
@@ -120,7 +152,7 @@ UnicornDemo () {
     echo -e "${YELL}The Unicorn-Frontend (DC1) Web UI is accessed from http://127.0.0.1:10000/ui/ ${NC}"
     echo ""
     PS3=$'\n\033[1;31mChoose an option: \033[0m'
-    options=("Nuke Unicorn-Backend (DC1) Container" "Restart Unicorn-Backend (DC1) Container" "Do Kube stuff (later)" "Go Back")
+    options=("Nuke Unicorn-Backend (DC1) Container" "Restart Unicorn-Backend (DC1) Container" "Go Back")
     select option in "${options[@]}"; do
         case $option in
             "Nuke Unicorn-Backend (DC1) Container")
@@ -128,6 +160,7 @@ UnicornDemo () {
                 echo -e "${GRN}Killing unicorn-backend (DC1) container...${NC}"
 
                 docker kill unicorn-backend-dc1
+                docker kill unicorn-backend-dc1_envoy
 
                 echo ""
                 echo -e "${YELL}Traffic from Unicorn-Frontend Service-Resolver (left side) should now route to Unicorn-Backend (DC2)${NC}"
@@ -138,8 +171,10 @@ UnicornDemo () {
                 echo ""
                 echo -e "${GRN}Restarting Unicorn-Backend (DC1) Container...${NC}"
 
-                docker start unicorn-backend-dc1
+                docker-compose up -d 2>&1 | grep --color=never Starting
 
+                echo ""
+                echo -e "${YELL}Traffic from Unicorn-Frontend Service-Resolver (left side) should now fail-back to Unicorn-Backend (DC1)${NC}"
                 echo ""
                 REPLY=
                 ;;
@@ -166,7 +201,7 @@ UnicornDemo () {
 
 
 PS3=$'\n\033[1;31mChoose an option: \033[0m'
-options=("Service Discovery" "Manipulate Services" "Unicorn Demo" "Quit")
+options=("Service Discovery" "Manipulate Services" "Unicorn Demo")
 echo ""
 select option in "${options[@]}"; do
     case $option in

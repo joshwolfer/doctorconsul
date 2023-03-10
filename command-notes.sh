@@ -103,3 +103,47 @@ consul peering read -http-addr="$DC2" -name DC1-default
 
 consul config read -http-addr="$DC1" -kind service-defaults -name web2
 
+
+# ==========================================
+
+consul acl policy create -name unicorn -partition=unicorn -namespace=default -rules @./acl/dc1-unicorn-frontend.hcl
+
+consul acl token create \
+    -partition=unicorn \
+    -namespace=default \
+    -secret="00000000-0000-0000-0000-000000004444" \
+    -policy-name=unicorn \
+    -http-addr="$DC1"
+
+docker kill unicorn-frontend
+docker kill unicorn-frontend_envoy
+
+agent.cache: handling error in Cache.Notify: cache-type=peer-trust-bundle error="rpc error: code = Unknown desc = Permission denied: token with AccessorID 'd648aba7-e243-1a82-4dbf-1969150c8e4b' lacks permission 'service:write' on \"any service\" in partition \"unicorn\" in namespace \"default\"" index=0
+
+consul-client-dc1-unicorn        | 2023-03-09T20:53:12.992Z [WARN]  agent.cache: handling error in Cache.Notify: cache-type=peer-trust-bundle error="rpc error: code = Unknown desc = Permission denied: token with AccessorID 'd648aba7-e243-1a82-4dbf-1969150c8e4b' lacks permission 'service:write' on \"any service\" in partition \"unicorn\" in namespace \"default\"" index=0
+
+
+# ========================================== 
+
+service "whateverIwant" {
+  policy = "write"  
+}
+
+namespace_prefix "" {
+  service_prefix "" {
+      policy     = "read"
+  }
+  node_prefix "" {
+      policy = "read"
+  }
+}
+
+namespace "frontend" {
+  service_prefix "unicorn-frontend"{
+    policy  = "write"
+  }
+}
+
+
+docker logs consul-server1-dc1 -f
+

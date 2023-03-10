@@ -36,8 +36,8 @@ services:
         ipv4_address: 192.169.7.2
     ports:
       - "8500:8500"
-      - "8600:8600/tcp"
-      - "8600:8600/udp"
+      - "8600:53/tcp"
+      - "8600:53/udp"
     command: "agent -bootstrap-expect=1"
     privileged: true
 
@@ -249,7 +249,7 @@ services:
     network_mode: "service:web-upstream"
 
   # Service "unicorn-frontend" (DC1) and Sidecar proxy
-  unicorn-frontend:
+  unicorn-frontend-dc1:
     image: nicholasjackson/fake-service:v0.24.2
     container_name: unicorn-frontend
     environment:
@@ -265,14 +265,14 @@ services:
     ports:
       - 10000:10000
       - "19004:19000"
-  unicorn-frontend_envoy:
+  unicorn-frontend-dc1_envoy:
     image: joshwolfer/consul-envoy:v1.15.1-ent_v1.25.1
     container_name: unicorn-frontend_envoy
     environment:
       CONSUL_HTTP_ADDR: 10.5.0.12:8500
       CONSUL_GRPC_ADDR: 10.5.0.12:8502
       CONSUL_LICENSE_PATH: "/consul/config/license"
-      CONSUL_HTTP_TOKEN: "root"
+      CONSUL_HTTP_TOKEN: "00000000-0000-0000-0000-000000004444"
       CONSUL_CACERT: "/consul/config/certs/consul-agent-ca.pem"
       SERVICE_CONFIG: /consul/config/services-dc1-unicorn-frontend.hcl
     volumes:
@@ -284,7 +284,7 @@ services:
       "-partition=unicorn", "-namespace=frontend",
       # "--ignore-envoy-compatibility",
       "-admin-bind=0.0.0.0:19000"]
-    network_mode: "service:unicorn-frontend"
+    network_mode: "service:unicorn-frontend-dc1"
 
   # Service "unicorn-backend" (DC1) and Sidecar proxy
   unicorn-backend-dc1:

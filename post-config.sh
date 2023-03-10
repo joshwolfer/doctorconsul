@@ -164,37 +164,47 @@ consul acl token create \
     -secret="00000000-0000-0000-0000-000000003333" \
     -http-addr="$DC1"
 
-# Service Token for Node: client-dc1-unicorn
+
+# Service Token for Node: unicorn-frontend-dc1_envoy
 
 echo -e ""
 echo -e "${GRN}ACL Token: 000000004444:${NC}"
 
 consul acl token create \
-    -node-identity=client-dc1-alpha:dc1 \
-    -service-identity=joshs-obnoxiously-long-service-name-gonna-take-awhile:dc1 \
-    -service-identity=josh:dc1 \
-    -partition=default \
-    -namespace=default \
+    -service-identity=unicorn-frontend:dc1 \
+    -partition=unicorn \
+    -namespace=frontend \
     -secret="00000000-0000-0000-0000-000000004444" \
     -http-addr="$DC1"
 
-# ------------------------------------------
-#        Create ACL tokens in DC2
-# ------------------------------------------
-
-# Service Token for Node: client-dc1-unicorn
+# Service Token for Node: unicorn-backend-dc1_envoy
 
 echo -e ""
 echo -e "${GRN}ACL Token: 000000005555:${NC}"
 
 consul acl token create \
-    -node-identity=client-dc1-alpha:dc1 \
-    -service-identity=joshs-obnoxiously-long-service-name-gonna-take-awhile:dc1 \
-    -service-identity=josh:dc1 \
-    -partition=default \
-    -namespace=default \
-    -secret="00000000-0000-0000-0000-000000004444" \
+    -service-identity=unicorn-backend:dc1 \
+    -partition=unicorn \
+    -namespace=backend \
+    -secret="00000000-0000-0000-0000-000000005555" \
     -http-addr="$DC1"
+
+
+# ------------------------------------------
+#        Create ACL tokens in DC2
+# ------------------------------------------
+
+# Service Token for Node: unicorn-backend-dc2_envoy
+
+echo -e ""
+echo -e "${GRN}ACL Token: 000000006666:${NC}"
+
+consul acl token create \
+    -service-identity=unicorn-backend:dc2 \
+    -partition=unicorn \
+    -namespace=backend \
+    -secret="00000000-0000-0000-0000-000000006666" \
+    -http-addr="$DC2"
 
 # ------------------------------------------
 #          Partition proj1 RBAC

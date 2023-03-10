@@ -22,6 +22,7 @@ advertise_addr_wan = "192.169.7.2"
 ports = {
   grpc = 8502
   grpc_tls = 8503
+  dns = 53
 }
 
 acl {
