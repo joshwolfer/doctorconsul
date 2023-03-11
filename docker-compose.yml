@@ -36,8 +36,8 @@ services:
         ipv4_address: 192.169.7.2
     ports:
       - "8500:8500"
-      - "8600:53/tcp"
-      - "8600:53/udp"
+      - "8600:53"
+      # - "8600:53/udp"
     command: "agent -bootstrap-expect=1"
     privileged: true
 

@@ -196,12 +196,52 @@ UnicornDemo () {
 }
 
 # ==========================================
+#            4 Kubernetes
+# ==========================================
+
+Kubernetes () {
+
+    echo -e "${GRN}"
+    echo -e "=========================================="
+    echo -e "            Kubernetes"
+    echo -e "=========================================="
+    echo -e "${NC}"
+    # echo -e "${YELL}The Unicorn-Frontend (DC1) Web UI is accessed from http://127.0.0.1:10000/ui/ ${NC}"
+    echo "Coming Soon..."
+    echo ""
+    PS3=$'\n\033[1;31mChoose an option: \033[0m'
+    options=("Go Back")
+    select option in "${options[@]}"; do
+        case $option in
+            # "Nuke Unicorn-Backend (DC1) Container")
+            #     echo ""
+            #     REPLY=
+            #     ;;
+            # "Restart Unicorn-Backend (DC1) Container")
+            #     echo ""
+            #     REPLY=
+            #     ;;
+            # "3")
+            #     echo ""
+            #     REPLY=
+            #     ;;
+            "Go Back")
+                echo ""
+                clear
+                break
+                ;;
+            *) echo "invalid option $REPLY";;
+        esac
+    done
+}
+
+# ==========================================
 #              Main Menu
 # ==========================================
 
 
 PS3=$'\n\033[1;31mChoose an option: \033[0m'
-options=("Service Discovery" "Manipulate Services" "Unicorn Demo")
+options=("Service Discovery" "Manipulate Services" "Unicorn Demo" "Kubernetes")
 echo ""
 select option in "${options[@]}"; do
     case $option in
@@ -213,6 +253,9 @@ select option in "${options[@]}"; do
             ;;
         "Unicorn Demo")
             UnicornDemo
+            ;;
+        "Kubernetes")
+            Kubernetes
             ;;
         "Quit")
             echo "User requested exit"

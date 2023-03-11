@@ -1,0 +1,92 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: unicorn-frontend
+  namespace: unicorn
+
+---
+
+apiVersion: consul.hashicorp.com/v1alpha1
+kind: ServiceDefaults
+metadata:
+  name: unicorn-frontend
+  namespace: unicorn
+spec:
+  protocol: http
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: unicorn-frontend
+  namespace: unicorn
+spec:
+  type: LoadBalancer        # This may not work with k3s, since this was taken from an AKS config
+  selector:
+    app: unicorn-frontend
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8000            # Should be the port the Kube LB will listen on to forward to TCP/10000
+      targetPort: 10000     # This should line up with the FakeService LISTEN_ADDR: 0.0.0.0:10000
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: unicorn-frontend
+  namespace: unicorn
+  labels:
+    app: unicorn-frontend
+    version: v1
+    # service: fake-service      # do I need this?
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: unicorn-frontend
+  template:
+    metadata:
+      labels:
+        app: unicorn-frontend
+        # service: fake-service     # do I need this?
+      annotations:
+        consul.hashicorp.com/connect-inject: 'true'
+        consul.hashicorp.com/transparent-proxy: 'false'
+        consul.hashicorp.com/service-tags: 'dc3'
+        consul.hashicorp.com/service-meta-version: 'v1'
+        consul.hashicorp.com/connect-service-upstreams: "unicorn-backend.unicorn:11000:dc3"
+    spec:
+      serviceAccountName: unicorn-frontend
+      containers:
+        - name: unicorn-frontend
+          image: nicholasjackson/fake-service:v0.24.2
+          imagePullPolicy: Always       # Probably don't need this
+          ports:
+            - containerPort: 10000
+          env:
+            - name: 'LISTEN_ADDR'
+              value: '0.0.0.0:10000'
+            - name: 'UPSTREAM_URIS'
+              value: 'grpc://127.0.0.1:11000'
+            #  value: 'grpc://127.0.0.1:11000,http://payments.payments-ns:9090'
+            - name: 'NAME'
+              value: 'unicorn-frontend (DC3)'
+            - name: 'MESSAGE'
+              value: 'Hello Operators of Doom!'
+            - name: 'SERVER_TYPE'
+              value: 'http'
+            - name: 'TIMING_50_PERCENTILE'
+              value: '30ms'
+            - name: 'TIMING_90_PERCENTILE'
+              value: '60ms'
+            - name: 'TIMING_99_PERCENTILE'
+              value: '90ms'
+            - name: 'TIMING_VARIANCE'
+              value: '10'
+            # - name: 'HTTP_CLIENT_APPEND_REQUEST'
+            #   value: 'true'
+            # - name: 'TRACING_ZIPKIN'
+            #   value: 'http://simplest-collector.default:9411'

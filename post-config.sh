@@ -130,6 +130,18 @@ echo -e "=========================================="
 echo -e "            ACLs / Auth N/Z"
 echo -e "==========================================${NC}"
 
+
+
+# ------------------------------------------
+#         Create ACL tokens in DC1
+# ------------------------------------------
+
+echo -e ""
+echo -e "${GRN}Add service:read to the anonymous token (enabling DNS Service Discovery):${NC}"
+
+consul acl policy create -name dns-discovery -rules @./acl/dns-discovery.hcl -http-addr="$DC1"
+consul acl token update -id 00000000-0000-0000-0000-000000000002 -policy-name dns-discovery -http-addr="$DC1"
+
 # ------------------------------------------
 #         Create ACL tokens in DC1
 # ------------------------------------------
