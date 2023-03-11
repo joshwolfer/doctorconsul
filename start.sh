@@ -25,3 +25,6 @@ echo -e "------------------------------------------"
 echo -e "${NC}"
 
 docker-compose up
+# docker-compose up --env-file ./docker_vars/standard.env 
+
+    # image: "webapp:${TAG}"
