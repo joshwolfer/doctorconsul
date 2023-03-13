@@ -22,7 +22,7 @@ services:
 # ==========================================
 
   consul-server1-dc1:
-    image: hashicorp/consul-enterprise:1.15.1-ent
+    image: ${CONSUL_IMAGE}
     container_name: consul-server1-dc1
     restart: always
     volumes:
@@ -46,14 +46,14 @@ services:
 # --------------------------------
 
   gateway-dc1:
-    image: joshwolfer/consul-envoy:v1.15.1-ent_v1.25.1
+    image: ${CONVOY_IMAGE}
     container_name: gateway-dc1
     environment:
       CONSUL_HTTP_ADDR: 10.5.0.2:8500   # Address of consul-server1-dc1
       CONSUL_GRPC_ADDR: 10.5.0.2:8502   # Address of consul-server1-dc1
       CONSUL_LICENSE_PATH: "/consul/config/license"
       CONSUL_CACERT: "/consul/config/certs/consul-agent-ca.pem"
-      CONSUL_HTTP_TOKEN: "root"
+      CONSUL_HTTP_TOKEN: ${TOKEN_GATEWAY_DC1}
     command: [
       "consul",
       "connect", "envoy",
@@ -79,14 +79,14 @@ services:
         ipv4_address: 192.169.7.3
 
   gateway-dc1-unicorn:
-    image: joshwolfer/consul-envoy:v1.15.1-ent_v1.25.1
+    image: ${CONVOY_IMAGE}
     container_name: gateway-dc1-unicorn
     environment:
       CONSUL_HTTP_ADDR: 10.5.0.12:8500   # Address of consul-server1-dc1
       CONSUL_GRPC_ADDR: 10.5.0.12:8502   # Address of consul-server1-dc1
       CONSUL_LICENSE_PATH: "/consul/config/license"
       CONSUL_CACERT: "/consul/config/certs/consul-agent-ca.pem"
-      CONSUL_HTTP_TOKEN: "root"
+      CONSUL_HTTP_TOKEN: ${TOKEN_GATEWAY_DC1_UNICORN}
     command: [
       "consul",
       "connect", "envoy",
@@ -117,7 +117,7 @@ services:
 
 # (Partition: default)
   consul-client-dc1-alpha:
-    image: hashicorp/consul-enterprise:1.15.1-ent
+    image: ${CONSUL_IMAGE}
     container_name: consul-client-dc1-alpha
     restart: always
     volumes:
@@ -132,7 +132,7 @@ services:
 
 # (Partition: donkey)
   consul-client-dc1-charlie-ap1:
-    image: hashicorp/consul-enterprise:1.15.1-ent
+    image: ${CONSUL_IMAGE}
     container_name: consul-client-dc1-charlie-ap1
     restart: always
     volumes:
@@ -146,7 +146,7 @@ services:
 
 # (Partition: unicorn)
   consul-client-dc1-unicorn:
-    image: hashicorp/consul-enterprise:1.15.1-ent
+    image: ${CONSUL_IMAGE}
     container_name: consul-client-dc1-unicorn
     restart: always
     volumes:
@@ -159,7 +159,7 @@ services:
 
 # (Partition: proj1)
   consul-client-dc1-echo-proj1:
-    image: hashicorp/consul-enterprise:1.15.1-ent
+    image: ${CONSUL_IMAGE}
     container_name: consul-client-dc1-echo-proj1
     restart: always
     volumes:
@@ -193,13 +193,13 @@ services:
       - 9000:9090
       - "19002:19000"
   web_envoy:
-    image: joshwolfer/consul-envoy:v1.15.1-ent_v1.25.1
+    image: ${CONVOY_IMAGE}
     container_name: web_envoy
     environment:
       CONSUL_HTTP_ADDR: 10.5.0.2:8500
       CONSUL_GRPC_ADDR: 10.5.0.2:8502
       CONSUL_LICENSE_PATH: "/consul/config/license"
-      CONSUL_HTTP_TOKEN: "root"
+      CONSUL_HTTP_TOKEN: ${TOKEN_WEB}
       CONSUL_CACERT: "/consul/config/certs/consul-agent-ca.pem"
       SERVICE_CONFIG: /consul/config/services-dc1-web_v1.hcl
     volumes:
@@ -228,13 +228,13 @@ services:
     ports:
       - "19003:19000"
   web-upstream_envoy:
-    image: joshwolfer/consul-envoy:v1.15.1-ent_v1.25.1
+    image: ${CONVOY_IMAGE}
     container_name: web-upstream_envoy
     environment:
       CONSUL_HTTP_ADDR: 10.5.0.2:8500
       CONSUL_GRPC_ADDR: 10.5.0.2:8502
       CONSUL_LICENSE_PATH: "/consul/config/license"
-      CONSUL_HTTP_TOKEN: "root"
+      CONSUL_HTTP_TOKEN: ${TOKEN_WEB_UPSTREAM}
       CONSUL_CACERT: "/consul/config/certs/consul-agent-ca.pem"
       SERVICE_CONFIG: /consul/config/services-dc1-web-upstream_v1.hcl
     volumes:
@@ -266,13 +266,13 @@ services:
       - 10000:10000
       - "19004:19000"
   unicorn-frontend-dc1_envoy:
-    image: joshwolfer/consul-envoy:v1.15.1-ent_v1.25.1
+    image: ${CONVOY_IMAGE}
     container_name: unicorn-frontend_envoy
     environment:
       CONSUL_HTTP_ADDR: 10.5.0.12:8500
       CONSUL_GRPC_ADDR: 10.5.0.12:8502
       CONSUL_LICENSE_PATH: "/consul/config/license"
-      CONSUL_HTTP_TOKEN: "00000000-0000-0000-0000-000000004444"
+      CONSUL_HTTP_TOKEN: ${TOKEN_UNICORN_FRONTEND_DC1}
       CONSUL_CACERT: "/consul/config/certs/consul-agent-ca.pem"
       SERVICE_CONFIG: /consul/config/services-dc1-unicorn-frontend.hcl
     volumes:
@@ -303,13 +303,13 @@ services:
     ports:
       - "19005:19000"
   unicorn-backend-dc1_envoy:
-    image: joshwolfer/consul-envoy:v1.15.1-ent_v1.25.1
+    image: ${CONVOY_IMAGE}
     container_name: unicorn-backend-dc1_envoy
     environment:
       CONSUL_HTTP_ADDR: 10.5.0.12:8500
       CONSUL_GRPC_ADDR: 10.5.0.12:8502
       CONSUL_LICENSE_PATH: "/consul/config/license"
-      CONSUL_HTTP_TOKEN: "root"
+      CONSUL_HTTP_TOKEN: ${TOKEN_UNICORN_BACKEND_DC1}
       CONSUL_CACERT: "/consul/config/certs/consul-agent-ca.pem"
       SERVICE_CONFIG: /consul/config/services-dc1-unicorn-backend.hcl
     volumes:
@@ -328,7 +328,7 @@ services:
   # ==========================================
 
   consul-server1-dc2:
-    image: hashicorp/consul-enterprise:1.15.1-ent
+    image: ${CONSUL_IMAGE}
     container_name: consul-server1-dc2
     restart: always
     volumes:
@@ -350,14 +350,14 @@ services:
 # --------------------------------
 
   gateway-dc2:
-    image: joshwolfer/consul-envoy:v1.15.1-ent_v1.25.1
+    image: ${CONVOY_IMAGE}
     container_name: gateway-dc2
     environment:
       CONSUL_HTTP_ADDR: 10.6.0.2:8500   # Address of consul-server1-dc2
       CONSUL_GRPC_ADDR: 10.6.0.2:8502   # Address of consul-server1-dc2
       CONSUL_LICENSE_PATH: "/consul/config/license"
       CONSUL_CACERT: "/consul/config/certs/consul-agent-ca.pem"
-      CONSUL_HTTP_TOKEN: "root"
+      CONSUL_HTTP_TOKEN: ${TOKEN_GATEWAY_DC2}
     command: [
       "consul",
       "connect", "envoy",
@@ -383,14 +383,14 @@ services:
         ipv4_address: 192.169.7.5
 
   gateway-dc2-chunky:
-    image: joshwolfer/consul-envoy:v1.15.1-ent_v1.25.1
+    image: ${CONVOY_IMAGE}
     container_name: gateway-dc2-chunky
     environment:
       CONSUL_HTTP_ADDR: 10.6.0.11:8500   # Address of consul-server1-dc2
       CONSUL_GRPC_ADDR: 10.6.0.11:8502   # Address of consul-server1-dc2
       CONSUL_LICENSE_PATH: "/consul/config/license"
       CONSUL_CACERT: "/consul/config/certs/consul-agent-ca.pem"
-      CONSUL_HTTP_TOKEN: "root"
+      CONSUL_HTTP_TOKEN: ${TOKEN_GATEWAY_DC2_CHUNKY}
     command: [
       "consul",
       "connect", "envoy",
@@ -416,14 +416,14 @@ services:
         ipv4_address: 192.169.7.6
 
   gateway-dc2-unicorn:
-    image: joshwolfer/consul-envoy:v1.15.1-ent_v1.25.1
+    image: ${CONVOY_IMAGE}
     container_name: gateway-dc2-unicorn
     environment:
       CONSUL_HTTP_ADDR: 10.6.0.12:8500   # Address of consul-server1-dc2
       CONSUL_GRPC_ADDR: 10.6.0.12:8502   # Address of consul-server1-dc2
       CONSUL_LICENSE_PATH: "/consul/config/license"
       CONSUL_CACERT: "/consul/config/certs/consul-agent-ca.pem"
-      CONSUL_HTTP_TOKEN: "root"
+      CONSUL_HTTP_TOKEN: ${TOKEN_GATEWAY_DC2_UNICORN}
     command: [
       "consul",
       "connect", "envoy",
@@ -454,7 +454,7 @@ services:
 
 # (Partition: default)
   consul-client-dc2-bravo:
-    image: hashicorp/consul-enterprise:1.15.1-ent
+    image: ${CONSUL_IMAGE}
     container_name: consul-client-dc2-bravo
     restart: always
     volumes:
@@ -468,7 +468,7 @@ services:
 
 # (Partition: chunky)
   consul-client-dc2-foxtrot:
-    image: hashicorp/consul-enterprise:1.15.1-ent
+    image: ${CONSUL_IMAGE}
     container_name: consul-client-dc2-foxtrot
     restart: always
     volumes:
@@ -481,7 +481,7 @@ services:
 
 # (Partition: unicorn)
   consul-client-dc2-unicorn:
-    image: hashicorp/consul-enterprise:1.15.1-ent
+    image: ${CONSUL_IMAGE}
     container_name: consul-client-dc2-unicorn
     restart: always
     volumes:
@@ -512,13 +512,13 @@ services:
     ports:
       - "19010:19000"
   web-chunky_envoy:
-    image: joshwolfer/consul-envoy:v1.15.1-ent_v1.25.1
+    image: ${CONVOY_IMAGE}
     container_name: web-chunky_envoy
     environment:
       CONSUL_HTTP_ADDR: consul-client-dc2-foxtrot:8500
       CONSUL_GRPC_ADDR: consul-client-dc2-foxtrot:8502
       CONSUL_LICENSE_PATH: "/consul/config/license"
-      CONSUL_HTTP_TOKEN: "root"
+      CONSUL_HTTP_TOKEN: ${TOKEN_WEB_CHUNKY}
       CONSUL_CACERT: "/consul/config/certs/consul-agent-ca.pem"
       SERVICE_CONFIG: /consul/config/services-dc2-web-chunky_v1.hcl
     volumes:
@@ -549,13 +549,13 @@ services:
     ports:
       - "19011:19000"
   unicorn-backend-dc2_envoy:
-    image: joshwolfer/consul-envoy:v1.15.1-ent_v1.25.1
+    image: ${CONVOY_IMAGE}
     container_name: unicorn-backend-dc2_envoy
     environment:
       CONSUL_HTTP_ADDR: 10.6.0.12:8500
       CONSUL_GRPC_ADDR: 10.6.0.12:8502
       CONSUL_LICENSE_PATH: "/consul/config/license"
-      CONSUL_HTTP_TOKEN: "root"
+      CONSUL_HTTP_TOKEN: ${TOKEN_UNICORN_BACKEND_DC2}
       CONSUL_CACERT: "/consul/config/certs/consul-agent-ca.pem"
       SERVICE_CONFIG: /consul/config/services-dc2-unicorn-backend.hcl
     volumes:
