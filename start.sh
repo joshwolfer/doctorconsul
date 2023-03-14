@@ -8,7 +8,7 @@ GRN='\033[1;32m'
 YELL='\033[0;33m'
 NC='\033[0m' # No Color
 
-if [[ "$*" == *"--help"* ]]
+if [[ "$*" == *"-help"* ]]
   then
     echo -e "Syntax: ./start.sh [OPTIONS]"
     echo ""

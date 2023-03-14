@@ -13,6 +13,8 @@ GRN='\033[1;32m'
 YELL='\033[0;33m'
 NC='\033[0m' # No Color
 
+COLUMNS=12
+
 clear
 
 # ==========================================
@@ -29,6 +31,7 @@ DonkeyDiscovery () {
     echo -e "${YELL}DC1/Default Read-Only Token: 00000000-0000-0000-0000-000000003333${NC}"
     echo -e "${YELL}DC1/donkey/default/donkey is exported to the default AP${NC}"
     echo ""
+    COLUMNS=1
     PS3=$'\n\033[1;31mChoose an option: \033[0m'
     options=("API Discovery (health + catalog endpoints)" "Go Back")
     select option in "${options[@]}"; do
@@ -66,6 +69,7 @@ ServiceDiscovery () {
     echo -e "            Service Discovery "
     echo -e "==========================================${NC}"
     echo ""
+    COLUMNS=1
     PS3=$'\n\033[1;31mChoose an option: \033[0m'
     options=("DC1/donkey/donkey (local AP export)" "Go Back")
     select option in "${options[@]}"; do
@@ -95,6 +99,7 @@ ManipulateServices () {
     echo -e "            Manipulate Services"
     echo -e "=========================================="
     echo -e "${NC}"
+    COLUMNS=1
     PS3=$'\n\033[1;31mChoose an option: \033[0m'
     options=("Register Virtual-Baphomet" "De-register Virtual-Baphomet Node" "Go Back")
     select option in "${options[@]}"; do
@@ -151,8 +156,9 @@ UnicornDemo () {
     echo -e "${NC}"
     echo -e "${YELL}The Unicorn-Frontend (DC1) Web UI is accessed from http://127.0.0.1:10000/ui/ ${NC}"
     echo ""
+    COLUMNS=12
     PS3=$'\n\033[1;31mChoose an option: \033[0m'
-    options=("Nuke Unicorn-Backend (DC1) Container" "Restart Unicorn-Backend (DC1) Container" "Go Back")
+    options=("Nuke Unicorn-Backend (DC1) Container" "Restart Unicorn-Backend (DC1) Container (root token)" "Restart Unicorn-Backend (DC1) Container (standard token)" "Go Back")
     select option in "${options[@]}"; do
         case $option in
             "Nuke Unicorn-Backend (DC1) Container")
@@ -165,17 +171,30 @@ UnicornDemo () {
                 echo ""
                 echo -e "${YELL}Traffic from Unicorn-Frontend Service-Resolver (left side) should now route to Unicorn-Backend (DC2)${NC}"
                 echo ""
+                COLUMNS=12
                 REPLY=
                 ;;
-            "Restart Unicorn-Backend (DC1) Container")
+            "Restart Unicorn-Backend (DC1) Container (root token)")
                 echo ""
                 echo -e "${GRN}Restarting Unicorn-Backend (DC1) Container...${NC}"
 
-                docker-compose up -d 2>&1 | grep --color=never Starting
+                docker-compose --env-file docker_vars/acl-root.env up -d 2>&1 | grep --color=never Starting
 
                 echo ""
                 echo -e "${YELL}Traffic from Unicorn-Frontend Service-Resolver (left side) should now fail-back to Unicorn-Backend (DC1)${NC}"
                 echo ""
+                COLUMNS=12
+                REPLY=
+                ;;
+            "Restart Unicorn-Backend (DC1) Container (standard token)")
+                echo -e "${GRN}Restarting Unicorn-Backend (DC1) Container...${NC}"
+
+                docker-compose --env-file docker_vars/acl-secure.env up -d 2>&1 | grep --color=never Starting
+
+                echo ""
+                echo -e "${YELL}Traffic from Unicorn-Frontend Service-Resolver (left side) should now fail-back to Unicorn-Backend (DC1)${NC}"
+                echo ""
+                COLUMNS=12
                 REPLY=
                 ;;
             "3")
@@ -209,6 +228,7 @@ Kubernetes () {
     # echo -e "${YELL}The Unicorn-Frontend (DC1) Web UI is accessed from http://127.0.0.1:10000/ui/ ${NC}"
     echo "Coming Soon..."
     echo ""
+    COLUMNS=1
     PS3=$'\n\033[1;31mChoose an option: \033[0m'
     options=("Go Back")
     select option in "${options[@]}"; do
@@ -243,6 +263,7 @@ Kubernetes () {
 PS3=$'\n\033[1;31mChoose an option: \033[0m'
 options=("Service Discovery" "Manipulate Services" "Unicorn Demo" "Kubernetes")
 echo ""
+COLUMNS=1
 select option in "${options[@]}"; do
     case $option in
         "Service Discovery")

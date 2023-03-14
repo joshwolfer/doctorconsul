@@ -127,6 +127,10 @@ Architecture:
 * Highly recommended to get k9s to make navigating Kubernetes a lot easier.
 * [https://github.com/derailed/k9s/releases](https://github.com/derailed/k9s/releases)
 
+### HashiCorp consul-k8s CLI
+
+* Installation instructions [HERE](https://developer.hashicorp.com/consul/docs/k8s/installation/install-cli#install-the-latest-version)
+
 # Instructions to Execute Environment
 
 * Startup script (Cleans out previous containers, k3d clusters, and peering tokens)

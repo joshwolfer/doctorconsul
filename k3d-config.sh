@@ -18,7 +18,7 @@ GRN='\033[1;32m'
 YELL='\033[0;33m'
 NC='\033[0m' # No Color
 
-if [[ "$*" == *"--help"* ]]
+if [[ "$*" == *"help"* ]]
   then
     echo -e "Syntax: ./k3d-config.sh [OPTIONS]"
     echo ""
@@ -188,21 +188,51 @@ echo -e "=========================================="
 echo -e "        Install Unicorn Application"
 echo -e "==========================================${NC}"
 
-echo -e ""
+
+# ------------------------------------------
+#  Create Namespace Unicorn
+# ------------------------------------------
+
+  echo -e ""
 echo -e "${GRN}DC3: Create unicorn namespace${NC}"
 
 kubectl create namespace unicorn
 
+# ------------------------------------------
+#     Services
+# ------------------------------------------
+
 echo -e ""
 echo -e "${GRN}DC3: Apply Unicorn-frontend serviceAccount, serviceDefaults, service, deployment ${NC}"
 
-kubectl apply -f ./kube/configs/dc3/services/unicorn.yaml
+kubectl apply -f ./kube/configs/dc3/services/unicorn-frontend.yaml
+# kubectl delete -f ./kube/configs/dc3/services/unicorn-frontend.yaml
+
+echo -e ""
+echo -e "${GRN}DC3: Apply Unicorn-backend serviceAccount, serviceDefaults, service, deployment ${NC}"
+
+kubectl apply -f ./kube/configs/dc3/services/unicorn-backend.yaml
+# kubectl delete -f ./kube/configs/dc3/services/unicorn-backend.yaml
+
+echo -e ""
+echo -e "${GRN}DC3: Create Allow intention unicorn-frontend > unicorn-backend ${NC}"
+
+kubectl apply -f ./kube/configs/dc3/intentions/dc3-unicorn_frontend-allow.yaml
+
+
+echo -e ""
+echo -e "${GRN}DC3: Export unicorn-backend to peer: dc1-unicorn ${NC}"
+
+kubectl apply -f ./kube/configs/dc3/exported-services/exported-services-dc3-default.yaml
+
+
+
 
 echo -e ""
 
 
 # ==========================================
-#              Usefull Commands
+#              Useful Commands
 # ==========================================
 
 # k3d cluster list
@@ -213,3 +243,15 @@ echo -e ""
 
 # https://github.com/ppresto/terraform-azure-consul-ent-aks
 # https://github.com/ppresto/terraform-azure-consul-ent-aks/blob/main/PeeringDemo-EagleInvestments.md
+
+# consul-k8s proxy list -n unicorn | grep unicorn-frontend | cut -f1 | xargs -I {} consul-k8s proxy read {} -n unicorn
+
+# kubectl exec -nunicorn -it unicorn-frontend-97848474-lltd7  -- /usr/bin/curl localhost:19000/listeners
+# kubectl exec -nunicorn -it unicorn-frontend-97848474-lltd7  -- /usr/bin/curl localhost:19000/clusters | vsc
+# kubectl exec -nunicorn -it unicorn-backend-548d9999f6-khnxt  -- /usr/bin/curl localhost:19000/clusters | vsc
+
+# consul-k8s proxy list -n unicorn | grep unicorn-frontend | cut -f1 | tr -d " " | xargs -I {} kubectl exec -nunicorn -it {} -- /usr/bin/curl -s localhost:19000/clusters
+# consul-k8s proxy list -n unicorn | grep unicorn-frontend | cut -f1 | tr -d " " | xargs -I {} kubectl exec -nunicorn -it {} -- /usr/bin/curl -s localhost:19000/config_dump
+# consul-k8s proxy list -n unicorn | grep unicorn-backend | cut -f1 | tr -d " " | xargs -I {} kubectl exec -nunicorn -it {} -- /usr/bin/curl -s localhost:19000/clusters
+# consul-k8s proxy list -n unicorn | grep unicorn-backend | cut -f1 | tr -d " " | xargs -I {} kubectl exec -nunicorn -it {} -- /usr/bin/curl -s localhost:19000/config_dump
+

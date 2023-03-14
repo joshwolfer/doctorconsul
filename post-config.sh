@@ -34,9 +34,9 @@ docker exec -i -t consul-server1-dc1 sh -c "/sbin/iptables -I OUTPUT -d 192.169.
 
 # Block traffic from consul-server1-dc2 to consul-server-dc1
 docker exec -i -t consul-server1-dc2 sh -c "/sbin/iptables -I OUTPUT -d 192.169.7.2 -j DROP"
-
 # ^^^ This is to insure that cluster peering is indeed working over mesh gateways.
 
+echo "success"  # If the script didn't error out here, it worked. 
 
 # Wait for both DCs to electe a leader before starting resource provisioning
 echo -e ""
@@ -182,12 +182,25 @@ consul acl token create \
 echo -e ""
 echo -e "${GRN}ACL Token: 000000004444:${NC}"
 
+consul acl policy create -name unicorn -partition=unicorn -namespace=default -rules @./acl/dc1-unicorn-frontend.hcl
+
 consul acl token create \
-    -service-identity=unicorn-frontend:dc1 \
     -partition=unicorn \
-    -namespace=frontend \
+    -namespace=default \
     -secret="00000000-0000-0000-0000-000000004444" \
+    -policy-name=unicorn \
     -http-addr="$DC1"
+
+### ^^^ Temporary scoping of the token to the default namespace to figure out what's broken in cluster peering
+
+# consul acl token create \
+#     -service-identity=unicorn-frontend:dc1 \
+#     -partition=unicorn \
+#     -namespace=frontend \
+#     -secret="00000000-0000-0000-0000-000000004444" \
+#     -http-addr="$DC1"
+
+
 
 # Service Token for Node: unicorn-backend-dc1_envoy
 
