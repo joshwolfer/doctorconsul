@@ -87,7 +87,7 @@ Details:
 * 19011: (dc2) unicorn-backend-dc2
 
 Architecture:
-![](readme-images/architecture.png)
+![](readme-images/architecture2.png)
 
 # Initialization Pre-Requirements
 
