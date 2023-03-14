@@ -47,7 +47,7 @@ docker exec -i -t consul-server1-dc1 sh -c "/sbin/iptables -I OUTPUT -d 192.169.
 docker exec -i -t consul-server1-dc2 sh -c "/sbin/iptables -I OUTPUT -d 192.169.7.2 -j DROP"
 # ^^^ This is to insure that cluster peering is indeed working over mesh gateways.
 
-echo "success"  # If the script didn't error out here, it worked. 
+echo "success"  # If the script didn't error out here, it worked.
 
 # Wait for both DCs to electe a leader before starting resource provisioning
 echo -e ""
@@ -144,7 +144,7 @@ echo -e "==========================================${NC}"
 
 
 # ------------------------------------------
-#         Create ACL tokens in DC1
+# Update the anonymous token so DNS isn't horked
 # ------------------------------------------
 
 echo -e ""
@@ -167,6 +167,7 @@ consul acl token create \
     -partition=default \
     -namespace=default \
     -secret="00000000-0000-0000-0000-000000001111" \
+    -accessor="00000000-0000-0000-0000-000000001111" \
     -http-addr="$DC1"
 
 # DC1 Policy + Role + Token
@@ -185,6 +186,7 @@ consul acl token create \
     -partition=default \
     -namespace=default \
     -secret="00000000-0000-0000-0000-000000003333" \
+    -accessor="00000000-0000-0000-0000-000000003333" \
     -http-addr="$DC1"
 
 # Service Token for Node: web-dc1_envoy
@@ -197,6 +199,7 @@ consul acl token create \
     -partition=default \
     -namespace=default \
     -secret="00000000-0000-0000-0000-000000007777" \
+    -accessor="00000000-0000-0000-0000-000000007777" \
     -http-addr="$DC1"
 
 # Service Token for Node: web-dc1_envoy
@@ -209,6 +212,7 @@ consul acl token create \
     -partition=default \
     -namespace=default \
     -secret="00000000-0000-0000-0000-000000008888" \
+    -accessor="00000000-0000-0000-0000-000000008888" \
     -http-addr="$DC1"
 
 # Service Token for Node: unicorn-frontend-dc1_envoy
@@ -222,6 +226,7 @@ consul acl token create \
     -partition=unicorn \
     -namespace=default \
     -secret="00000000-0000-0000-0000-000000004444" \
+    -accessor="00000000-0000-0000-0000-000000004444" \
     -policy-name=unicorn \
     -http-addr="$DC1"
 
@@ -232,6 +237,7 @@ consul acl token create \
 #     -partition=unicorn \
 #     -namespace=frontend \
 #     -secret="00000000-0000-0000-0000-000000004444" \
+#     -accessor="00000000-0000-0000-0000-000000004444" \
 #     -http-addr="$DC1"
 
 
@@ -246,6 +252,7 @@ consul acl token create \
     -partition=unicorn \
     -namespace=backend \
     -secret="00000000-0000-0000-0000-000000005555" \
+    -accessor="00000000-0000-0000-0000-000000005555" \
     -http-addr="$DC1"
 
 
@@ -263,6 +270,7 @@ consul acl token create \
     -partition=unicorn \
     -namespace=backend \
     -secret="00000000-0000-0000-0000-000000006666" \
+    -accessor="00000000-0000-0000-0000-000000006666" \
     -http-addr="$DC2"
 
 # Service Token for Node: web-chunky_envoy
@@ -275,6 +283,7 @@ consul acl token create \
     -partition=chunky \
     -namespace=default \
     -secret="00000000-0000-0000-0000-000000009999" \
+    -accessor="00000000-0000-0000-0000-000000009999" \
     -http-addr="$DC2"
 
 # ------------------------------------------
@@ -292,7 +301,12 @@ consul acl policy create -name team-proj1-rw -rules @./acl/team-proj1-rw.hcl -ht
 consul acl role create -name team-proj1-rw -policy-name team-proj1-rw -http-addr="$DC1"
 echo -e ""
 echo -e "${GRN}ACL Token: 000000002222${NC}"
-consul acl token create -partition=default -role-name=team-proj1-rw -secret="00000000-0000-0000-0000-000000002222" -http-addr="$DC1"
+consul acl token create \
+    -partition=default \
+    -role-name=team-proj1-rw \
+    -secret="00000000-0000-0000-0000-000000002222" \
+    -accessor="00000000-0000-0000-0000-000000002222" \
+    -http-addr="$DC1"
 
 # ------------------------------------------
 #             Consul-Admins
@@ -544,4 +558,6 @@ fi
 #       protocol = "tcp"
 #    }
 # }
+
+
 

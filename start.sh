@@ -19,6 +19,8 @@ if [[ "$*" == *"help"* ]]
     exit 0
 fi
 
+clear
+
 if [[ $(docker ps -aq) ]]; then
     echo -e "${GRN}------------------------------------------"
     echo -e "        Nuking all the things..."
@@ -44,6 +46,7 @@ if [[ "$*" == *"-root"* ]]
   then
     echo -e "${YELL}docker-compose --env-file ./docker_vars/acl-root.env up ${NC}"
     docker-compose --env-file docker_vars/acl-root.env up
+    # docker compose --env-file docker_vars/acl-root.env convert | vsc yaml
     echo ""
     exit 0
 fi
@@ -52,12 +55,14 @@ if [[ "$*" == *"-custom"* ]]
   then
     echo -e "${YELL}docker-compose --env-file ./docker_vars/acl-custom.env up ${NC}"
     docker-compose --env-file docker_vars/acl-custom.env up
+    # docker compose --env-file docker_vars/acl-custom.env convert | vsc yaml
     echo ""
     exit 0
 fi
 
     echo -e "${YELL}docker-compose --env-file ./docker_vars/acl-secure.env up ${NC}"
     docker-compose --env-file docker_vars/acl-secure.env up
+    # docker compose --env-file docker_vars/acl-secure.env convert | vsc yaml
     echo ""
 
 # Validated the string substitution

@@ -179,6 +179,11 @@ services:
   web:
     image: nicholasjackson/fake-service:v0.24.2
     container_name: web
+    # healthcheck:
+    #   test: ["CMD-SHELL", "curl -s --header 'X-Consul-Token: root' --request GET http://10.5.0.12:8500/v1/acl/token/00000000-0000-0000-0000-000000007777 | grep web || exit 1"]
+    #   interval: 10s
+    #   timeout: 10s
+    #   retries: 5
     environment:
       NAME: Web (DC1)
       LISTEN_ADDR: 0.0.0.0:9090
@@ -195,6 +200,10 @@ services:
   web_envoy:
     image: ${CONVOY_IMAGE}
     container_name: web_envoy
+    restart: unless-stopped              # This solve the ACL token race condition!
+    # depends_on:
+    #   web:
+    #     condition: service_healthy
     environment:
       CONSUL_HTTP_ADDR: 10.5.0.2:8500
       CONSUL_GRPC_ADDR: 10.5.0.2:8502
@@ -230,6 +239,7 @@ services:
   web-upstream_envoy:
     image: ${CONVOY_IMAGE}
     container_name: web-upstream_envoy
+    restart: unless-stopped              # This solve the ACL token race condition!
     environment:
       CONSUL_HTTP_ADDR: 10.5.0.2:8500
       CONSUL_GRPC_ADDR: 10.5.0.2:8502
@@ -268,6 +278,7 @@ services:
   unicorn-frontend-dc1_envoy:
     image: ${CONVOY_IMAGE}
     container_name: unicorn-frontend_envoy
+    restart: unless-stopped              # This solve the ACL token race condition!
     environment:
       CONSUL_HTTP_ADDR: 10.5.0.12:8500
       CONSUL_GRPC_ADDR: 10.5.0.12:8502
@@ -305,6 +316,7 @@ services:
   unicorn-backend-dc1_envoy:
     image: ${CONVOY_IMAGE}
     container_name: unicorn-backend-dc1_envoy
+    restart: unless-stopped              # This solve the ACL token race condition!
     environment:
       CONSUL_HTTP_ADDR: 10.5.0.12:8500
       CONSUL_GRPC_ADDR: 10.5.0.12:8502
@@ -514,6 +526,7 @@ services:
   web-chunky_envoy:
     image: ${CONVOY_IMAGE}
     container_name: web-chunky_envoy
+    restart: unless-stopped              # This solve the ACL token race condition!
     environment:
       CONSUL_HTTP_ADDR: consul-client-dc2-foxtrot:8500
       CONSUL_GRPC_ADDR: consul-client-dc2-foxtrot:8502
@@ -551,6 +564,7 @@ services:
   unicorn-backend-dc2_envoy:
     image: ${CONVOY_IMAGE}
     container_name: unicorn-backend-dc2_envoy
+    restart: unless-stopped              # This solve the ACL token race condition!
     environment:
       CONSUL_HTTP_ADDR: 10.6.0.12:8500
       CONSUL_GRPC_ADDR: 10.6.0.12:8502

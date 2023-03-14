@@ -8,5 +8,9 @@ spec:
     - name: unicorn-frontend
       namespace: unicorn
       action: allow
+    - name: unicorn-frontend
+      namespace: frontend
+      peer: dc1-unicorn
+      action: allow
   destination:
     name: unicorn-backend

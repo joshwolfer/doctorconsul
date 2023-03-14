@@ -150,3 +150,5 @@ docker logs consul-server1-dc1 -f
 
 
 consul-client-dc1-unicorn        | 2023-03-14T01:19:49.689Z [WARN]  agent.cache: handling error in Cache.Notify: cache-type=peer-trust-bundle error="rpc error: code = Unknown desc = Permission denied: token with AccessorID '9a93399b-2671-4271-a05e-70308a531607' lacks permission 'service:write' on \"any service\" in partition \"default\" in namespace \"default\"" index=0
+
+curl --header "X-Consul-Token: root" --request GET http://127.0.0.1:8500/v1/acl/token/73700bd7-3abc-d4e0-9808-a7a2b42aa332
