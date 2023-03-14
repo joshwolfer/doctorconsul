@@ -89,12 +89,6 @@ Details:
 Architecture:
 ![](readme-images/architecture.png)
 
-^^^ Updates needed in diagram: 
-
-* k3d DC3
-  * unicorn-frontend
-  * unicorn-backend
-
 # Initialization Pre-Requirements
 
 ### Docker Compose
