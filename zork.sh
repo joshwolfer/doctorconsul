@@ -158,7 +158,7 @@ UnicornDemo () {
     echo ""
     COLUMNS=12
     PS3=$'\n\033[1;31mChoose an option: \033[0m'
-    options=("Nuke Unicorn-Backend (DC1) Container" "Restart Unicorn-Backend (DC1) Container (root token)" "Restart Unicorn-Backend (DC1) Container (standard token)" "Go Back")
+    options=("Nuke Unicorn-Backend (DC1) Container" "Restart Unicorn-Backend (DC1) Container (root token)" "Restart Unicorn-Backend (DC1) Container (standard token)" "Nuke Unicorn-Backend (DC2) Container" "Restart Unicorn-Backend (DC2) Container (root token)" "Restart Unicorn-Backend (DC2) Container (standard token)" "Go Back")
     select option in "${options[@]}"; do
         case $option in
             "Nuke Unicorn-Backend (DC1) Container")
@@ -193,6 +193,42 @@ UnicornDemo () {
 
                 echo ""
                 echo -e "${YELL}Traffic from Unicorn-Frontend Service-Resolver (left side) should now fail-back to Unicorn-Backend (DC1)${NC}"
+                echo ""
+                COLUMNS=12
+                REPLY=
+                ;;
+            "Nuke Unicorn-Backend (DC2) Container")
+                echo ""
+                echo -e "${GRN}Killing unicorn-backend (DC3) container...${NC}"
+
+                docker kill unicorn-backend-dc2
+                docker kill unicorn-backend-dc2_envoy
+
+                echo ""
+                echo -e "${YELL}Traffic from Unicorn-Frontend Service-Resolver (left side) should now route to Unicorn-Backend (DC3)${NC}"
+                echo ""
+                COLUMNS=12
+                REPLY=
+                ;;
+            "Restart Unicorn-Backend (DC2) Container (root token)")
+                echo ""
+                echo -e "${GRN}Restarting Unicorn-Backend (DC2) Container...${NC}"
+
+                docker-compose --env-file docker_vars/acl-root.env up -d 2>&1 | grep --color=never Starting
+
+                echo ""
+                echo -e "${YELL}Traffic from Unicorn-Frontend Service-Resolver (left side) should now fail-back to Unicorn-Backend (DC1 or DC2)${NC}"
+                echo ""
+                COLUMNS=12
+                REPLY=
+                ;;
+            "Restart Unicorn-Backend (DC2) Container (standard token)")
+                echo -e "${GRN}Restarting Unicorn-Backend (DC2) Container...${NC}"
+
+                docker-compose --env-file docker_vars/acl-secure.env up -d 2>&1 | grep --color=never Starting
+
+                echo ""
+                echo -e "${YELL}Traffic from Unicorn-Frontend Service-Resolver (left side) should now fail-back to Unicorn-Backend (DC1 or DC2)${NC}"
                 echo ""
                 COLUMNS=12
                 REPLY=

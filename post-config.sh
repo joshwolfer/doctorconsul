@@ -13,6 +13,7 @@ RED='\033[1;31m'
 BLUE='\033[1;34m'
 DGRN='\033[0;32m'
 GRN='\033[1;32m'
+YELL='\033[0;33m'
 NC='\033[0m' # No Color
 
 # Dark Gray     1;30
@@ -23,6 +24,16 @@ NC='\033[0m' # No Color
 # Light Gray   0;37     White         1;37
 
 # echo -e "  Consul versions: ${LINK}https://hub.docker.com/r/hashicorp/consul-enterprise/tags${NC}"
+
+if [[ "$*" == *"help"* ]]
+  then
+    echo -e "Syntax: ./post-config.sh [OPTIONS]"
+    echo ""
+    echo "Options:"
+    echo "  -k3d      Include the default k3d configuration (doesn't accept additional k3d-config.sh arguments)"
+    echo ""
+    exit 0
+fi
 
 mkdir -p ./tokens
 
@@ -167,7 +178,7 @@ consul acl policy create -name dc1-read -rules @./acl/dc1-read.hcl -http-addr="$
 consul acl role create -name dc1-read -policy-name dc1-read -http-addr="$DC1"
 
 echo -e ""
-echo -e "${GRN}ACL Token: 000000003333${NC}"
+echo -e "${GRN}ACL Token: 000000003333 (-role-name=dc1-read):${NC}"
 
 consul acl token create \
     -role-name=dc1-read \
@@ -176,11 +187,34 @@ consul acl token create \
     -secret="00000000-0000-0000-0000-000000003333" \
     -http-addr="$DC1"
 
+# Service Token for Node: web-dc1_envoy
+
+echo -e ""
+echo -e "${GRN}ACL Token: 000000007777 (web:dc1):${NC}"
+
+consul acl token create \
+    -service-identity=web:dc1 \
+    -partition=default \
+    -namespace=default \
+    -secret="00000000-0000-0000-0000-000000007777" \
+    -http-addr="$DC1"
+
+# Service Token for Node: web-dc1_envoy
+
+echo -e ""
+echo -e "${GRN}ACL Token: 000000008888 (web-upstream:dc1):${NC}"
+
+consul acl token create \
+    -service-identity=web-upstream:dc1 \
+    -partition=default \
+    -namespace=default \
+    -secret="00000000-0000-0000-0000-000000008888" \
+    -http-addr="$DC1"
 
 # Service Token for Node: unicorn-frontend-dc1_envoy
 
 echo -e ""
-echo -e "${GRN}ACL Token: 000000004444:${NC}"
+echo -e "${GRN}ACL Token: 000000004444 (-policy-name=unicorn):${NC}"
 
 consul acl policy create -name unicorn -partition=unicorn -namespace=default -rules @./acl/dc1-unicorn-frontend.hcl
 
@@ -205,7 +239,7 @@ consul acl token create \
 # Service Token for Node: unicorn-backend-dc1_envoy
 
 echo -e ""
-echo -e "${GRN}ACL Token: 000000005555:${NC}"
+echo -e "${GRN}ACL Token: 000000005555 (unicorn-backend:dc1):${NC}"
 
 consul acl token create \
     -service-identity=unicorn-backend:dc1 \
@@ -222,13 +256,25 @@ consul acl token create \
 # Service Token for Node: unicorn-backend-dc2_envoy
 
 echo -e ""
-echo -e "${GRN}ACL Token: 000000006666:${NC}"
+echo -e "${GRN}ACL Token: 000000006666 (unicorn-backend:dc2):${NC}"
 
 consul acl token create \
     -service-identity=unicorn-backend:dc2 \
     -partition=unicorn \
     -namespace=backend \
     -secret="00000000-0000-0000-0000-000000006666" \
+    -http-addr="$DC2"
+
+# Service Token for Node: web-chunky_envoy
+
+echo -e ""
+echo -e "${GRN}ACL Token: 000000009999 (web-chunky:dc2):${NC}"
+
+consul acl token create \
+    -service-identity=web-chunky:dc2 \
+    -partition=chunky \
+    -namespace=default \
+    -secret="00000000-0000-0000-0000-000000009999" \
     -http-addr="$DC2"
 
 # ------------------------------------------
@@ -454,6 +500,22 @@ echo -e ""
 echo -e "${GRN}Service-resolvers:${NC}"
 
 consul config write -http-addr="$DC1" ./configs/service-resolver/dc1-unicorn-backend-failover.hcl
+echo -e ""
+
+# ==========================================
+#               k3d config
+# ==========================================
+
+if [[ "$*" == *"-k3d"* ]]
+  then
+    echo -e "${GRN} Launching k3d configuration script (k3d-config.sh) ${NC}"
+    ./k3d-config.sh
+    echo ""
+fi
+
+
+
+
 
 # ------------------------------------------
 # Test STUFF

@@ -12,6 +12,11 @@ Failover = {
         Service = "unicorn-backend",
         Peer = "dc2-unicorn",
         Namespace = "backend"
+      },
+      {
+        Service = "unicorn-backend",
+        Peer = "dc3-default",
+        Namespace = "unicorn"
       }
     ]
   }

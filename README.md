@@ -56,12 +56,21 @@ Details:
 * web-chunky:                               10.6.0.100
 * unicorn-backend:                          10.6.0.111
 
+#### (DC3) k3d
+
+* consul (server)
+* mesh-gateway
+* unicorn-frontend (default)
+* unicorn-backend (default)
+
 ### Local Listeners
 
 * Consul Server1 DC1 UI: http://127.0.0.1:8500/ui/
 * Consul Server1 DC2 UI: http://127.0.0.1:8501/ui/
+* Consul Server DC3 UI: http://127.0.0.1:8502/ui/
 * Web Service UI: http://127.0.0.1:9000/ui
-* Unicorn-frontend (unicorn) UI: http://127.0.0.1:10000/ui
+* Unicorn-frontend (unicorn) DC1 UI: http://127.0.0.1:10000/ui
+* Unicorn-frontend (default) DC3 UI: http://127.0.0.1:11000/ui
 
 #### Local Listeners for Envoy troubleshooting
 
@@ -79,6 +88,12 @@ Details:
 
 Architecture:
 ![](readme-images/architecture.png)
+
+^^^ Updates needed in diagram: 
+
+* k3d DC3
+  * unicorn-frontend
+  * unicorn-backend
 
 # Initialization Pre-Requirements
 
@@ -133,19 +148,59 @@ Architecture:
 
 # Instructions to Execute Environment
 
+### Startup Script
+
 * Startup script (Cleans out previous containers, k3d clusters, and peering tokens)
   * `./start.sh`
+  * `./start.sh -root`
+  * `./start.sh -custom`
+
+The start script has three modes. By default the environment will assign Consul ACL tokens to most of the agents and proxies using the principle of least privilege.
+
+It may be handy to quickly launch the entire environment using nothing but root tokens, especially when troubleshooting ACL issues (docker_vars/acl-secure.env).
+
+Additionally, a custom ACL Token profile can be used (docker_vars/acl-custom.env)
+
+### Configuration Script
+
 * Configure the core environment using the `post-config.sh` script:
-* * `./post-config.sh`
+  * `./post-config.sh`
+  * `./post-config.sh -k3d`
+
+The `-k3d` argument automatically runs the `k3d-config.sh` script with all options.
+
+### k3d configuration script (optional)
+
 * Build K3d Kubernetes cluster using the `k3d-config.sh` script:
   * `./k3d-config.sh`
+  * `./k3d-config.sh -nopeer`
 
-# Tear down and Re-build Environment
+The `-nopeer` option launched the k3d cluster with no peering. This is useful when it is desired to launch only the k3d cluster without the rest of the Doctor Consul environment.
 
-* Delete all docker resources except the images:
-  * `docker ps -a | grep -v CONTAINER | awk '{print \$1}' | xargs docker stop; docker ps -a | grep -v CONTAINER | awk '{print \$1}' | xargs docker rm; docker volume ls | grep -v DRIVER | awk '{print \$2}' | xargs docker volume rm; docker network prune -f`
-  * `k3d cluster delete doctorconsul`
-  * `docker-compose up`
+# Tear down Environment
+
+* Delete all docker resources except the downloaded images:
+  * `./kill.sh`
+
+# Zork Menu Driven Environment Controls
+
+The `./zork.sh` script is a menu driven system to control various aspects of the environment. The most noteworthy is to kill and restore containers in the "Unicorn" application. This makes it so you do not have to copy and paste or memorize lots of commands to make full use of Doctor Consul.
+
+Framework
+
+* **Service Discovery**
+  * DC1/donkey/donkey (local AP export)
+    * API Discovery (health + catalog endpoints)
+* **Manipulate Services**
+  * Register Virtual-Baphomet
+  * De-register Virtual-Baphomet Node
+* **Unicorn Demo**
+  * Nuke Unicorn-Backend (DC1) Container
+  * Restart Unicorn-Backend (DC1) Container (root token)
+  * Restart Unicorn-Backend (DC1) Container (standard token)
+  * Nuke Unicorn-Backend (DC2) Container
+  * Restart Unicorn-Backend (DC2) Container (root token)
+  * Restart Unicorn-Backend (DC2) Container (standard token)
 
 # Architecture Overview
 
@@ -226,6 +281,11 @@ Architecture:
   * `frontend` (NS)
   * `backend` (NS)
 
+### DC3 (k3d)
+
+* `default`
+  * `unicorn` (NS)
+
 ## Cluster Peering Relationships & Exported Services
 
 ### Configuration
@@ -234,9 +294,13 @@ Architecture:
 
 ### Peering Relationships
 
-* `DC1`/`default` <> `DC2`/`default`
-* `DC1`/`default` <> `DC2`/`heimdall`
-* `DC1`/`unicorn` <> `DC2`/`unicorn`
+* `DC1`/`default` <- `DC2`/`default`
+* `DC1`/`default` <- `DC2`/`heimdall`
+* `DC1`/`default` -> `DC2`/`chunky`
+* `DC1`/`unicorn` <- `DC2`/`unicorn`
+* `DC3`/`default` -> `DC1`/`default`
+* `DC3`/`default` -> `DC1`/`unicorn`
+* `DC3`/`default` -> `DC2`/`unicorn`
 
 ### Exported Services
 
@@ -250,6 +314,10 @@ Architecture:
 
 * `DC2`/`default(AP)/josh`>`DC1`/`default` (Peer)
 * `DC2`/`unicorn(AP)/unicorn-backend` > `DC1`/`unicorn` (Peer)
+
+#### DC3
+
+* `DC3`/`default(AP)/unicorn(NS)/unicorn-backend` > `DC1`/`unicorn` (peer)
 
 ## HashiCorp Vault
 
@@ -389,26 +457,18 @@ Vault will eventually be implemented in the future as the Certificate Authority 
 
 * Policy: `global-management`
 
-#### Token: `00000000-0000-0000-0000-000000001111`
 
-* Policies:
-  * node-identity: `client-dc1-alpha:dc1`
-  * service-identity: `joshs-obnoxiously-long-service-name-gonna-take-awhile:dc1`
-  * service-identity: `josh:dc1`
-* Purpose:
-  * Agent token for Consul Client `consul-client-dc1-alpha` (DC1)
-
-#### Token: `00000000-0000-0000-0000-000000002222`
-
-* Role: `team-proj1-rw`
-* Purpose:
-  * Grant write permissions within `DC1` / `proj1` partition.
-
-#### Token: `00000000-0000-0000-0000-000000003333`
-
-* Role: `DC1-Read`
-* Purpose:
-  * Read-only privileges within the entire `DC1` cluster.
+| Token                                  | Privs                                                                                                                                         | Purpose                                                      |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| `00000000-0000-0000-0000-000000001111` | node-identity:`client-dc1-alpha:dc1`,service-identity:`joshs-obnoxiously-long-service-name-gonna-take-awhile:dc1`,service-identity:`josh:dc1` | Agent token for Consul Client`consul-client-dc1-alpha` (DC1) |
+| `00000000-0000-0000-0000-000000002222` | Role:`team-proj1-rw`                                                                                                                          | Grant write permissions within`DC1` / `proj1` partition.     |
+| `00000000-0000-0000-0000-000000003333` | Role:`DC1-Read`                                                                                                                               | Read-only privileges within the entire`DC1` cluster.         |
+| `00000000-0000-0000-0000-000000004444` | service-identy:`unicorn.frontend.unicorn-frontend:dc1`                                                                                        |                                                              |
+| `00000000-0000-0000-0000-000000005555` | service-identity:`unicorn.backend.unicorn-backend:dc1`                                                                                        |                                                              |
+| `00000000-0000-0000-0000-000000006666` | service-identity:`unicorn.backend.unicorn-backend:dc2`                                                                                        |                                                              |
+| `00000000-0000-0000-0000-000000007777` | service-identity:`default.default.web:dc1`                                                                                                    |                                                              |
+| `00000000-0000-0000-0000-000000008888` | service-identity:`default.default.web-upstream:dc1`                                                                                           |                                                              |
+| `00000000-0000-0000-0000-000000009999` | service-identity:`chunky.default.web-chunky:dc2`                                                                                              |                                                              |
 
 ## Roles
 
@@ -467,24 +527,15 @@ Vault will eventually be implemented in the future as the Certificate Authority 
 
 ### Key Architecture
 
-* Add a local Kubernetes Consul cluster
-  * Likely using minikube or k3s. Haven't decided.
 * Add ECS cluster
   * Need to figure out how to expose local networking to ECS. This may not be practical for a DC lab. We'll see.
+* Find someone that is a Terraform boss and launch an HCP cluster with integration.
 
 ### PKI / Certificates
 
 * Add Vault as the ConnectCA
 * Use a unique CA keyset for each DC (`DC1` / `DC2`)
   * This is how separately managed clusters would work in the real world.
-
-### Service Mesh
-
-* Add FakeService applications working in the Consul Mesh.
-
-### ACLs
-
-* Mesh Gateways are currently using root ACL tokens - switch them to least privileges.
 
 ### Authentication Methods
 
@@ -494,5 +545,3 @@ Vault will eventually be implemented in the future as the Certificate Authority 
 
 * Add local UI metrics
   * I think this will require setting up a local prometheus pod.
-
-# Staging Notes

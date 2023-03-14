@@ -123,10 +123,10 @@ agent.cache: handling error in Cache.Notify: cache-type=peer-trust-bundle error=
 consul-client-dc1-unicorn        | 2023-03-09T20:53:12.992Z [WARN]  agent.cache: handling error in Cache.Notify: cache-type=peer-trust-bundle error="rpc error: code = Unknown desc = Permission denied: token with AccessorID 'd648aba7-e243-1a82-4dbf-1969150c8e4b' lacks permission 'service:write' on \"any service\" in partition \"unicorn\" in namespace \"default\"" index=0
 
 
-# ========================================== 
+# ==========================================
 
 service "whateverIwant" {
-  policy = "write"  
+  policy = "write"
 }
 
 namespace_prefix "" {
@@ -147,3 +147,6 @@ namespace "frontend" {
 
 docker logs consul-server1-dc1 -f
 
+
+
+consul-client-dc1-unicorn        | 2023-03-14T01:19:49.689Z [WARN]  agent.cache: handling error in Cache.Notify: cache-type=peer-trust-bundle error="rpc error: code = Unknown desc = Permission denied: token with AccessorID '9a93399b-2671-4271-a05e-70308a531607' lacks permission 'service:write' on \"any service\" in partition \"default\" in namespace \"default\"" index=0

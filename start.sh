@@ -8,12 +8,13 @@ GRN='\033[1;32m'
 YELL='\033[0;33m'
 NC='\033[0m' # No Color
 
-if [[ "$*" == *"-help"* ]]
+if [[ "$*" == *"help"* ]]
   then
     echo -e "Syntax: ./start.sh [OPTIONS]"
     echo ""
     echo "Options:"
     echo "  -root      Launch all agents and services with root tokens"
+    echo "  -custom    Launch all agents and services with a custom token config (docker_vars/acl-custom.env)"
     echo ""
     exit 0
 fi
@@ -44,11 +45,20 @@ if [[ "$*" == *"-root"* ]]
     echo -e "${YELL}docker-compose --env-file ./docker_vars/acl-root.env up ${NC}"
     docker-compose --env-file docker_vars/acl-root.env up
     echo ""
-  else
+    exit 0
+fi
+
+if [[ "$*" == *"-custom"* ]]
+  then
+    echo -e "${YELL}docker-compose --env-file ./docker_vars/acl-custom.env up ${NC}"
+    docker-compose --env-file docker_vars/acl-custom.env up
+    echo ""
+    exit 0
+fi
+
     echo -e "${YELL}docker-compose --env-file ./docker_vars/acl-secure.env up ${NC}"
     docker-compose --env-file docker_vars/acl-secure.env up
     echo ""
-fi
 
 # Validated the string substitution
 # docker compose --env-file ./docker_vars/acl-root.env convert | vsc yaml
