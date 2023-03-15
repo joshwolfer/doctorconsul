@@ -261,13 +261,13 @@ services:
   # Service "unicorn-frontend" (DC1) and Sidecar proxy
   unicorn-frontend-dc1:
     image: nicholasjackson/fake-service:v0.24.2
-    container_name: unicorn-frontend
+    container_name: unicorn-frontend-dc1
     environment:
       NAME: unicorn-frontend (DC1)
       LISTEN_ADDR: 0.0.0.0:10000
       MESSAGE: "Hello World"
       SERVER_TYPE: "http"
-      UPSTREAM_URIS: "http://localhost:11000,http://localhost:11001"
+      UPSTREAM_URIS: "http://localhost:11000,http://localhost:11001,http://localhost:11002"
       HTTP_CLIENT_KEEP_ALIVES: "false"
     networks:
       dc1:
@@ -277,7 +277,7 @@ services:
       - "19004:19000"
   unicorn-frontend-dc1_envoy:
     image: ${CONVOY_IMAGE}
-    container_name: unicorn-frontend_envoy
+    container_name: unicorn-frontend-dc1_envoy
     restart: unless-stopped              # This solve the ACL token race condition!
     environment:
       CONSUL_HTTP_ADDR: 10.5.0.12:8500

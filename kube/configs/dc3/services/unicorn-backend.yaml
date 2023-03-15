@@ -12,7 +12,7 @@ metadata:
   name: unicorn-backend
   namespace: unicorn
 spec:
-  protocol: grpc
+  protocol: http
 
 ---
 

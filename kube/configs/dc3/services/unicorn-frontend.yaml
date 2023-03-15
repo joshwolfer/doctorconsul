@@ -70,7 +70,7 @@ spec:
             - name: 'LISTEN_ADDR'
               value: '0.0.0.0:10000'
             - name: 'UPSTREAM_URIS'
-              value: 'grpc://127.0.0.1:11000'
+              value: 'http://127.0.0.1:11000'
             #  value: 'grpc://127.0.0.1:11000,http://payments.payments-ns:9090'
             - name: 'NAME'
               value: 'unicorn-frontend (DC3)'

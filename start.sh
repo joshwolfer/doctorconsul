@@ -21,6 +21,10 @@ fi
 
 clear
 
+echo -e "${GRN} Checking that Docker is running - If not starting it. ${NC}"
+pgrep dockerd || sudo service docker start
+echo ""
+
 if [[ $(docker ps -aq) ]]; then
     echo -e "${GRN}------------------------------------------"
     echo -e "        Nuking all the things..."
@@ -45,7 +49,11 @@ echo -e "${NC}"
 if [[ "$*" == *"-root"* ]]
   then
     echo -e "${YELL}docker-compose --env-file ./docker_vars/acl-root.env up ${NC}"
-    docker-compose --env-file docker_vars/acl-root.env up
+    echo "=========================================="
+    cat ./docker_vars/acl-root.env
+    echo ""
+    echo "=========================================="
+    docker-compose --env-file docker_vars/acl-root.env up 
     # docker compose --env-file docker_vars/acl-root.env convert | vsc yaml
     echo ""
     exit 0
@@ -54,14 +62,22 @@ fi
 if [[ "$*" == *"-custom"* ]]
   then
     echo -e "${YELL}docker-compose --env-file ./docker_vars/acl-custom.env up ${NC}"
-    docker-compose --env-file docker_vars/acl-custom.env up
+    echo "=========================================="
+    cat ./docker_vars/acl-custom.env
+    echo ""
+    echo "=========================================="
+    docker-compose --env-file docker_vars/acl-custom.env up 
     # docker compose --env-file docker_vars/acl-custom.env convert | vsc yaml
     echo ""
     exit 0
 fi
 
     echo -e "${YELL}docker-compose --env-file ./docker_vars/acl-secure.env up ${NC}"
-    docker-compose --env-file docker_vars/acl-secure.env up
+    echo "=========================================="
+    cat ./docker_vars/acl-secure.env
+    echo ""
+    echo "=========================================="
+    docker-compose --env-file docker_vars/acl-secure.env up 
     # docker compose --env-file docker_vars/acl-secure.env convert | vsc yaml
     echo ""
 

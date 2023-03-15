@@ -262,25 +262,99 @@ Kubernetes () {
     echo -e "=========================================="
     echo -e "${NC}"
     # echo -e "${YELL}The Unicorn-Frontend (DC1) Web UI is accessed from http://127.0.0.1:10000/ui/ ${NC}"
-    echo "Coming Soon..."
-    echo ""
     COLUMNS=1
     PS3=$'\n\033[1;31mChoose an option: \033[0m'
-    options=("Go Back")
+    options=("Get DC3 LoadBalancer Address" "Kube Apply DC3/unicorn-frontend" "Kube Delete DC3/unicorn-frontend" "Kube Apply DC3/unicorn-backend" "Kube Delete DC3/unicorn-backend" "Go Back")
     select option in "${options[@]}"; do
         case $option in
-            # "Nuke Unicorn-Backend (DC1) Container")
-            #     echo ""
-            #     REPLY=
-            #     ;;
-            # "Restart Unicorn-Backend (DC1) Container")
-            #     echo ""
-            #     REPLY=
-            #     ;;
-            # "3")
-            #     echo ""
-            #     REPLY=
-            #     ;;
+            "Get DC3 LoadBalancer Address")
+                echo ""
+                echo -e "${YELL}kubectl get service consul-mesh-gateway -nconsul -ojson | jq -r .status.loadBalancer.ingress[0].ip ${NC}"
+                kubectl get service consul-mesh-gateway -nconsul -ojson | jq -r .status.loadBalancer.ingress[0].ip
+                echo ""
+                COLUMNS=1
+                REPLY=
+                ;;
+            "Kube Apply DC3/unicorn-frontend")
+                echo ""
+                echo -e "${YELL}kubectl apply -f ./kube/configs/dc3/services/unicorn-frontend.yaml ${NC}"
+                kubectl apply -f ./kube/configs/dc3/services/unicorn-frontend.yaml
+                echo ""
+                COLUMNS=1
+                REPLY=
+                ;;
+            "Kube Delete DC3/unicorn-frontend")
+                echo ""
+                echo -e "${YELL}kubectl delete -f ./kube/configs/dc3/services/unicorn-frontend.yaml ${NC}"
+                kubectl delete -f ./kube/configs/dc3/services/unicorn-frontend.yaml
+                echo ""
+                COLUMNS=1
+                REPLY=
+                ;;
+            "Kube Apply DC3/unicorn-backend")
+                echo ""
+                echo -e "${YELL}kubectl apply -f ./kube/configs/dc3/services/unicorn-backend.yaml ${NC}"
+                kubectl apply -f ./kube/configs/dc3/services/unicorn-backend.yaml
+                echo ""
+                COLUMNS=1
+                REPLY=
+                ;;
+            "Kube Delete DC3/unicorn-backend")
+                echo ""
+                echo -e "${YELL}kubectl delete -f ./kube/configs/dc3/services/unicorn-backend.yaml ${NC}"
+                kubectl delete -f ./kube/configs/dc3/services/unicorn-backend.yaml
+                echo ""
+                COLUMNS=1
+                REPLY=
+                ;;
+            "Go Back")
+                echo ""
+                clear
+                break
+                ;;
+            *) echo "invalid option $REPLY";;
+        esac
+    done
+}
+
+# ==========================================
+#            5 Docker Function
+# ==========================================
+
+DockerFunction () {
+
+    echo -e "${GRN}"
+    echo -e "=========================================="
+    echo -e "            Docker Function"
+    echo -e "=========================================="
+    echo -e "${NC}"
+    # echo -e "${YELL}The Unicorn-Frontend (DC1) Web UI is accessed from http://127.0.0.1:10000/ui/ ${NC}"
+    COLUMNS=1
+    PS3=$'\n\033[1;31mChoose an option: \033[0m'
+    options=("Reload Docker Compose (Root Tokens)" "Reload Docker Compose (Secure Tokens)" "Reload Docker Compose (Custom Tokens)" "Go Back")
+    select option in "${options[@]}"; do
+        case $option in
+            "Reload Docker Compose (Root Tokens)")
+                echo ""
+                echo -e "${YELL}docker-compose --env-file ./docker_vars/acl-root.env up -d ${NC}"
+                echo ""
+                docker-compose --env-file docker_vars/acl-root.env up -d
+                break
+                ;;
+            "Reload Docker Compose (Secure Tokens)")
+                echo ""
+                echo -e "${YELL}docker-compose --env-file ./docker_vars/acl-secure.env up -d ${NC}"
+                echo ""
+                docker-compose --env-file docker_vars/acl-secure.env up -d
+                break
+                ;;
+            "Reload Docker Compose (Custom Tokens)")
+                echo ""
+                echo -e "${YELL}docker-compose --env-file ./docker_vars/acl-custom.env up -d ${NC}"
+                echo ""
+                docker-compose --env-file docker_vars/acl-custom.env up -d
+                break
+                ;;
             "Go Back")
                 echo ""
                 clear
@@ -297,7 +371,7 @@ Kubernetes () {
 
 
 PS3=$'\n\033[1;31mChoose an option: \033[0m'
-options=("Service Discovery" "Manipulate Services" "Unicorn Demo" "Kubernetes")
+options=("Service Discovery" "Manipulate Services" "Unicorn Demo" "Kubernetes" "Docker Compose")
 echo ""
 COLUMNS=1
 select option in "${options[@]}"; do
@@ -313,6 +387,9 @@ select option in "${options[@]}"; do
             ;;
         "Kubernetes")
             Kubernetes
+            ;;
+        "Docker Compose")
+            DockerFunction
             ;;
         "Quit")
             echo "User requested exit"
