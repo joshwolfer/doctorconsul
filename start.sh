@@ -13,8 +13,9 @@ if [[ "$*" == *"help"* ]]
     echo -e "Syntax: ./start.sh [OPTIONS]"
     echo ""
     echo "Options:"
-    echo "  -root      Launch all agents and services with root tokens"
-    echo "  -custom    Launch all agents and services with a custom token config (docker_vars/acl-custom.env)"
+    echo "  [DEFAULT]   Launch all agents and services with ACL tokens (least privileges)."
+    echo "  -root       Launch all agents and services with root tokens"
+    echo "  -custom     Launch all agents and services with a custom token config (docker_vars/acl-custom.env)"
     echo ""
     exit 0
 fi

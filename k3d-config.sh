@@ -41,7 +41,7 @@ k3d cluster create dc3 --network doctorconsul_wan \
     --api-port 127.0.0.1:6443 \
     -p "8502:443@loadbalancer" \
     -p "11000:8000" \
-    --k3s-arg="--disable=traefik@server:0" \
+    --k3s-arg="--disable=traefik@server:0"
 
 # ==========================================
 #            Install Consul-k8s

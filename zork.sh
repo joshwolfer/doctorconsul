@@ -33,7 +33,10 @@ DonkeyDiscovery () {
     echo ""
     COLUMNS=1
     PS3=$'\n\033[1;31mChoose an option: \033[0m'
-    options=("API Discovery (health + catalog endpoints)" "Go Back")
+    options=(
+        "API Discovery (health + catalog endpoints)"
+        "Go Back"
+    )
     select option in "${options[@]}"; do
         case $option in
             "API Discovery (health + catalog endpoints)")
@@ -71,7 +74,10 @@ ServiceDiscovery () {
     echo ""
     COLUMNS=1
     PS3=$'\n\033[1;31mChoose an option: \033[0m'
-    options=("DC1/donkey/donkey (local AP export)" "Go Back")
+    options=(
+        "DC1/donkey/donkey (local AP export)"
+        "Go Back"
+    )
     select option in "${options[@]}"; do
         case $option in
             "DC1/donkey/donkey (local AP export)")
@@ -101,7 +107,11 @@ ManipulateServices () {
     echo -e "${NC}"
     COLUMNS=1
     PS3=$'\n\033[1;31mChoose an option: \033[0m'
-    options=("Register Virtual-Baphomet" "De-register Virtual-Baphomet Node" "Go Back")
+    options=(
+        "Register Virtual-Baphomet"
+        "De-register Virtual-Baphomet Node"
+        "Go Back"
+    )
     select option in "${options[@]}"; do
         case $option in
             "Register Virtual-Baphomet")
@@ -158,7 +168,15 @@ UnicornDemo () {
     echo ""
     COLUMNS=12
     PS3=$'\n\033[1;31mChoose an option: \033[0m'
-    options=("Nuke Unicorn-Backend (DC1) Container" "Restart Unicorn-Backend (DC1) Container (root token)" "Restart Unicorn-Backend (DC1) Container (standard token)" "Nuke Unicorn-Backend (DC2) Container" "Restart Unicorn-Backend (DC2) Container (root token)" "Restart Unicorn-Backend (DC2) Container (standard token)" "Go Back")
+    options=(
+        "Nuke Unicorn-Backend (DC1) Container"
+        "Restart Unicorn-Backend (DC1) Container (root token)"
+        "Restart Unicorn-Backend (DC1) Container (standard token)"
+        "Nuke Unicorn-Backend (DC2) Container"
+        "Restart Unicorn-Backend (DC2) Container (root token)"
+        "Restart Unicorn-Backend (DC2) Container (standard token)"
+        "Go Back"
+    )
     select option in "${options[@]}"; do
         case $option in
             "Nuke Unicorn-Backend (DC1) Container")
@@ -264,7 +282,14 @@ Kubernetes () {
     # echo -e "${YELL}The Unicorn-Frontend (DC1) Web UI is accessed from http://127.0.0.1:10000/ui/ ${NC}"
     COLUMNS=1
     PS3=$'\n\033[1;31mChoose an option: \033[0m'
-    options=("Get DC3 LoadBalancer Address" "Kube Apply DC3/unicorn-frontend" "Kube Delete DC3/unicorn-frontend" "Kube Apply DC3/unicorn-backend" "Kube Delete DC3/unicorn-backend" "Go Back")
+    options=(
+        "Get DC3 LoadBalancer Address"
+        "Kube Apply DC3/unicorn-frontend"
+        "Kube Delete DC3/unicorn-frontend"
+        "Kube Apply DC3/unicorn-backend"
+        "Kube Delete DC3/unicorn-backend"
+        "Go Back"
+    )
     select option in "${options[@]}"; do
         case $option in
             "Get DC3 LoadBalancer Address")
@@ -331,7 +356,12 @@ DockerFunction () {
     # echo -e "${YELL}The Unicorn-Frontend (DC1) Web UI is accessed from http://127.0.0.1:10000/ui/ ${NC}"
     COLUMNS=1
     PS3=$'\n\033[1;31mChoose an option: \033[0m'
-    options=("Reload Docker Compose (Root Tokens)" "Reload Docker Compose (Secure Tokens)" "Reload Docker Compose (Custom Tokens)" "Go Back")
+    options=(
+        "Reload Docker Compose (Root Tokens)"
+        "Reload Docker Compose (Secure Tokens)"
+        "Reload Docker Compose (Custom Tokens)"
+        "Go Back"
+    )
     select option in "${options[@]}"; do
         case $option in
             "Reload Docker Compose (Root Tokens)")
@@ -366,12 +396,62 @@ DockerFunction () {
 }
 
 # ==========================================
+#            6 Else Function
+# ==========================================
+
+ElseFunction () {
+
+    echo -e "${GRN}"
+    echo -e "=========================================="
+    echo -e "          All the other stuff..."
+    echo -e "=========================================="
+    echo -e "${NC}"
+    COLUMNS=1
+    PS3=$'\n\033[1;31mChoose an option: \033[0m'
+    options=(
+        "API call template to Consul Servers"
+        "Stream logs from Consul Servers"
+        "Go Back"
+    )
+    select option in "${options[@]}"; do
+        case $option in
+            "API call template to Consul Servers")
+                echo ""
+                echo -e "${GRN}(DC1)${NC} curl --header \"X-Consul-Token: root\" $DC1/v1/"
+                echo -e "${GRN}(DC2)${NC} curl --header \"X-Consul-Token: root\" $DC2/v1/"
+                echo -e "${GRN}(DC3)${NC} curl --header \"X-Consul-Token: root\" $DC3/v1/"
+                echo ""
+                COLUMNS=1
+                REPLY=
+                ;;
+            "Stream logs from Consul Servers")
+                echo ""
+                echo -e "${GRN}(DC1)${NC} curl --header \"X-Consul-Token: root\" $DC1/v1/agent/monitor"
+                echo -e "${GRN}(DC2)${NC} curl --header \"X-Consul-Token: root\" $DC2/v1/agent/monitor"
+                echo -e "${GRN}(DC3)${NC} curl --header \"X-Consul-Token: root\" $DC3/v1/agent/monitor"
+                echo ""
+                echo -e "For Trace level logging: Add ${YELL}?loglevel=\"trace\" ${NC}"
+                echo ""
+                COLUMNS=1
+                REPLY=
+                ;;
+            "Go Back")
+                echo ""
+                clear
+                break
+                ;;
+            *) echo "invalid option $REPLY";;
+        esac
+    done
+}
+
+# ==========================================
 #              Main Menu
 # ==========================================
 
 
 PS3=$'\n\033[1;31mChoose an option: \033[0m'
-options=("Service Discovery" "Manipulate Services" "Unicorn Demo" "Kubernetes" "Docker Compose")
+options=("Service Discovery" "Manipulate Services" "Unicorn Demo" "Kubernetes" "Docker Compose" "Else")
 echo ""
 COLUMNS=1
 select option in "${options[@]}"; do
@@ -390,6 +470,9 @@ select option in "${options[@]}"; do
             ;;
         "Docker Compose")
             DockerFunction
+            ;;
+        "Else")
+            ElseFunction
             ;;
         "Quit")
             echo "User requested exit"
