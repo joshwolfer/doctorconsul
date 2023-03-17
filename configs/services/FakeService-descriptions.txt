@@ -1,0 +1,32 @@
+https://www.html-code-generator.com/html/html-online-editor
+
+Replace " w/ &quot; before putting into docker-compose variable. The editor above should automagically do it.
+
+Frontend-unicorn (DC1)
+------------------------------------------
+<p><strong>The Unicorn Application</strong></p>
+
+<p>This Unicorn-frontend application has 3 configured upstream services. Left to right:</p>
+
+<p><strong>unicorn-backend (DC1)</strong><br />
+This is actually a service-resolver which is named the same as the real service DC1/unicorn/backend/unicorn-backend.<br />
+It utilizes failover targets in the following order:</p>
+
+<ul>
+	<li>dc1/unicorn/backend/unicorn-backend</li>
+	<li>(peer) dc2-unicorn/backend/unicorn-backend</li>
+	<li>(peer) dc3-unicorn/unicorn/unicorn-backend</li>
+</ul>
+
+<p>To quickly nuke containers and observe the failover in real-time, use the zork.sh script option &quot;3) Unicorn Demo&quot;.</p>
+
+<p><strong>unicorn-backend (DC2) - Static</strong><br />
+This is the static version of the &quot;(peer) dc2-unicorn/backend/unicorn-backend&quot; that is used in the service-resolver in the first upstream above.&nbsp;</p>
+
+<p>It is handy to have duplicated explicit upstream defined, so we can better troubleshoot between issues with peering connections vs service-resolvers.</p>
+
+<p><strong>unicorn-backend (DC3) - Static</strong><br />
+This is the static version of the &quot;(peer) dc3-unicorn/unicorn/unicorn-backend&quot; that is used in the service-resolver above.</p>
+
+<p>&nbsp;</p>
+------------------------------------------ 

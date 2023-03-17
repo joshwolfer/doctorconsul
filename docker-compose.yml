@@ -192,7 +192,7 @@ services:
 
   # Service "Web" (DC1) and Sidecar proxy
   web:
-    image: nicholasjackson/fake-service:v0.24.2
+    image: ${FAKESERVICE_IMAGE}
     container_name: web
     # healthcheck:
     #   test: ["CMD-SHELL", "curl -s --header 'X-Consul-Token: root' --request GET http://10.5.0.12:8500/v1/acl/token/00000000-0000-0000-0000-000000007777 | grep web || exit 1"]
@@ -202,7 +202,7 @@ services:
     environment:
       NAME: Web (DC1)
       LISTEN_ADDR: 0.0.0.0:9090
-      MESSAGE: "Hello World"
+      MESSAGE: "This is the Web Application. <p> It fetches Web Upstream from the same local DC (DC1) and Web Chunky from a peering connection to DC2/chunky</p>"
       SERVER_TYPE: "http"
       UPSTREAM_URIS: "http://localhost:9091,http://localhost:9092"
       HTTP_CLIENT_KEEP_ALIVES: "false"
@@ -239,7 +239,7 @@ services:
 
   # Service "Web-upstream" (DC1) and Sidecar proxy
   web-upstream:
-    image: nicholasjackson/fake-service:v0.24.2
+    image: ${FAKESERVICE_IMAGE}
     container_name: web-upstream
     environment:
       NAME: Web Upstream (DC1)
@@ -275,12 +275,12 @@ services:
 
   # Service "unicorn-frontend" (DC1) and Sidecar proxy
   unicorn-frontend-dc1:
-    image: nicholasjackson/fake-service:v0.24.2
+    image: ${FAKESERVICE_IMAGE}
     container_name: unicorn-frontend-dc1
     environment:
       NAME: unicorn-frontend (DC1)
       LISTEN_ADDR: 0.0.0.0:10000
-      MESSAGE: "Hello World"
+      MESSAGE: "<p><strong>The Unicorn Application</strong></p><p>This Unicorn-frontend application has 3 configured upstream services. Left to right:</p><p><strong>unicorn-backend (DC1)</strong><br />This is actually a service-resolver which is named the same as the real service DC1/unicorn/backend/unicorn-backend.<br />It utilizes failover targets in the following order:</p><ul><li>dc1/unicorn/backend/unicorn-backend</li><li>(peer) dc2-unicorn/backend/unicorn-backend</li><li>(peer) dc3-unicorn/unicorn/unicorn-backend</li></ul><p>To quickly nuke containers and observe the failover in real-time, use the zork.sh script option &quot;3) Unicorn Demo&quot;.</p><p><strong>unicorn-backend (DC2) - Static</strong><br />This is the static version of the &quot;(peer) dc2-unicorn/backend/unicorn-backend&quot; that is used in the service-resolver in the first upstream above.&nbsp;</p><p>It is handy to have duplicated explicit upstream defined, so we can better troubleshoot between issues with peering connections vs service-resolvers.</p><p><strong>unicorn-backend (DC3) - Static</strong><br />This is the static version of the &quot;(peer) dc3-unicorn/unicorn/unicorn-backend&quot; that is used in the service-resolver above.</p>"
       SERVER_TYPE: "http"
       UPSTREAM_URIS: "http://localhost:11000,http://localhost:11001,http://localhost:11002"
       HTTP_CLIENT_KEEP_ALIVES: "false"
@@ -314,7 +314,7 @@ services:
 
   # Service "unicorn-backend" (DC1) and Sidecar proxy
   unicorn-backend-dc1:
-    image: nicholasjackson/fake-service:v0.24.2
+    image: ${FAKESERVICE_IMAGE}
     container_name: unicorn-backend-dc1
     environment:
       NAME: unicorn-backend (DC1)
@@ -526,7 +526,7 @@ services:
 
   # Service "Web-chunky" (DC2) and Sidecar proxy
   web-chunky:
-    image: nicholasjackson/fake-service:v0.24.2
+    image: ${FAKESERVICE_IMAGE}
     container_name: web-chunky
     environment:
       NAME: Web Chunky (DC2)
@@ -562,7 +562,7 @@ services:
 
   # Service "unicorn-backend" (DC2) and Sidecar proxy
   unicorn-backend-dc2:
-    image: nicholasjackson/fake-service:v0.24.2
+    image: ${FAKESERVICE_IMAGE}
     container_name: unicorn-backend-dc2
     environment:
       NAME: unicorn-backend (DC2)
