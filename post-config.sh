@@ -131,6 +131,34 @@ echo -e ""
 echo -e "${GRN}DC1/Proj1/default/baphomet2${NC}"
 curl --request PUT --data @./configs/services/dc1-proj1-baphomet2.json --header "X-Consul-Token: root" "${DC1}/v1/catalog/register"
 
+
+  # ------------------------------------------
+  #           proxy-defaults
+  # ------------------------------------------
+
+# Managing race conditions....
+# 1. When the _envoy side-car containers come up before ACLs have been set, they crash because the ACL doesn't exit.
+# 2. So the containers are set to automatically restart on crash.
+# 3. The ACL tokens are created in this script and when the Envoys restart, they'll pick up the ACL token.
+# 4. proxy-defaults have to be written BEFORE the ACL tokens to make sure the prometheus listener is picked up on Envoy start.
+#      Proxy-defaults won't restart Envoy proxies that are already running (/sigh)
+
+# All this ^^^ to TLDR; Proxy-defaults MUST be set BEFORE Envoy side-car ACL tokens.
+
+echo -e ""
+echo -e "${GRN}proxy-defaults:${NC}"
+echo -e ""
+echo -ne "${GRN}(DC1) default Partition: ${NC}"
+consul config write -http-addr="$DC1" ./configs/proxy-defaults/dc1-default-proxydefaults.hcl
+echo -ne "${GRN}(DC1) unicorn Partition: ${NC}"
+consul config write -http-addr="$DC1" ./configs/proxy-defaults/dc1-unicorn-proxydefaults.hcl
+echo -ne "${GRN}(DC2) default Partition: ${NC}"
+consul config write -http-addr="$DC2" ./configs/proxy-defaults/dc2-default-proxydefaults.hcl
+echo -ne "${GRN}(DC2) unicorn Partition: ${NC}"
+consul config write -http-addr="$DC2" ./configs/proxy-defaults/dc2-unicorn-proxydefaults.hcl
+echo -ne "${GRN}(DC2) chunky Partition: ${NC}"
+consul config write -http-addr="$DC2" ./configs/proxy-defaults/dc2-chunky-proxydefaults.hcl
+
 # ==========================================
 #             ACLs / Auth N/Z
 # ==========================================

@@ -41,6 +41,7 @@ k3d cluster create dc3 --network doctorconsul_wan \
     --api-port 127.0.0.1:6443 \
     -p "8502:443@loadbalancer" \
     -p "11000:8000" \
+    -p "9091:9090" \
     --k3s-arg="--disable=traefik@server:0"
 
 # ==========================================
@@ -85,6 +86,19 @@ helm show values hashicorp/consul > ./kube/helm/latest-complete-helm-values.yaml
 echo -e ""
 echo -e "${GRN}DC3: Helm consul-k8s install${NC}"
 helm install consul hashicorp/consul -f ./kube/helm/dc3-helm-values.yaml --namespace consul --debug
+
+echo -e "${GRN}"
+echo -e "=========================================="
+echo -e "             Prometheus configs"
+echo -e "==========================================${NC}"
+
+# ==========================================
+#              Prometheus configs
+# ==========================================
+
+echo -e ""
+echo -e "${GRN}Setup Prometheus service in DC3 ${NC}"
+kubectl apply --namespace consul -f ./kube/prometheus/dc3-prometheus-service.yaml
 
 # ==========================================
 #              Consul configs

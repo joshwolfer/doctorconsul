@@ -1,0 +1,19 @@
+global:
+  scrape_interval: 30s
+  scrape_timeout: 10s
+
+# rule_files:
+#   - alert.yml     # This is for setting up alerts which we probably don't need in Doctor Consul...
+
+scrape_configs:
+  - job_name: services
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          # - 'prometheus:9090'
+          - 'web:9102'
+          - 'web-upstream:9102'
+          - 'unicorn-frontend-dc1:9102'
+          - 'unicorn-backend-dc1:9102'
+          - 'web-chunky:9102'
+          - 'unicorn-backend-dc2:9102'

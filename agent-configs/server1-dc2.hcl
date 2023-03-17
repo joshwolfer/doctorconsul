@@ -7,7 +7,15 @@ log_level = "INFO"
 
 peering { enabled = true }
 
-ui_config = { enabled = true }
+ui_config = {
+  enabled = true
+
+  metrics_provider = "prometheus"
+  metrics_proxy = {
+    base_url = "http://10.6.0.200:9090"
+  }
+}
+
 data_dir = "/consul/data"
 
 addresses = {

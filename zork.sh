@@ -369,6 +369,7 @@ DockerFunction () {
                 echo -e "${YELL}docker-compose --env-file ./docker_vars/acl-root.env up -d ${NC}"
                 echo ""
                 docker-compose --env-file docker_vars/acl-root.env up -d
+                echo ""
                 break
                 ;;
             "Reload Docker Compose (Secure Tokens)")
@@ -376,6 +377,7 @@ DockerFunction () {
                 echo -e "${YELL}docker-compose --env-file ./docker_vars/acl-secure.env up -d ${NC}"
                 echo ""
                 docker-compose --env-file docker_vars/acl-secure.env up -d
+                echo ""
                 break
                 ;;
             "Reload Docker Compose (Custom Tokens)")
@@ -383,6 +385,7 @@ DockerFunction () {
                 echo -e "${YELL}docker-compose --env-file ./docker_vars/acl-custom.env up -d ${NC}"
                 echo ""
                 docker-compose --env-file docker_vars/acl-custom.env up -d
+                echo ""
                 break
                 ;;
             "Go Back")
@@ -444,6 +447,11 @@ ElseFunction () {
         esac
     done
 }
+
+# restart prometheus
+# curl -X POST http://localhost:9090/-/reload
+
+
 
 # ==========================================
 #              Main Menu

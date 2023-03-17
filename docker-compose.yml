@@ -21,6 +21,21 @@ services:
 #                DC1 Config
 # ==========================================
 
+  prometheus:
+    image: prom/prometheus:v2.42.0
+    container_name: prometheus
+    ports:
+      - 9090:9090
+    volumes:
+      - ./prometheus:/etc/prometheus
+      - prometheus-data:/prometheus
+    command: --config.file=/etc/prometheus/prometheus.yml
+    networks:
+      dc1:
+        ipv4_address: 10.5.0.200
+      dc2:
+        ipv4_address: 10.6.0.200
+
   consul-server1-dc1:
     image: ${CONSUL_IMAGE}
     container_name: consul-server1-dc1
@@ -579,7 +594,7 @@ services:
     command: ["consul", "connect", "envoy",
       "-sidecar-for", "unicorn-backend-1",
       # "--ignore-envoy-compatibility",
-      "-partition=unicorn", "-namespace=backend"]
+      "-partition=unicorn", "-namespace=backend", "-admin-bind=0.0.0.0:19000"]
     network_mode: "service:unicorn-backend-dc2"
 
 
@@ -605,6 +620,8 @@ networks:
        - subnet: 192.169.7.0/24
          gateway: 192.169.7.1
 
+volumes:
+  prometheus-data:                      # This allows prometheus to persist data to disk. Need to verify that my kill script nukes it.
 
 
 
