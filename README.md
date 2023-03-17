@@ -15,8 +15,15 @@ Details:
 * Consul: 1.15.1 (Enterprise)
 * Envoy: 1.25.1
 * FakeService: 0.24.2
+* Prometheus: 2.42.0
 
 ### Network Quick Chart
+
+#### Shared Services
+
+* Prometheus:
+  * dc1 network: 10.5.0.200
+    dc2 network: 10.6.0.200
 
 #### (DC1) Consul Core
 
@@ -62,6 +69,7 @@ Details:
 * mesh-gateway
 * unicorn-frontend (default)
 * unicorn-backend (default)
+* prometheus-server
 
 ### Local Listeners
 
@@ -71,6 +79,8 @@ Details:
 * Web Service UI: http://127.0.0.1:9000/ui
 * Unicorn-frontend (unicorn) DC1 UI: http://127.0.0.1:10000/ui
 * Unicorn-frontend (default) DC3 UI: http://127.0.0.1:11000/ui
+* Prometheus (non-kube) UI: http://localhost:9090/
+* Prometheus (kube DC3) UI: http://localhost:9091/
 
 #### Local Listeners for Envoy troubleshooting
 
@@ -161,7 +171,7 @@ Additionally, a custom ACL Token profile can be used (docker_vars/acl-custom.env
   * `./post-config.sh`
   * `./post-config.sh -k3d`
 
-The `-k3d` argument automatically runs the `k3d-config.sh` script with all options.
+The `-k3d` argument automatically runs the `k3d-config.sh` script with no arguments.
 
 ### k3d configuration script (optional)
 
@@ -169,9 +179,9 @@ The `-k3d` argument automatically runs the `k3d-config.sh` script with all optio
   * `./k3d-config.sh`
   * `./k3d-config.sh -nopeer`
 
-The `-nopeer` option launched the k3d cluster with no peering. This is useful when it is desired to launch only the k3d cluster without the rest of the Doctor Consul environment.
+The `-nopeer` option launches the k3d cluster with no peering. This is useful when it is desired to launch only the k3d cluster without the rest of the Doctor Consul environment.
 
-# Tear down Environment
+# Delete Environment
 
 * Delete all docker resources except the downloaded images:
   * `./kill.sh`
@@ -183,18 +193,37 @@ The `./zork.sh` script is a menu driven system to control various aspects of the
 Framework
 
 * **Service Discovery**
+
   * DC1/donkey/donkey (local AP export)
     * API Discovery (health + catalog endpoints)
 * **Manipulate Services**
+
   * Register Virtual-Baphomet
   * De-register Virtual-Baphomet Node
 * **Unicorn Demo**
+
   * Nuke Unicorn-Backend (DC1) Container
   * Restart Unicorn-Backend (DC1) Container (root token)
   * Restart Unicorn-Backend (DC1) Container (standard token)
   * Nuke Unicorn-Backend (DC2) Container
   * Restart Unicorn-Backend (DC2) Container (root token)
   * Restart Unicorn-Backend (DC2) Container (standard token)
+* **Kubernetes**
+
+  * Get DC3 LoadBalancer Address
+  * Kube Apply DC3/unicorn-frontend
+  * Kube Delete DC3/unicorn-frontend
+  * Kube Apply DC3/unicorn-backend
+  * Kube Delete DC3/unicorn-backend
+* **Docker Compose**
+
+  * Reload Docker Compose (Root Tokens)
+  * Reload Docker Compose (Secure Tokens)
+  * Reload Docker Compose (Custom Tokens)
+* **Else**
+
+  * API call template to Consul Servers
+  * Stream logs from Consul Servers
 
 # Architecture Overview
 
@@ -253,7 +282,7 @@ Framework
 
 # Kubernetes (K3d)
 
-* Local Kube API listner: 127.0.0.1:6443
+* Local Kube API listener: 127.0.0.1:6443
 
 ## Admin Partitions & Namespaces
 
@@ -320,6 +349,8 @@ Vault will eventually be implemented in the future as the Certificate Authority 
 * The Vault server is currently commented out in the docker-compose file.
 
 ## Consul Clients
+
+Tokens for Clients are written directly to agent config files (cannot be changed).
 
 ### consul-client-dc1-alpha (DC1)
 
@@ -447,6 +478,8 @@ Vault will eventually be implemented in the future as the Certificate Authority 
 
 ## ACL Tokens
 
+Envoy side-car ACLs are controlled via the `start.sh` script. The ACL tokens listed below will only be accurate when running in the default "secure" mode.
+
 #### Token: `root`
 
 * Policy: `global-management`
@@ -501,6 +534,10 @@ Vault will eventually be implemented in the future as the Certificate Authority 
   * TLS encryption on all nodes.
   * TLS Verify on everything.
   * Gossip Encryption enabled.
+* UI Visualizations turned on for all mesh applications.
+  * Prometheus servers:
+    * k3d: prometheus-server
+    * docker: prometheus
 
 ### PKI / Certificates
 
@@ -524,6 +561,7 @@ Vault will eventually be implemented in the future as the Certificate Authority 
 * Add ECS cluster
   * Need to figure out how to expose local networking to ECS. This may not be practical for a DC lab. We'll see.
 * Find someone that is a Terraform boss and launch an HCP cluster with integration.
+* Add AWS Lambda connected via Consul Terminating Gateway.
 
 ### PKI / Certificates
 
@@ -534,8 +572,3 @@ Vault will eventually be implemented in the future as the Certificate Authority 
 ### Authentication Methods
 
 * Add JWT authentication
-
-### Metrics / Telemetry
-
-* Add local UI metrics
-  * I think this will require setting up a local prometheus pod.
