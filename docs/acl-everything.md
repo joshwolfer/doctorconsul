@@ -1,6 +1,11 @@
 # ACL Auth / Policies / Roles / Tokens
 
-## ACL Tokens
+* `global-management` token defined as `root`
+  * When in doubt use the `root` token.
+* Most tokens and roles are scoped to the `default` partitions.
+  * This is intentional, so all tokens are at the root hierarchy and can be scoped to managed any resource in any partition. (best-practices)
+
+## ACL Token Specifics
 
 Envoy side-car ACLs are controlled via the `start.sh` script. The ACL tokens listed below will only be accurate when running in the default "secure" mode.
 

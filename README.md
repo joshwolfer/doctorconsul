@@ -1,6 +1,6 @@
 # HashiCorp Consul Docker-Compose Test Environment
 
-This repo contains a full featured environment for setting up and testing HashiCorp Consul Enterprise.
+This repo contains a full featured environment for setting up and testing HashiCorp Consul Enterprise. While it is not directly intended to be used for Consul demos, the entire environment is consistently built within ~2 minutes.
 
 **Details**:
 
@@ -15,9 +15,7 @@ This repo contains a full featured environment for setting up and testing HashiC
 * FakeService: 0.25.0
 * Prometheus: 2.42.0
 
-### Consul Features
-
-#### Core Cluster Config
+#### Consul Features
 
 * Consul Enterprise
 * Admin Partitions Enabled
@@ -29,21 +27,11 @@ This repo contains a full featured environment for setting up and testing HashiC
   * Prometheus servers:
     * k3d: prometheus-server
     * docker: prometheus
-
-#### PKI / Certificates
-
-* Auto encrypt enabled (automatic distribution of Consul Client RPC certificates)
-
-#### ACL / RBAC / Tokens
-
-* `global-management` token defined as `root`
-  * When in doubt use the `root` token.
-* Most tokens and roles are scoped to the `default` partitions.
-  * This is intentional, so all tokens are at the root hierarchy and can be scoped to managed any resource in any partition. (best-practices)
-
-#### Authentication
-
-* OIDC Authentication enabled with external Auth0 service.
+* PKI / Certificates
+  * Auto encrypt enabled (automatic distribution of Consul Client RPC certificates)
+* ACLs enabled w/ tokens and policies applied.
+* External OIDC Authentication:
+  * OIDC enabled with Auth0 service.
 
 # Environment Pre-Requirements
 
@@ -85,7 +73,12 @@ This repo contains a full featured environment for setting up and testing HashiC
 
 ### Kubectl
 
+* Installation instructions [HERE](https://kubernetes.io/docs/tasks/tools/)
+
 ### Helm
+
+* Helm is used to configure and install Consul into Kubernetes.
+* Installation instructions [HERE](https://helm.sh/docs/intro/install/)
 
 ### k9s (Optional)
 
