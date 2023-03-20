@@ -2,104 +2,50 @@
 
 This repo contains a full featured environment for setting up and testing HashiCorp Consul Enterprise.
 
-It is a constant Work-in-progress.
-
-Details:
+**Details**:
 
 * Heavy focus on implementing and testing the latest Consul features.
-* Rapidly changing.
+* Rapidly changing, constant work-in-progress.
 * [Doctor Consul Helper](https://github.com/joshwolfer/doctorconsul-helper) tool for easily collecting troubleshooting data.
 
-### Software Versions used in this environment
+**Software Versions used in this environment**:
 
 * Consul: 1.15.1 (Enterprise)
 * Envoy: 1.25.1
-* FakeService: 0.24.2
+* FakeService: 0.25.0
 * Prometheus: 2.42.0
 
-### Network Quick Chart
+### Consul Features
 
-#### Shared Services
+#### Core Cluster Config
 
-* Prometheus:
-  * dc1 network: 10.5.0.200
-    dc2 network: 10.6.0.200
+* Consul Enterprise
+* Admin Partitions Enabled
+* Best-Practice Security Features Enabled
+  * TLS encryption on all nodes.
+  * TLS Verify on everything.
+  * Gossip Encryption enabled.
+* UI Visualizations turned on for all mesh applications.
+  * Prometheus servers:
+    * k3d: prometheus-server
+    * docker: prometheus
 
-#### (DC1) Consul Core
+#### PKI / Certificates
 
-* DC1 server: 10.5.0.2 / 192.169.7.2
-* DC1 MGW: 10.5.0.5 / 192.169.7.3
-* DC1 MGW (unicorn): 10.5.0.6 / 192.169.7.7
+* Auto encrypt enabled (automatic distribution of Consul Client RPC certificates)
 
-#### (DC1) Consul Clients
+#### ACL / RBAC / Tokens
 
-* consul-client-dc1-alpha (default):        10.5.0.10
-* consul-client-dc1-charlie-ap1 (donkey):   10.5.0.11
-* consul-client-dc1-delta-ap2 (unicorn):    10.5.0.12
-* consul-client-dc1-echo-proj1 (proj1):     10.5.0.13
+* `global-management` token defined as `root`
+  * When in doubt use the `root` token.
+* Most tokens and roles are scoped to the `default` partitions.
+  * This is intentional, so all tokens are at the root hierarchy and can be scoped to managed any resource in any partition. (best-practices)
 
-#### (DC1) Applications
+#### Authentication
 
-* web-v1:                         10.5.0.100
-* web-upstream:                   10.5.0.101
-* unicorn-frontend:               10.5.0.110
-* unicorn-backend:                10.5.0.111
+* OIDC Authentication enabled with external Auth0 service.
 
-#### (DC2) Consul Core
-
-* DC2 server:                          10.6.0.2 / 192.169.7.4
-* DC2 MGW:                             10.6.0.5 / 192.169.7.5
-* DC2 MGW (chunky):                    10.6.0.6 / 192.169.7.6
-* DC2 MGW (unicorn):                   10.6.0.7 / 192.169.7.8
-
-#### (DC2) Consul Clients
-
-* consul-client-dc2-bravo   (default):      10.6.0.10
-* consul-client-dc2-foxtrot (chunky):       10.6.0.11
-* consul-client-dc2-unicorn (unicorn):      10.6.0.12
-
-#### (DC2) Applications
-
-* web-chunky:                               10.6.0.100
-* unicorn-backend:                          10.6.0.111
-
-#### (DC3) k3d
-
-* consul (server)
-* mesh-gateway
-* unicorn-frontend (default)
-* unicorn-backend (default)
-* prometheus-server
-
-### Local Listeners
-
-* Consul Server1 DC1 UI: http://127.0.0.1:8500/ui/
-* Consul Server1 DC2 UI: http://127.0.0.1:8501/ui/
-* Consul Server DC3 UI: http://127.0.0.1:8502/ui/
-* Web Service UI: http://127.0.0.1:9000/ui
-* Unicorn-frontend (unicorn) DC1 UI: http://127.0.0.1:10000/ui
-* Unicorn-frontend (default) DC3 UI: http://127.0.0.1:11000/ui
-* Prometheus (non-kube) UI: http://localhost:9090/
-* Prometheus (kube DC3) UI: http://localhost:9091/
-
-#### Local Listeners for Envoy troubleshooting
-
-* 19001: (dc1) gateway-dc1-unicorn
-* 19002: (dc1) web
-* 19003: (dc1) web-upstream
-* 19004: (dc1) unicorn-frontend
-* 19005: (dc1) unicorn-backend-dc1
-* 19006: (dc1) gateway-dc1
-* 19007: (dc2) gateway-dc2
-* 19008: (dc2) gateway-dc2-chunky
-* 19009: (dc2) gateway-dc2-unicorn
-* 19010: (dc2) web-chunky
-* 19011: (dc2) unicorn-backend-dc2
-
-Architecture:
-![](readme-images/architecture2.png)
-
-# Initialization Pre-Requirements
+# Environment Pre-Requirements
 
 ### Docker Compose
 
@@ -181,378 +127,32 @@ The `-k3d` argument automatically runs the `k3d-config.sh` script with no argume
 
 The `-nopeer` option launches the k3d cluster with no peering. This is useful when it is desired to launch only the k3d cluster without the rest of the Doctor Consul environment.
 
-# Delete Environment
+### Delete Environment
 
-* Delete all docker resources except the downloaded images:
-  * `./kill.sh`
+When the docker-compose windows is sent control+c, most of the docker images will shutdown. The k3d environment continues to run. To destroy everything, including the k3d containers, run the kill script:
 
-# Zork Menu Driven Environment Controls
+* `./kill.sh`
 
-The `./zork.sh` script is a menu driven system to control various aspects of the environment. The most noteworthy is to kill and restore containers in the "Unicorn" application. This makes it so you do not have to copy and paste or memorize lots of commands to make full use of Doctor Consul.
+# Documentation
 
-Framework
+The Doctor Consul architecture (including visual diagram) and details are [HERE](docs/architecture.md)
 
-* **Service Discovery**
+### Consul Specifics:
 
-  * DC1/donkey/donkey (local AP export)
-    * API Discovery (health + catalog endpoints)
-* **Manipulate Services**
+* Network Overview and Chart: [HERE](docs/network.md)
+* Admin Partitions, Namespaces, & Cluster Peering Details: [HERE](docs/consul-structure.md)
+* Consul Client Details: [HERE](docs/consul-clients.md)
+* ACL Authentication, Policies, Roles, and ACL Tokens: [HERE](docs/acl-everything.md)
 
-  * Register Virtual-Baphomet
-  * De-register Virtual-Baphomet Node
-* **Unicorn Demo**
+### Zork Control Script
 
-  * Nuke Unicorn-Backend (DC1) Container
-  * Restart Unicorn-Backend (DC1) Container (root token)
-  * Restart Unicorn-Backend (DC1) Container (standard token)
-  * Nuke Unicorn-Backend (DC2) Container
-  * Restart Unicorn-Backend (DC2) Container (root token)
-  * Restart Unicorn-Backend (DC2) Container (standard token)
-* **Kubernetes**
+The `./zork.sh` script is a menu driven system to control various aspects of the Doctor Consul environment.
+Docs: [HERE](docs/zork.md)
 
-  * Get DC3 LoadBalancer Address
-  * Kube Apply DC3/unicorn-frontend
-  * Kube Delete DC3/unicorn-frontend
-  * Kube Apply DC3/unicorn-backend
-  * Kube Delete DC3/unicorn-backend
-* **Docker Compose**
+### Fake Service Application
 
-  * Reload Docker Compose (Root Tokens)
-  * Reload Docker Compose (Secure Tokens)
-  * Reload Docker Compose (Custom Tokens)
-* **Else**
-
-  * API call template to Consul Servers
-  * Stream logs from Consul Servers
-
-# Architecture Overview
-
-## Consul Servers
-
-* 3x single-node Consul Clusters (2 in VM, 1 in Kubernetes)
-
-### DC1 (VM)
-
-* Servers (1)
-  * `consul-server1-dc1`
-  * UI exposed on local port 8500: `http://127.0.0.1:8500/ui/_default/dc1/services`
-* Gossip Encryption: `aPuGh+5UDskRAbkLaXRzFoSOcSM+5vAK+NEYOWHJH7w=`
-
-### DC2 (VM)
-
-* Consul Servers (1)
-  * `consul-server1-dc2`
-* UI exposed on local port 8501: `http://127.0.0.1:8501/ui/_default/dc2/services`
-* Gossip Encryption: `dznVKWl1ri975FUJiddzAPM+3eNP9iXDad2c8hghsKA=`
-
-### DC3 (K3d Kubernetes)
-
-* Servers (1)
-  * `consul-server-0`
-* UI exposed on local port 8502: `http://127.0.0.1:8502/ui/_default/dc3/services`
-* Gossip Encryption: Randomly generated into a Kube secret.
-
-## Consul Mesh Gateways
-
-### DC1
-
-* gateway-dc1
-  * Internal listener: 10.5.0.5:443
-  * Public listener: 192.169.7.3:443
-* dc1-unicorn-mgw
-  * Internal listener: 10.5.0.6:443
-  * Public listener: 192.169.7.7:443
-
-### DC2
-
-* gateway-dc2
-  * Internal listener: 10.6.0.5:443
-  * Public listener: 192.169.7.5:443
-* dc2-chunky-mgw
-  * Internal listener: 10.6.0.6:443
-  * Public listener: 192.169.7.6:443
-* dc2-unicorn-mgw
-  * Internal listener: 10.6.0.7:443
-  * Public listener: 192.169.7.8:443
-
-### DC3 (K3d)
-
-* mesh-gateway
-  * Kube loadbalancer: 192.168.7.9:8443 (NOTE! This is dynamically assigned, it could change...)
-
-# Kubernetes (K3d)
-
-* Local Kube API listener: 127.0.0.1:6443
-
-## Admin Partitions & Namespaces
-
-### DC1
-
-* `default`
-* `donkey`
-* `unicorn`
-  * `frontend` (NS)
-  * `backend` (NS)
-* `proj1`
-* `proj2`
-
-### DC2
-
-* `default`
-* `heimdall`
-* `unicorn`
-  * `frontend` (NS)
-  * `backend` (NS)
-
-### DC3 (k3d)
-
-* `default`
-  * `unicorn` (NS)
-
-## Cluster Peering Relationships & Exported Services
-
-### Configuration
-
-* Cluster Peering over Mesh Gateways enabled
-
-### Peering Relationships
-
-* `DC1`/`default` <- `DC2`/`default`
-* `DC1`/`default` <- `DC2`/`heimdall`
-* `DC1`/`default` -> `DC2`/`chunky`
-* `DC1`/`unicorn` <- `DC2`/`unicorn`
-* `DC3`/`default` -> `DC1`/`default`
-* `DC3`/`default` -> `DC1`/`unicorn`
-* `DC3`/`default` -> `DC2`/`unicorn`
-
-### Exported Services
-
-#### DC1
-
-* `DC1`/`donkey(AP)/donkey` > `DC1`/`default(AP)` (local partition)
-* `DC1`/`default(AP)/joshs-obnoxiously-long-service-name-gonna-take-awhile`>`DC2`/`default(AP)` (Peer)
-* `DC1`/`default(AP)/joshs-obnoxiously-long-service-name-gonna-take-awhile`>`DC2`/`heimdall(AP)` (Peer)
-
-#### DC2
-
-* `DC2`/`default(AP)/josh`>`DC1`/`default` (Peer)
-* `DC2`/`unicorn(AP)/unicorn-backend` > `DC1`/`unicorn` (Peer)
-
-#### DC3
-
-* `DC3`/`default(AP)/unicorn(NS)/unicorn-backend` > `DC1`/`unicorn` (peer)
-
-## HashiCorp Vault
-
-Vault will eventually be implemented in the future as the Certificate Authority for the Consul Connect Service Mesh.
-
-* The Vault server is currently commented out in the docker-compose file.
-
-## Consul Clients
-
-Tokens for Clients are written directly to agent config files (cannot be changed).
-
-### consul-client-dc1-alpha (DC1)
-
-* **DC**: `DC1`
-* **Partition**: `default`
-* **Services**:
-  * `josh` (4 instances)
-    * This `josh` service is exported to the `DC2` peer (`default`).
-    * The `service.id` is `josh-local-x` to differentiate between this local service and the imported service (see Notes below)
-  * `joshs-obnoxiously-long-service-name-gonna-take-awhile` (8 instances)
-    * This `joshs-obnoxiously-long-service-name-gonna-take-awhile` service is exported to the `DC2` peer (`default`).
-* **ACL Token**: `00000000-0000-0000-0000-000000001111`
-  * `node-identity=client-dc1-alpha:dc1`
-  * `service-identity=joshs-obnoxiously-long-service-name-gonna-take-awhile:dc1`
-  * `service-identity=josh:dc1`
-* **Notes**:
-  * Within `DC1` and `DC2`, each cluster contains a service named `josh`.
-  * This is intentional, as to test out the behavior of when a exported service from a peer matches the same name of a local service.
-  * `DC1/default_AP/default_NS/josh` and `DC2/default_AP/default_NS/josh => DC1/default_AP/default_NS`
-  * (Bug) As of 1.13.2, the UI cannot list the instances of both `josh` services by clicking on them.
-    * Both links point to the imported `josh` only (bugged)
-    * The UI URL can be manually manipulated to view the local `josh`: `http://127.0.0.1:8500/ui/_default/dc1/services/josh/instances`
-
-### consul-client-dc1-charlie-ap1 (DC1)
-
-* **DC**: `DC1`
-* **Partition**: `donkey`
-* **Services**:
-  * `donkey` (5 instances)
-* **ACL Token**: `root`
-* **Notes**:
-
-### consul-client-dc1-unicorn (DC1)
-
-* **DC**: `DC1`
-* **Partition**: `unicorn`
-* **Services**:
-  * `unicorn-frontend` (3 instances)
-    * Namespace: `frontend`
-  * `unicorn-backend` (3 instances)
-    * Namespace: `backend`
-* **ACL Token**: `root`
-* **Notes**:
-
-### consul-client-dc1-echo-proj1 (DC1)
-
-* **DC**: `DC1`
-* **Partition**: `proj1`
-* **Services**
-  * `baphomet` (3 instances)
-* **ACL Token**: `root`
-* **Notes**:
-
-### virtual (DC1)
-
-* **DC**: `DC1`
-* **Partition**: `proj1`
-* **Services**
-  * `virtual-baphomet` (3 external instances)
-* **Notes**:
-  * This is a virtual node registered with the `post-config.sh` script.
-  * It represents an externally registered service
-  * Each `virtual-baphomet` service can be de-registered using the following commands:
-    ```
-    curl --request PUT --data @./configs/services-dc1-proj1-baphomet0.json --header "X-Consul-Token: root" localhost:8500/v1/catalog/register
-    curl --request PUT --data @./configs/services-dc1-proj1-baphomet1.json --header "X-Consul-Token: root" localhost:8500/v1/catalog/register
-    curl --request PUT --data @./configs/services-dc1-proj1-baphomet2.json --header "X-Consul-Token: root" localhost:8500/v1/catalog/register
-    ```
-
-### consul-client-dc2-bravo (DC2)
-
-* **DC**: `DC2`
-* **Partition**: `default`
-* **Services**:
-  * `josh` (7 instances)
-* **ACL Token**: `root`
-* **Notes**:
-  * This `josh` service is exported to the `DC1` peer (`default`).
-
-### consul-client-dc2-foxtrot (DC2)
-
-* **DC**: `DC2`
-* **Partition**: `chunky`
-* **Services**:
-  * `web-chunky` (in-mesh)
-* **ACL Token**: `root`
-* **Notes**:
-
-# Consul Service Mesh Details
-
-* Environment variables for the FakeService:
-  * [https://hub.docker.com/r/nicholasjackson/fake-service](https://hub.docker.com/r/nicholasjackson/fake-servicehttps:/)
-
-### Most useful FakeService Variables
-
-#### Service Listener
-
-
-| **Variable**              | **Meaning**                                                                             |
-| --------------------------- | ----------------------------------------------------------------------------------------- |
-| LISTEN_ADDR: 0.0.0.0:9090 | IP address and port to bind service to                                                  |
-| MESSAGE: "Hello World"    | Message to be returned from service, can either be a string or valid JSON               |
-| SERVER_TYPE: "http"       | Service type: [http or grpc], default:http. Determines the type of service HTTP or gRPC |
-| NAME: "Service_name"      | Name of the service                                                                     |
-
-### Fault Injection
-
-
-| **Variable**             | **Meaning**                                                                              |
-| -------------------------- | ------------------------------------------------------------------------------------------ |
-| ERROR_RATE: "0"          | Decimal percentage of request where handler will report an error. (0.1 = 10% will error) |
-| ERROR_TYPE: "http_error" | Type of error [http_error, delay]                                                        |
-| ERROR_CODE: "500"        | Error code to return on error                                                            |
-
-#### Upstream Settings
-
-
-| **Variable**                         | **Meaning**                                           |
-| -------------------------------------- | ------------------------------------------------------- |
-| UPSTREAM_URIS: http://localhost:9091 | Comma separated URIs of the upstream services to call |
-| HTTP_CLIENT_KEEP_ALIVES: "false"     | Enable HTTP connection keep alives for upstream calls |
-| HTTP_CLIENT_REQUEST_TIMEOUT: "30s"   | Maximum duration for upstream service requests        |
-
-# ACL Auth / Policies / Roles / Tokens
-
-## ACL Tokens
-
-Envoy side-car ACLs are controlled via the `start.sh` script. The ACL tokens listed below will only be accurate when running in the default "secure" mode.
-
-#### Token: `root`
-
-* Policy: `global-management`
-
-
-| Token                                  | Privs                                                                                                                                         | Purpose                                                      |
-| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| `00000000-0000-0000-0000-000000001111` | node-identity:`client-dc1-alpha:dc1`,service-identity:`joshs-obnoxiously-long-service-name-gonna-take-awhile:dc1`,service-identity:`josh:dc1` | Agent token for Consul Client`consul-client-dc1-alpha` (DC1) |
-| `00000000-0000-0000-0000-000000002222` | Role:`team-proj1-rw`                                                                                                                          | Grant write permissions within`DC1` / `proj1` partition.     |
-| `00000000-0000-0000-0000-000000003333` | Role:`DC1-Read`                                                                                                                               | Read-only privileges within the entire`DC1` cluster.         |
-| `00000000-0000-0000-0000-000000004444` | service-identy:`unicorn.frontend.unicorn-frontend:dc1`                                                                                        |                                                              |
-| `00000000-0000-0000-0000-000000005555` | service-identity:`unicorn.backend.unicorn-backend:dc1`                                                                                        |                                                              |
-| `00000000-0000-0000-0000-000000006666` | service-identity:`unicorn.backend.unicorn-backend:dc2`                                                                                        |                                                              |
-| `00000000-0000-0000-0000-000000007777` | service-identity:`default.default.web:dc1`                                                                                                    |                                                              |
-| `00000000-0000-0000-0000-000000008888` | service-identity:`default.default.web-upstream:dc1`                                                                                           |                                                              |
-| `00000000-0000-0000-0000-000000009999` | service-identity:`chunky.default.web-chunky:dc2`                                                                                              |                                                              |
-
-## Roles
-
-#### Role: `consul-admins`
-
-* Policy: `global-management`
-* Purpose:
-  * Assign root level permissions.
-  * Used within the Auth0 OIDC method (group: `admins`) to define who should have "god mode" in the Consul Cluster
-
-#### Role: `team-proj1-rw`
-
-* Purpose: Grant write permissions within `DC1` / `proj1` partition.
-* Used within the Auth0 OIDC method (group: `proj1`) to define who should have management permission of the `proj` partition
-
-#### Role: `dc1-read`
-
-* Purpose: Read-only privileges within the entire `DC1` cluster.
-
-## OIDC Authentiction
-
-### Auth0
-
-#### Binding Rules
-
-* auth0 groups = `proj1`
-* auth0 groups = `admins`
-
-# Enabled Features
-
-### Core Cluster Config
-
-* Consul Enterprise
-* Admin Partitions Enabled
-* Best-Practice Security Features Enabled
-  * TLS encryption on all nodes.
-  * TLS Verify on everything.
-  * Gossip Encryption enabled.
-* UI Visualizations turned on for all mesh applications.
-  * Prometheus servers:
-    * k3d: prometheus-server
-    * docker: prometheus
-
-### PKI / Certificates
-
-* Auto encrypt enabled (automatic distribution of Consul Client RPC certificates)
-
-### ACL / RBAC / Tokens
-
-* `global-management` token defined as `root`
-  * When in doubt use the `root` token.
-* Most tokens and roles are scoped to the `default` partitions.
-  * This is intentional, so all tokens are at the root hierarchy and can be scoped to managed any resource in any partition. (best-practices)
-
-### Authentication
-
-* OIDC Authentication enabled with Auth0
+Several applications are deployed in Doctor Consul using the "Fake Service" application.
+Docs: [HERE](docs/fake-service.md)
 
 # Future Goals
 
@@ -565,6 +165,9 @@ Envoy side-car ACLs are controlled via the `start.sh` script. The ACL tokens lis
 
 ### PKI / Certificates
 
+HashiCorp Vault will eventually be implemented in the future as the Certificate Authority for the Consul Connect Service Mesh.
+
+* The Vault server is currently commented out in the docker-compose file.
 * Add Vault as the ConnectCA
 * Use a unique CA keyset for each DC (`DC1` / `DC2`)
   * This is how separately managed clusters would work in the real world.
