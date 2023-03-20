@@ -1,6 +1,26 @@
+# Doctor Consul Applications
+
+There are 3 core "applications" deployed into the Doctor Consul environment, each with an accessible  application UI:
+
+* Web Service UI: http://127.0.0.1:9000/ui
+* Unicorn-frontend (unicorn) DC1 UI: http://127.0.0.1:10000/ui
+* Unicorn-frontend (default) DC3 UI: http://127.0.0.1:11000/ui
+
 # Fake Service Application Details
 
-* Environment variables for the FakeService:
+Nic Jackson's Fake Service is a powerful light-weight application used to demonstrate various mesh functionality within Doctor Consul. It can be found here:
+
+* Github: [HERE](https://github.com/nicholasjackson/fake-service)
+* Dockerhub: [HERE](https://hub.docker.com/r/nicholasjackson/fake-service/tags)
+
+Each application has a single downstream service with a Web UI, that connects to one or more upstreams services, using various mesh routing options. Within the UI of each application, is a heirarchical view of the downastream and upstream services. Clicking on the "click here for description" link within each service block will provide more details about what is happening within the application. 
+
+### Fake Service Variables
+
+The Fake Service behaviors are configured complete through environment variables within the `docker-compose.yml` file. 
+
+* Complete list of environment variables for the FakeService:
+
   * [https://hub.docker.com/r/nicholasjackson/fake-service](https://hub.docker.com/r/nicholasjackson/fake-servicehttps:/)
 
 ### Most useful FakeService Variables

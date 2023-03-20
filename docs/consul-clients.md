@@ -63,12 +63,7 @@ Tokens for Clients are written directly to agent config files (cannot be changed
 * **Notes**:
   * This is a virtual node registered with the `post-config.sh` script.
   * It represents an externally registered service
-  * Each `virtual-baphomet` service can be de-registered using the following commands:
-    ```
-    curl --request PUT --data @./configs/services-dc1-proj1-baphomet0.json --header "X-Consul-Token: root" localhost:8500/v1/catalog/register
-    curl --request PUT --data @./configs/services-dc1-proj1-baphomet1.json --header "X-Consul-Token: root" localhost:8500/v1/catalog/register
-    curl --request PUT --data @./configs/services-dc1-proj1-baphomet2.json --header "X-Consul-Token: root" localhost:8500/v1/catalog/register
-    ```
+  * Each `virtual-baphomet` service can be de-registered using the Zork script.
 
 ### consul-client-dc2-bravo (DC2)
 

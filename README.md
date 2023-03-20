@@ -98,11 +98,9 @@ This repo contains a full featured environment for setting up and testing HashiC
   * `./start.sh -root`
   * `./start.sh -custom`
 
-The start script has three modes. By default the environment will assign Consul ACL tokens to most of the agents and proxies using the principle of least privilege.
+The start script has three modes. By default the environment will assign Consul ACL tokens to most of the agents and proxies using the principle of least privilege (secure mode).
 
-It may be handy to quickly launch the entire environment using nothing but root tokens, especially when troubleshooting ACL issues (docker_vars/acl-secure.env).
-
-Additionally, a custom ACL Token profile can be used (docker_vars/acl-custom.env)
+For more details, see the ACL docs belows.
 
 ### Configuration Script
 
@@ -136,15 +134,17 @@ The Doctor Consul architecture (including visual diagram) and details are [HERE]
 * Admin Partitions, Namespaces, & Cluster Peering Details: [HERE](docs/consul-structure.md)
 * Consul Client Details: [HERE](docs/consul-clients.md)
 * ACL Authentication, Policies, Roles, and ACL Tokens: [HERE](docs/acl-everything.md)
+* UI Visualizations (Prometheus): [HERE](docs/ui-viz.md)
 
 ### Zork Control Script
 
 The `./zork.sh` script is a menu driven system to control various aspects of the Doctor Consul environment.
 Docs: [HERE](docs/zork.md)
 
-### Fake Service Application
+### Doctor Consul Applications
 
-Several applications are deployed in Doctor Consul using the "Fake Service" application.
+Several "fake service" applications are deployed in the Doctor Consul environment. These applications are used to demonstrate and observe various Consul service mesh behaviors, such as advanced routing and service failover. 
+
 Docs: [HERE](docs/fake-service.md)
 
 # Future Goals

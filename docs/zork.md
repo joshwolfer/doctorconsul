@@ -1,6 +1,12 @@
-The `./zork.sh` script is a menu driven system to control various aspects of the environment. The most noteworthy is to kill and restore containers in the "Unicorn" application. This makes it so you do not have to copy and paste or memorize lots of commands to make full use of Doctor Consul.
+# Zork Environment Control Script
 
-Framework
+The `./zork.sh` script is a menu driven system to control various aspects of the environment.
+
+This is to make it as easy as possible on the operator of Doctor Consul, so the most common tasks can be accomplished without requiring in depth knowledge of the environment or Consul.
+
+The most noteworthy is to kill and restore containers in the "Unicorn" application. This makes it so you do not have to copy, paste, or memorize commands to make full-use of the Doctor Consul environment.
+
+## Contents
 
 * **Service Discovery**
 

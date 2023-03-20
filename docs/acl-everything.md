@@ -7,7 +7,18 @@
 
 ## ACL Token Specifics
 
-Envoy side-car ACLs are controlled via the `start.sh` script. The ACL tokens listed below will only be accurate when running in the default "secure" mode.
+Envoy side-car ACLs are controlled via the `start.sh` script and has three ACL modes. By default (secure mode) the environment will assign Consul ACL tokens to most of the agents and proxies using the principle of least privilege.
+
+* `./start.sh` (secure mode - Default)
+* `./start.sh -root`
+* `./start.sh -custom`
+
+It may be handy to quickly launch the entire environment using nothing but root tokens, especially when troubleshooting ACL issues (docker_vars/acl-secure.env).
+
+Each modes token definitions are kept in the `docker_vars` directory.
+The custom ACL Token profile is intended to set a hybrid set of tokens as needed (docker_vars/acl-custom.env).
+
+The ACL tokens listed below will only be accurate when running in the default "secure" mode.
 
 #### Token: `root`
 
