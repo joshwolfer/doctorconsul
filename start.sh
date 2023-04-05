@@ -22,6 +22,10 @@ fi
 
 clear
 
+echo -e "${GRN}syncing the WSL clock to hardware...${NC}"
+# Because WSL is pissing me off and the UI metrics grab from Prometheus breaks if the clock is out of sync.
+sudo hwclock -s
+
 echo -e "${GRN} Checking that Docker is running - If not starting it. ${NC}"
 pgrep dockerd || sudo service docker start
 echo ""

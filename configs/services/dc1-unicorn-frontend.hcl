@@ -32,7 +32,7 @@ service {
         }
         upstreams {
             destination_name = "unicorn-backend"
-            destination_peer = "dc3-unicorn"
+            destination_peer = "dc3-default"
             destination_namespace = "unicorn"
             local_bind_address = "127.0.0.1"
             local_bind_port = 11002

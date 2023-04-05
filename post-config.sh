@@ -35,6 +35,8 @@ if [[ "$*" == *"help"* ]]
     exit 0
 fi
 
+clear
+
 mkdir -p ./tokens
 
 echo -e ""
@@ -182,6 +184,29 @@ consul acl policy create -name dns-discovery -rules @./acl/dns-discovery.hcl -ht
 consul acl token update -id 00000000-0000-0000-0000-000000000002 -policy-name dns-discovery -http-addr="$DC1"
 
 # ------------------------------------------
+#   DC1/unicorn cross namespace discovery
+# ------------------------------------------
+
+echo -e ""
+echo -e "${GRN}Add DC1/unicorn cross-namespace discovery${NC}"
+
+consul acl policy create \
+  -name "cross-namespace-sd" \
+  -description "cross-namespace service discovery" \
+  -rules @./acl/cross-namespace-discovery.hcl \
+  -partition=unicorn \
+  -namespace=default \
+  -http-addr="$DC1"
+
+consul namespace update -name frontend \
+  -default-policy-name="cross-namespace-sd" \
+  -partition=unicorn \
+  -http-addr="$DC1"
+
+# We need this to make is so unicorn-frontend can read unicorn-backend (discovery).
+# But this still doesn't grant read into imported services aross partitions. What a pain in the ass.
+
+# ------------------------------------------
 #         Create ACL tokens in DC1
 # ------------------------------------------
 
@@ -190,7 +215,7 @@ echo -e "${GRN}ACL Token: 000000001111:${NC}"
 
 consul acl token create \
     -node-identity=client-dc1-alpha:dc1 \
-    -service-identity=joshs-obnoxiously-long-service-name-gonna-take-awhile:dc1 \
+    -service-identity=joshs-obnoxiously-long-service-name-gonna-take-awhile-and-i-wonder-how-far-we-can-go-before-something-breaks-hrm:dc1 \
     -service-identity=josh:dc1 \
     -partition=default \
     -namespace=default \
@@ -268,9 +293,7 @@ consul acl token create \
 #     -accessor="00000000-0000-0000-0000-000000004444" \
 #     -http-addr="$DC1"
 
-
-
-# Service Token for Node: unicorn-backend-dc1_envoy
+# Service Token for Node: unicorn-backend-dc1_envoy. Still broken with SD of peer endpoints. Keep using the temp one above. 
 
 echo -e ""
 echo -e "${GRN}ACL Token: 000000005555 (unicorn-backend:dc1):${NC}"
@@ -506,6 +529,10 @@ echo -e "${GRN}exported-services:${NC}"
 
 # Export the DC1/Donkey/default/Donkey service to DC1/default/default
 consul config write -http-addr="$DC1" ./configs/exported-services/exported-services-donkey.hcl
+
+# Export the DC1/unicorn/backend/unicorn-backend service to DC1/default/default
+# This is the only example of a mesh service being exported on a local partition
+consul config write -http-addr="$DC1" ./configs/exported-services/exported-services-dc1-unicorn.hcl
 
 # Export the default partition services to various peers
 consul config write -http-addr="$DC1" ./configs/exported-services/exported-services-dc1-default.hcl

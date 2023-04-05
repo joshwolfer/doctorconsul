@@ -143,7 +143,7 @@ Docs: [HERE](docs/zork.md)
 
 ### Doctor Consul Applications
 
-Several "fake service" applications are deployed in the Doctor Consul environment. These applications are used to demonstrate and observe various Consul service mesh behaviors, such as advanced routing and service failover. 
+Several "fake service" applications are deployed in the Doctor Consul environment. These applications are used to demonstrate and observe various Consul service mesh behaviors, such as advanced routing and service failover.
 
 Docs: [HERE](docs/fake-service.md)
 
@@ -168,3 +168,15 @@ HashiCorp Vault will eventually be implemented in the future as the Certificate 
 ### Authentication Methods
 
 * Add JWT authentication
+
+### Transparent Proxy on VM and Kube
+
+* Add some transparent proxies + fake service.
+* Figure out VM Consul DNS config:
+  * systemd-resolved:
+
+  ```
+  [Resolve]
+  DNS=127.0.0.1:8600
+  Domains=~consul
+  ```

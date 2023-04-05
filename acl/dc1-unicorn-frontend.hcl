@@ -1,6 +1,6 @@
-service "whateverIwant" {
-  policy = "write"
-}
+// service "whateverIwant" {
+//   policy = "write"
+// }
 
 namespace_prefix "" {
   service_prefix "" {

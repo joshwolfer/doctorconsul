@@ -435,6 +435,10 @@ ElseFunction () {
                 echo ""
                 echo -e "For Trace level logging: Add ${YELL}?loglevel=\"trace\" ${NC}"
                 echo ""
+                echo -e "${GRN}(DC1)${NC} consul monitor -http-addr=$DC1 -token=root -log-level=trace"
+                echo -e "${GRN}(DC2)${NC} consul monitor -http-addr=$DC2 -token=root -log-level=trace"
+                echo -e "${GRN}(DC3)${NC} consul monitor -http-addr=$DC3 -token=root -log-level=trace"
+                echo ""
                 COLUMNS=1
                 REPLY=
                 ;;
