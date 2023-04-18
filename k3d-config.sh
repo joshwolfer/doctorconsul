@@ -7,9 +7,13 @@ export CONSUL_HTTP_TOKEN=root
 DC1="http://127.0.0.1:8500"
 DC2="http://127.0.0.1:8501"
 DC3="https://127.0.0.1:8502"
-DC4=""
+DC4="https://127.0.0.1:8503"
 DC5=""
 DC6=""
+
+KDC3="k3d-dc3"
+KDC3_P1="k3d-dc3-p1"
+KDC4="k3d-dc4"
 
 RED='\033[1;31m'
 BLUE='\033[1;34m'
@@ -24,13 +28,34 @@ if [[ "$*" == *"help"* ]]
     echo ""
     echo "Options:"
     echo "  -nopeer      Bypass cluster peering. Useful when launching k3d without the rest of Doctor Consul (Compose environment)"
+    echo "  -update      Update K3d to the latest version"
+    exit 0
+fi
+
+if [[ "$*" == *"-update"* ]]
+  then
+    echo ""
+    echo -e "${GRN}Updating K3d... ${NC}"
+    echo -e "${YELL}Pulling from https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh ${NC}"
+    wget -q -O - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
     echo ""
     exit 0
 fi
 
+# (4/18/23) New K3d errors regarding cgroups fixed via %UserProfile%\.wslconfig
+# 
+# [wsl2]
+# kernelCommandLine = cgroup_no_v1=all cgroup_enable=cpuset cgroup_memory=1 cgroup_enable=memory
+# 
+# wsl.exe --shutdown
+
 # ==========================================
-#         Setup K3d cluster (DC3)
+#             Setup K3d clusters
 # ==========================================
+
+# ------------------------------------------
+#                    DC3
+# ------------------------------------------
 
 echo -e "${GRN}"
 echo -e "=========================================="
@@ -44,26 +69,36 @@ k3d cluster create dc3 --network doctorconsul_wan \
     -p "9091:9090" \
     --k3s-arg="--disable=traefik@server:0"
 
+    # -p "11000:8000"    DC3/unicorn/unicorn-frontend (fake service UI)
+    # -p "9091:9090"     Prometheus UI
+
+# ------------------------------------------
+#                    DC4
+# ------------------------------------------
+
+echo -e "${GRN}"
+echo -e "=========================================="
+echo -e "         Setup K3d cluster (DC4)"
+echo -e "==========================================${NC}"
+
+k3d cluster create dc3-p1 --network doctorconsul_wan \
+    --api-port 127.0.0.1:6444 \
+    -p "8443:8443" \
+    -p "12000:8000" \
+    --k3s-arg="--disable=traefik@server:0"
+
+
+    # -p "8443:8443"      api-gateway ingress
+    # -p "12000:8000"     reserved for fakeservice something
+
 # ==========================================
-#            Install Consul-k8s
+#            Setup Consul-k8s
 # ==========================================
 
 echo -e "${GRN}"
 echo -e "=========================================="
-echo -e "           Install Consul-k8s"
+echo -e "           Setup Consul-k8s"
 echo -e "==========================================${NC}"
-
-echo -e ""
-echo -e "${GRN}DC3: Create Consul namespace${NC}"
-
-kubectl create namespace consul
-
-echo -e ""
-echo -e "${GRN}DC3: Create secrets for gossip, ACL token, Consul License:${NC}"
-
-kubectl create secret generic consul-gossip-encryption-key --namespace consul --from-literal=key="$(consul keygen)"
-kubectl create secret generic consul-bootstrap-acl-token --namespace consul --from-literal=key="root"
-kubectl create secret generic consul-license --namespace consul --from-literal=key="$(cat ./license)"
 
 echo -e ""
 echo -e "${GRN}Adding HashiCorp Helm Chart:${NC}"
@@ -83,18 +118,112 @@ echo -e ""
 echo -e "${GRN}Writing latest Consul Helm values to disk...${NC}"
 helm show values hashicorp/consul > ./kube/helm/latest-complete-helm-values.yaml
 
+# ==========================================
+#         Install Consul-k8s (DC3)
+# ==========================================
+
+echo -e "${GRN}"
+echo -e "=========================================="
+echo -e "        Install Consul-k8s (DC3)"
+echo -e "==========================================${NC}"
+
+echo -e "${YELL}Switching Context to DC3... ${NC}"
+kubectl config use-context $KDC3
+
+echo -e ""
+echo -e "${GRN}DC3: Create Consul namespace${NC}"
+
+kubectl create namespace consul
+
+echo -e ""
+echo -e "${GRN}DC3: Create secrets for gossip, ACL token, Consul License:${NC}"
+
+kubectl create secret generic consul-gossip-encryption-key --namespace consul --from-literal=key="$(consul keygen)"
+kubectl create secret generic consul-bootstrap-acl-token --namespace consul --from-literal=key="root"
+kubectl create secret generic consul-license --namespace consul --from-literal=key="$(cat ./license)"
+
+
 echo -e ""
 echo -e "${GRN}DC3: Helm consul-k8s install${NC}"
+
 helm install consul hashicorp/consul -f ./kube/helm/dc3-helm-values.yaml --namespace consul --debug
+
+echo -e ""
+echo -e "${GRN}DC3: Extract CA cert / key, bootstrap token, and partition token for child Consul Dataplane clusters ${NC}"
+
+kubectl get secret consul-ca-cert consul-bootstrap-acl-token -n consul -o yaml > ./tokens/dc3-credentials.yaml
+kubectl get secret consul-ca-key -n consul -o yaml > ./tokens/dc3-ca-key.yaml
+kubectl get secret consul-partitions-acl-token -n consul -o yaml > ./tokens/dc3-partition-token.yaml
+
+# ==========================================
+# Install Consul-k8s (DC3 Cernunnos Partition)
+# ==========================================
+
+echo -e "${GRN}"
+echo -e "=========================================="
+echo -e "Install Consul-k8s (DC3 Cernunnos Partition)"
+echo -e "==========================================${NC}"
+
+echo -e "${YELL}Switching Context to DC3-P1... ${NC}"
+kubectl config use-context $KDC3_P1
+
+echo -e ""
+echo -e "${GRN}DC3-P1 (Cernunnos): Create Consul namespace${NC}"
+
+kubectl create namespace consul
+
+echo -e ""
+echo -e "${GRN}DC3-P1 (Cernunnos): Install Kube secrets (CA cert / key, bootstrap token, partition token) extracted from DC3:${NC}"
+
+kubectl apply -f ./tokens/dc3-credentials.yaml
+kubectl apply -f ./tokens/dc3-ca-key.yaml
+kubectl apply -f ./tokens/dc3-partition-token.yaml
+# ^^^ Consul namespace is already embedded in the secret yaml.
+
+echo -e ""
+echo -e "${GRN}DC3-P1 (Cernunnos): Create secret Consul License:${NC}"
+
+# kubectl create secret generic consul-gossip-encryption-key --namespace consul --from-literal=key="$(consul keygen)"   # It looks like we don't need this for Dataplane...
+kubectl create secret generic consul-license --namespace consul --from-literal=key="$(cat ./license)"
+
+echo -e ""
+echo -e "${GRN}Discover the DC3 external load balancer IP:${NC}"
+
+export DC3_LB_IP="$(kubectl get svc consul-ui -nconsul --context $KDC3 -o json | jq -r '.status.loadBalancer.ingress[0].ip')"
+echo -e "${YELL}DC3 External Load Balancer IP is:${NC} $DC3_LB_IP"
+
+echo -e ""
+echo -e "${GRN}Discover the DC3 Cernunnos cluster Kube API${NC}"
+
+export DC3_K8S_IP="https://$(kubectl get node k3d-dc3-p1-server-0 --context $KDC3_P1 -o json | jq -r '.metadata.annotations."k3s.io/internal-ip"'):6443"
+echo -e "${YELL}DC3 K8s API address is:${NC} $DC3_K8S_IP"
+
+  # kubectl get services --selector="app=consul,component=server" --namespace consul --output jsonpath="{range .items[*]}{@.status.loadBalancer.ingress[*].ip}{end}"
+  #  ^^^ Potentially better way to get list of all LB IPs, but I don't care for Doctor Consul right now.
+
+  # kubectl config view --output "jsonpath={.clusters[?(@.name=='$KDC3_P1')].cluster.server}"
+  # ^^^ Don't actually need this because the k3d kube API is exposed on via the LB on 6443 already.
+
+echo -e ""
+echo -e "${GRN}DC3-P1 (Cernunnos): Helm consul-k8s install${NC}"
+
+helm install consul hashicorp/consul -f ./kube/helm/dc3-p1-helm-values.yaml --namespace consul \
+  --set externalServers.k8sAuthMethodHost=$DC3_K8S_IP \
+  --set externalServers.hosts[0]=$DC3_LB_IP \
+  --debug
+# ^^^ --dry-run to test variable interpolation... if it actually worked.
+
+
+# ==========================================
+#              Prometheus configs
+# ==========================================
+
+kubectl config use-context $KDC3
 
 echo -e "${GRN}"
 echo -e "=========================================="
 echo -e "             Prometheus configs"
 echo -e "==========================================${NC}"
-
-# ==========================================
-#              Prometheus configs
-# ==========================================
 
 echo -e ""
 echo -e "${GRN}Setup Prometheus service in DC3 ${NC}"
