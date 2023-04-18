@@ -123,6 +123,7 @@ The `-nopeer` option launches the k3d cluster with no peering. This is useful wh
 When the docker-compose windows is sent control+c, most of the docker images will shutdown. The k3d environment continues to run. To destroy everything, including the k3d containers, run the kill script:
 
 * `./kill.sh`
+* `./kill.sh -k3d`   (Only destroy the k3d clusters so they can be rebuilt without tearing down the entire docker environment.)
 
 # Documentation
 

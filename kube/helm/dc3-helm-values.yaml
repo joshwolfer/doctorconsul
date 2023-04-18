@@ -2,10 +2,10 @@ global:
   name: consul
   domain: consul
   datacenter: dc3
-  image: hashicorp/consul-enterprise:1.15.2-ent    # Select an image from: https://hub.docker.com/r/hashicorp/consul-enterprise/tags
-  imageEnvoy: "envoyproxy/envoy:v1.25.1"
+  image: hashicorp/consul-enterprise:1.15.2-ent                                             # Select an image from: https://hub.docker.com/r/hashicorp/consul-enterprise/tags
+  # imageEnvoy: "envoyproxy/envoy:v1.25.1"                                                  # Pulls the latest supported when unspecified.
   # imageK8S: docker.mirror.hashicorp.services/hashicorp/consul-k8s-control-plane:1.0.1     # What's this for?
-  imageConsulDataplane: "hashicorp/consul-dataplane:1.0.0"
+  # imageConsulDataplane: "hashicorp/consul-dataplane:1.1.0"                                # Pulls the latest when unspecified.
 
   gossipEncryption:
     secretName: consul-gossip-encryption-key
@@ -45,6 +45,14 @@ server:
   replicas: 1
   bootstrapExpect: 1
   connect: true
+  exposeService:
+    enabled: true
+    type: LoadBalancer
+  # exposeGossipAndRPCPorts: true         #
+
+dns:
+  enabled: true
+  enableRedirection: true
 
 client:
   enabled: false
@@ -85,7 +93,7 @@ connectInject:
   transparentProxy:
     defaultEnabled: true         # Default
   cni:
-    enabled: false
+    enabled: true
   consulNamespaces:
     consulDestinationNamespace: "default"   # Ignored when mirroringK8S is true
     mirroringK8S: true

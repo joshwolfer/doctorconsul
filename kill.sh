@@ -6,6 +6,26 @@ NC='\033[0m' # No Color
 
 echo ""
 
+if [[ "$*" == *"help"* ]]
+  then
+    echo -e "Syntax: ./kill.sh [OPTIONS]"
+    echo ""
+    echo "Options:"
+    echo "  -k3d      Only delete the k3d clusters, not the entire docker environment"
+    echo ""
+    exit 0
+fi
+
+if [[ "$*" == *"-k3d"* ]]
+  then
+    echo -e "${GRN}Nuking k3d clusters ONLY ${NC}"
+    echo ""
+    k3d cluster delete dc3
+    k3d cluster delete dc3-p1
+    echo ""
+    exit 0
+fi
+
 if [[ $(docker ps -aq) ]]; then
     echo -e "${GRN}------------------------------------------"
     echo -e "        Nuking all the things..."
