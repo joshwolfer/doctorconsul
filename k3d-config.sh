@@ -73,12 +73,12 @@ k3d cluster create dc3 --network doctorconsul_wan \
     # -p "9091:9090"     Prometheus UI
 
 # ------------------------------------------
-#                    DC4
+#            DC3-P1 cernunnos
 # ------------------------------------------
 
 echo -e "${GRN}"
 echo -e "=========================================="
-echo -e "         Setup K3d cluster (DC4)"
+echo -e "         Setup K3d cluster (DC3-P1 cernunnos)"
 echo -e "==========================================${NC}"
 
 k3d cluster create dc3-p1 --network doctorconsul_wan \
@@ -241,15 +241,22 @@ echo -e "==========================================${NC}"
 ## Wait for DC3 to electe a leader before starting resource provisioning
 
 echo -e ""
-echo -e "${GRN}Wait for DC3 connect-inject service to be ready before starting resource provisioning${NC}"
+echo -e "${GRN}Wait for DC3 and DC3-cernunnos connect-inject services to be ready before starting resource provisioning${NC}"
 
 # until curl -s -k ${DC3}/v1/status/leader | grep 8300; do
 #   echo -e "${RED}Waiting for DC3 Consul to start${NC}"
 #   sleep 1
 # done
 
-until kubectl get deployment consul-connect-injector -n consul -ojson | jq -r .status.availableReplicas | grep 1; do
-  echo -e "${RED}Waiting for DC3 connect-inject service to be ready...${NC}"
+echo -e "${RED}Waiting for DC3 (default) connect-inject service to be ready...${NC}"
+until kubectl get deployment consul-connect-injector -n consul --context $KDC3 -ojson | jq -r .status.availableReplicas | grep 1; do
+  echo -e "${RED}Waiting for DC3 (default) connect-inject service to be ready...${NC}"
+  sleep 1
+done
+
+echo -e "${RED}Waiting for DC3 (cernunnos) connect-inject service to be ready...${NC}"
+until kubectl get deployment consul-cernunnos-connect-injector -n consul --context $KDC3_P1 -ojson | jq -r .status.availableReplicas | grep 1; do
+  echo -e "${RED}Waiting for DC3 (cernunnos) connect-inject service to be ready...${NC}"
   sleep 1
 done
 
@@ -333,42 +340,72 @@ echo -e "==========================================${NC}"
 
 
 # ------------------------------------------
-#  Create Namespace Unicorn
+#  Create Namespaces for Unicorn
 # ------------------------------------------
 
-  echo -e ""
-echo -e "${GRN}DC3: Create unicorn namespace${NC}"
+echo -e "${GRN}"
+echo -e "------------------------------------------"
+echo -e "        Create Unicorn Namespaces"
+echo -e "------------------------------------------${NC}"
 
-kubectl create namespace unicorn
+echo -e ""
+echo -e "${GRN}DC3 (default): Create unicorn namespace${NC}"
+
+kubectl create namespace unicorn --context $KDC3
+
+echo -e ""
+echo -e "${GRN}DC3 (cernunnos): Create unicorn namespace${NC}"
+
+kubectl create namespace unicorn --context $KDC3_P1
 
 # ------------------------------------------
 #     Services
 # ------------------------------------------
 
-echo -e ""
-echo -e "${GRN}DC3: Apply Unicorn-frontend serviceAccount, serviceDefaults, service, deployment ${NC}"
-
-kubectl apply -f ./kube/configs/dc3/services/unicorn-frontend.yaml
-# kubectl delete -f ./kube/configs/dc3/services/unicorn-frontend.yaml
-
-echo -e ""
-echo -e "${GRN}DC3: Apply Unicorn-backend serviceAccount, serviceDefaults, service, deployment ${NC}"
-
-kubectl apply -f ./kube/configs/dc3/services/unicorn-backend.yaml
-# kubectl delete -f ./kube/configs/dc3/services/unicorn-backend.yaml
+echo -e "${GRN}"
+echo -e "------------------------------------------"
+echo -e "        Launch Kube Configs"
+echo -e "------------------------------------------${NC}"
 
 echo -e ""
-echo -e "${GRN}DC3: Create Allow intention unicorn-frontend > unicorn-backend ${NC}"
+echo -e "${GRN}DC3 (default): Apply Unicorn-frontend serviceAccount, serviceDefaults, service, deployment ${NC}"
 
-kubectl apply -f ./kube/configs/dc3/intentions/dc3-unicorn_frontend-allow.yaml
+kubectl apply --context $KDC3 -f ./kube/configs/dc3/services/unicorn-frontend.yaml
+# kubectl delete --context $KDC3 -f ./kube/configs/dc3/services/unicorn-frontend.yaml
+
+echo -e ""
+echo -e "${GRN}DC3 (default): Apply Unicorn-backend serviceAccount, serviceDefaults, service, deployment ${NC}"
+
+kubectl apply --context $KDC3 -f ./kube/configs/dc3/services/unicorn-backend.yaml
+# kubectl delete --context $KDC3 -f ./kube/configs/dc3/services/unicorn-backend.yaml
 
 
 echo -e ""
-echo -e "${GRN}DC3: Export unicorn-backend to peer: dc1-unicorn ${NC}"
+echo -e "${GRN}DC3 (cernunnos): Apply Unicorn-backend serviceAccount, serviceDefaults, service, deployment ${NC}"
 
-kubectl apply -f ./kube/configs/dc3/exported-services/exported-services-dc3-default.yaml
+kubectl apply --context $KDC3_P1 -f ./kube/configs/dc3/services/unicorn-cernunnos-backend.yaml
+# kubectl delete --context $KDC3_P1 -f ./kube/configs/dc3/services/unicorn-cernunnos-backend.yaml
 
+# ------------------------------------------
+#     Intentions / Exported-services
+# ------------------------------------------
 
+echo -e "${GRN}"
+echo -e "------------------------------------------"
+echo -e "        Intentions"
+echo -e "------------------------------------------${NC}"
+
+echo -e ""
+echo -e "${GRN}DC3 (default): Create Allow intention unicorn-frontend > unicorn-backend ${NC}"
+kubectl apply --context $KDC3 -f ./kube/configs/dc3/intentions/dc3-unicorn_frontend-allow.yaml
+
+echo -e ""
+echo -e "${GRN}DC3 (default): Export unicorn-backend to peer: dc1-unicorn ${NC}"
+kubectl apply --context $KDC3 -f ./kube/configs/dc3/exported-services/exported-services-dc3-default.yaml
+
+echo -e ""
+echo -e "${GRN}DC3 (cernunnos): Intention allow DC3/default/unicorn/unicorn-frontend to DC3/cernunnos/unicorn/unicorn-backend ${NC}"
+kubectl apply --context $KDC3_P1 -f ./kube/configs/dc3/intentions/dc3-cernunnos-unicorn_backend-allow.yaml
 
 
 echo -e ""

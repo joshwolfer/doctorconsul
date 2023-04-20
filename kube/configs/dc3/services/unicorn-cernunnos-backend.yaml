@@ -26,8 +26,8 @@ spec:
   selector:
     app: unicorn-backend
   ports:
-    - port: 10001
-      targetPort: 10001
+    - port: 10002
+      targetPort: 10002
 
 ---
 
@@ -51,7 +51,7 @@ spec:
       annotations:
         consul.hashicorp.com/connect-inject: 'true'
         consul.hashicorp.com/transparent-proxy: 'false'
-        consul.hashicorp.com/service-tags: 'dc3'
+        consul.hashicorp.com/service-tags: 'cernunnos'
         consul.hashicorp.com/service-meta-version: 'v1'
     spec:
       serviceAccountName: unicorn-backend
@@ -60,14 +60,14 @@ spec:
           image: nicholasjackson/fake-service:v0.25.0
           imagePullPolicy: Always       # Probably don't need this
           ports:
-            - containerPort: 10001
+            - containerPort: 10002
           env:
             - name: 'LISTEN_ADDR'
               value: '0.0.0.0:10001'
             # - name: 'UPSTREAM_URIS'
             #   value: 'grpc://127.0.0.1:11000'
             - name: 'NAME'
-              value: 'unicorn-backend (DC3)'
+              value: 'unicorn-backend (DC3 Cernunnos)'
             - name: 'MESSAGE'
               value: 'peekaboo'
             - name: 'SERVER_TYPE'
