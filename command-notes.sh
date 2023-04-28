@@ -70,6 +70,12 @@ curl --header "X-Consul-Token: root" "$DC1"/v1/catalog/service/donkey?partition=
 curl -s --header "X-Consul-Token: 00000000-0000-0000-0000-000000003333" "$DC1"/v1/health/service/donkey?partition=donkey | jq -r '.[].Service.ID'
 curl -s --header "X-Consul-Token: 00000000-0000-0000-0000-000000003333" "$DC1"/v1/catalog/service/donkey?partition=donkey | jq -r '.[].ServiceID'
 
+
+
+curl -sk --header "X-Consul-Token: root" 'https://127.0.0.1:8502/v1/catalog/service/unicorn-backend?ns=unicorn&partition=cernunnos' | jq -r '.[].ServiceAddress'
+
+curl 'localhost:8500/v1/health/service/payments?'
+
 # ------------------------------------------
 #    Exported-services - Cluster Peers
 # ------------------------------------------

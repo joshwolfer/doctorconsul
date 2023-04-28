@@ -52,7 +52,7 @@ spec:
         consul.hashicorp.com/connect-inject: 'true'
         consul.hashicorp.com/transparent-proxy: 'false'
         consul.hashicorp.com/service-tags: 'cernunnos'
-        consul.hashicorp.com/service-meta-version: 'v1'
+        # consul.hashicorp.com/service-meta-version: 'v1'
     spec:
       serviceAccountName: unicorn-backend
       containers:
@@ -61,9 +61,16 @@ spec:
           imagePullPolicy: Always       # Probably don't need this
           ports:
             - containerPort: 10002
+          readinessProbe:
+            httpGet:
+              scheme: HTTP
+              path: /
+              port: 10002
+            initialDelaySeconds: 10
+            periodSeconds: 5
           env:
             - name: 'LISTEN_ADDR'
-              value: '0.0.0.0:10001'
+              value: '0.0.0.0:10002'
             # - name: 'UPSTREAM_URIS'
             #   value: 'grpc://127.0.0.1:11000'
             - name: 'NAME'

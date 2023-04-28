@@ -52,7 +52,7 @@ spec:
         consul.hashicorp.com/connect-inject: 'true'
         consul.hashicorp.com/transparent-proxy: 'false'
         consul.hashicorp.com/service-tags: 'dc3'
-        consul.hashicorp.com/service-meta-version: 'v1'
+        # consul.hashicorp.com/service-meta-version: 'v1'
     spec:
       serviceAccountName: unicorn-backend
       containers:

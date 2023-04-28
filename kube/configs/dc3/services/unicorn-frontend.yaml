@@ -56,8 +56,12 @@ spec:
         consul.hashicorp.com/connect-inject: 'true'
         consul.hashicorp.com/transparent-proxy: 'false'
         consul.hashicorp.com/service-tags: 'dc3'
-        consul.hashicorp.com/service-meta-version: 'v1'
-        consul.hashicorp.com/connect-service-upstreams: "unicorn-backend.unicorn:11000:dc3"
+        # consul.hashicorp.com/service-meta-version: 'v1'
+        # consul.hashicorp.com/connect-service-upstreams: "unicorn-backend.unicorn:11000:dc3"
+        # consul.hashicorp.com/connect-service-upstreams: "unicorn-backend.unicorn.cernunnos:12000"
+        # consul.hashicorp.com/connect-service-upstreams: "unicorn-backend.unicorn.cernunnos:12000:dc3"
+        # consul.hashicorp.com/connect-service-upstreams: "unicorn-backend.unicorn.default:11000:dc3"
+        consul.hashicorp.com/connect-service-upstreams: "unicorn-backend.unicorn:11000:dc3,unicorn-backend.unicorn.cernunnos:12000"
     spec:
       serviceAccountName: unicorn-frontend
       containers:
@@ -70,7 +74,7 @@ spec:
             - name: 'LISTEN_ADDR'
               value: '0.0.0.0:10000'
             - name: 'UPSTREAM_URIS'
-              value: 'http://127.0.0.1:11000'
+              value: 'http://127.0.0.1:11000,http://127.0.0.1:12000'
             #  value: 'grpc://127.0.0.1:11000,http://payments.payments-ns:9090'
             - name: 'NAME'
               value: 'unicorn-frontend (DC3)'

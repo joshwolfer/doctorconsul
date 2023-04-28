@@ -4,14 +4,29 @@ export CONSUL_HTTP_TOKEN=root
 
 DC1="http://127.0.0.1:8500"
 DC2="http://127.0.0.1:8501"
-DC3="http://127.0.0.1:8502"
+DC3="https://127.0.0.1:8502"
+DC4="https://127.0.0.1:8503"
+DC5=""
+DC6=""
 
-RED='\033[1;31m'
-BLUE='\033[1;34m'
-DGRN='\033[0;32m'
-GRN='\033[1;32m'
-YELL='\033[0;33m'
-NC='\033[0m' # No Color
+KDC3="k3d-dc3"
+KDC3_P1="k3d-dc3-p1"
+KDC4="k3d-dc4"
+
+# RED='\033[1;31m'
+# BLUE='\033[1;34m'
+# DGRN='\033[0;32m'
+# GRN='\033[1;32m'
+# YELL='\033[0;33m'
+# NC='\033[0m' # No Color
+
+RED=$(tput setaf 1)
+BLUE=$(tput setaf 4)
+DGRN=$(tput setaf 2)
+GRN=$(tput setaf 10)
+YELL=$(tput setaf 3)
+NC=$(tput sgr0)
+
 
 COLUMNS=12
 
@@ -284,10 +299,13 @@ Kubernetes () {
     PS3=$'\n\033[1;31mChoose an option: \033[0m'
     options=(
         "Get DC3 LoadBalancer Address"
-        "Kube Apply DC3/unicorn-frontend"
-        "Kube Delete DC3/unicorn-frontend"
-        "Kube Apply DC3/unicorn-backend"
-        "Kube Delete DC3/unicorn-backend"
+        "Get DC3 Cernunnos LoadBalancer Address"
+        "Kube ${GRN}Apply${NC} DC3/default/unicorn/unicorn-frontend"
+        "Kube ${RED}Delete${NC} DC3/default/unicorn/unicorn-frontend"
+        "Kube ${GRN}Apply${NC} DC3/default/unicorn/unicorn-backend"
+        "Kube ${RED}Delete${NC} DC3/default/unicorn/unicorn-backend"
+        "Kube ${GRN}Apply${NC} DC3/${YELL}cernunnos${NC}/unicorn/unicorn-backend"
+        "Kube ${RED}Delete${NC} DC3/${YELL}cernunnos${NC}/unicorn/unicorn-backend"
         "Go Back"
     )
     select option in "${options[@]}"; do
@@ -300,34 +318,58 @@ Kubernetes () {
                 COLUMNS=1
                 REPLY=
                 ;;
-            "Kube Apply DC3/unicorn-frontend")
+            "Get DC3 Cernunnos LoadBalancer Address")
                 echo ""
-                echo -e "${YELL}kubectl apply -f ./kube/configs/dc3/services/unicorn-frontend.yaml ${NC}"
-                kubectl apply -f ./kube/configs/dc3/services/unicorn-frontend.yaml
-                echo ""
-                COLUMNS=1
-                REPLY=
-                ;;
-            "Kube Delete DC3/unicorn-frontend")
-                echo ""
-                echo -e "${YELL}kubectl delete -f ./kube/configs/dc3/services/unicorn-frontend.yaml ${NC}"
-                kubectl delete -f ./kube/configs/dc3/services/unicorn-frontend.yaml
+                echo -e "${YELL}kubectl get node k3d-dc3-p1-server-0 --context $KDC3_P1 -o json | jq -r '.metadata.annotations."k3s.io/internal-ip"' ${NC}"
+                kubectl get node k3d-dc3-p1-server-0 --context $KDC3_P1 -o json | jq -r '.metadata.annotations."k3s.io/internal-ip"'
                 echo ""
                 COLUMNS=1
                 REPLY=
                 ;;
-            "Kube Apply DC3/unicorn-backend")
+            "Kube ${GRN}Apply${NC} DC3/default/unicorn/unicorn-frontend")
                 echo ""
-                echo -e "${YELL}kubectl apply -f ./kube/configs/dc3/services/unicorn-backend.yaml ${NC}"
-                kubectl apply -f ./kube/configs/dc3/services/unicorn-backend.yaml
+                echo -e "${YELL}kubectl apply --context=$KDC3 -f ./kube/configs/dc3/services/unicorn-frontend.yaml ${NC}"
+                kubectl apply --context=$KDC3 -f ./kube/configs/dc3/services/unicorn-frontend.yaml
                 echo ""
                 COLUMNS=1
                 REPLY=
                 ;;
-            "Kube Delete DC3/unicorn-backend")
+            "Kube ${RED}Delete${NC} DC3/default/unicorn/unicorn-frontend")
                 echo ""
-                echo -e "${YELL}kubectl delete -f ./kube/configs/dc3/services/unicorn-backend.yaml ${NC}"
-                kubectl delete -f ./kube/configs/dc3/services/unicorn-backend.yaml
+                echo -e "${YELL}kubectl delete --context=$KDC3 -f ./kube/configs/dc3/services/unicorn-frontend.yaml ${NC}"
+                kubectl delete --context=$KDC3 -f ./kube/configs/dc3/services/unicorn-frontend.yaml
+                echo ""
+                COLUMNS=1
+                REPLY=
+                ;;
+            "Kube ${GRN}Apply${NC} DC3/default/unicorn/unicorn-backend")
+                echo ""
+                echo -e "${YELL}kubectl apply --context=$KDC3 -f ./kube/configs/dc3/services/unicorn-backend.yaml ${NC}"
+                kubectl apply --context=$KDC3 -f ./kube/configs/dc3/services/unicorn-backend.yaml
+                echo ""
+                COLUMNS=1
+                REPLY=
+                ;;
+            "Kube ${RED}Delete${NC} DC3/default/unicorn/unicorn-backend")
+                echo ""
+                echo -e "${YELL}kubectl delete --context=$KDC3 -f ./kube/configs/dc3/services/unicorn-backend.yaml ${NC}"
+                kubectl delete --context=$KDC3 -f ./kube/configs/dc3/services/unicorn-backend.yaml
+                echo ""
+                COLUMNS=1
+                REPLY=
+                ;;
+            "Kube ${GRN}Apply${NC} DC3/${YELL}cernunnos${NC}/unicorn/unicorn-backend")
+                echo ""
+                echo -e "${YELL}kubectl apply --context=$KDC3_P1 -f ./kube/configs/dc3/services/unicorn-cernunnos-backend.yaml ${NC}"
+                kubectl apply --context=$KDC3_P1 -f ./kube/configs/dc3/services/unicorn-cernunnos-backend.yaml
+                echo ""
+                COLUMNS=1
+                REPLY=
+                ;;
+            "Kube ${RED}Delete${NC} DC3/${YELL}cernunnos${NC}/unicorn/unicorn-backend")
+                echo ""
+                echo -e "${YELL}kubectl delete --context=$KDC3_P1 -f ./kube/configs/dc3/services/unicorn-cernunnos-backend.yaml ${NC}"
+                kubectl delete --context=$KDC3_P1 -f ./kube/configs/dc3/services/unicorn-cernunnos-backend.yaml
                 echo ""
                 COLUMNS=1
                 REPLY=

@@ -20,7 +20,7 @@ BLUE='\033[1;34m'
 DGRN='\033[0;32m'
 GRN='\033[1;32m'
 YELL='\033[0;33m'
-NC='\033[0m' # No Color
+NC='\033[0m' 
 
 if [[ "$*" == *"help"* ]]
   then
@@ -41,6 +41,13 @@ if [[ "$*" == *"-update"* ]]
     echo ""
     exit 0
 fi
+
+echo ""
+echo -e "${GRN}Checking that Docker is running - If not starting it. ${NC}"
+pgrep dockerd || sudo service docker start
+echo ""
+
+sleep 2
 
 # (4/18/23) New K3d errors regarding cgroups fixed via %UserProfile%\.wslconfig
 # 
@@ -265,9 +272,9 @@ echo -e "${GRN}DC3: MGW Peering over Gateways${NC}"
 
 kubectl apply -f ./kube/configs/peering/mgw-peering.yaml
 
-# ==========================================
+# ==============================================================================================================================
 #            Cluster Peering
-# ==========================================
+# ==============================================================================================================================
 
 k3dPeering () {
 
@@ -387,12 +394,27 @@ kubectl apply --context $KDC3_P1 -f ./kube/configs/dc3/services/unicorn-cernunno
 # kubectl delete --context $KDC3_P1 -f ./kube/configs/dc3/services/unicorn-cernunnos-backend.yaml
 
 # ------------------------------------------
-#     Intentions / Exported-services
+#                    Defaults
 # ------------------------------------------
 
 echo -e "${GRN}"
 echo -e "------------------------------------------"
-echo -e "        Intentions"
+echo -e "               Defaults"
+echo -e "------------------------------------------${NC}"
+
+echo -e ""
+echo -e "${GRN}DC3 (default): proxy-defaults ${NC}- MGW:${YELL}Local${NC} Proto:${YELL}HTTP ${NC}"
+kubectl apply --context $KDC3 -f ./kube/configs/dc3/defaults/proxy-defaults.yaml
+echo -e "${GRN}DC3 (cernunnos): proxy-defaults${NC} - MGW:${YELL}Local${NC} Proto:${YELL}HTTP ${NC}"
+kubectl apply --context $KDC3_P1 -f ./kube/configs/dc3/defaults/proxy-defaults.yaml
+
+# ------------------------------------------
+#                 Intentions
+# ------------------------------------------
+
+echo -e "${GRN}"
+echo -e "------------------------------------------"
+echo -e "              Intentions"
 echo -e "------------------------------------------${NC}"
 
 echo -e ""
@@ -400,12 +422,31 @@ echo -e "${GRN}DC3 (default): Create Allow intention unicorn-frontend > unicorn-
 kubectl apply --context $KDC3 -f ./kube/configs/dc3/intentions/dc3-unicorn_frontend-allow.yaml
 
 echo -e ""
-echo -e "${GRN}DC3 (default): Export unicorn-backend to peer: dc1-unicorn ${NC}"
+echo -e "${GRN}DC3 (cernunnos): Intention allow DC3/default/unicorn/unicorn-frontend to DC3/cernunnos/unicorn/unicorn-backend ${NC}"
+kubectl apply --context $KDC3_P1 -f ./kube/configs/dc3/intentions/dc3-cernunnos-unicorn_backend-allow.yaml
+
+
+# ------------------------------------------
+#           Exported-services
+# ------------------------------------------
+
+echo -e "${GRN}"
+echo -e "------------------------------------------"
+echo -e "           Exported Services"
+echo -e "------------------------------------------${NC}"
+
+echo -e ""
+echo -e "${GRN}DC3 (default): Export services from the ${YELL}default ${GRN}partition ${NC}"
 kubectl apply --context $KDC3 -f ./kube/configs/dc3/exported-services/exported-services-dc3-default.yaml
 
 echo -e ""
-echo -e "${GRN}DC3 (cernunnos): Intention allow DC3/default/unicorn/unicorn-frontend to DC3/cernunnos/unicorn/unicorn-backend ${NC}"
-kubectl apply --context $KDC3_P1 -f ./kube/configs/dc3/intentions/dc3-cernunnos-unicorn_backend-allow.yaml
+echo -e "${GRN}DC3 (cernunnos): Export services from the ${YELL}cernunnos ${GRN}partition ${NC}"
+kubectl apply --context $KDC3_P1 -f ./kube/configs/dc3/exported-services/exported-services-dc3-cernunnos.yaml
+
+
+
+
+
 
 
 echo -e ""
