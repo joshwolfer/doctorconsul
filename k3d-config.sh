@@ -376,22 +376,38 @@ echo -e "------------------------------------------${NC}"
 
 echo -e ""
 echo -e "${GRN}DC3 (default): Apply Unicorn-frontend serviceAccount, serviceDefaults, service, deployment ${NC}"
-
 kubectl apply --context $KDC3 -f ./kube/configs/dc3/services/unicorn-frontend.yaml
 # kubectl delete --context $KDC3 -f ./kube/configs/dc3/services/unicorn-frontend.yaml
 
+# ----------------
+# Unicorn-backends
+# ----------------
+
 echo -e ""
 echo -e "${GRN}DC3 (default): Apply Unicorn-backend serviceAccount, serviceDefaults, service, deployment ${NC}"
-
 kubectl apply --context $KDC3 -f ./kube/configs/dc3/services/unicorn-backend.yaml
 # kubectl delete --context $KDC3 -f ./kube/configs/dc3/services/unicorn-backend.yaml
 
 
 echo -e ""
 echo -e "${GRN}DC3 (cernunnos): Apply Unicorn-backend serviceAccount, serviceDefaults, service, deployment ${NC}"
-
 kubectl apply --context $KDC3_P1 -f ./kube/configs/dc3/services/unicorn-cernunnos-backend.yaml
 # kubectl delete --context $KDC3_P1 -f ./kube/configs/dc3/services/unicorn-cernunnos-backend.yaml
+
+
+# ----------------
+# Transparent Unicorn-backends
+# ----------------
+
+echo -e ""
+echo -e "${GRN}DC3 (default): Apply Unicorn-backend serviceAccount, serviceDefaults, service, deployment ${NC}"
+kubectl apply --context $KDC3 -f ./kube/configs/dc3/services/unicorn-tp_backend.yaml
+# kubectl delete --context $KDC3 -f ./kube/configs/dc3/services/unicorn-tp_backend.yaml
+
+echo -e ""
+echo -e "${GRN}DC3 (cernunnos): Apply Unicorn-backend serviceAccount, serviceDefaults, service, deployment ${NC}"
+kubectl apply --context $KDC3_P1 -f ./kube/configs/dc3/services/unicorn-cernunnos-tp_backend.yaml
+# kubectl delete --context $KDC3_P1 -f ./kube/configs/dc3/services/unicorn-cernunnos-tp_backend.yaml
 
 # ------------------------------------------
 #                    Defaults
@@ -418,12 +434,20 @@ echo -e "              Intentions"
 echo -e "------------------------------------------${NC}"
 
 echo -e ""
-echo -e "${GRN}DC3 (default): Create Allow intention unicorn-frontend > unicorn-backend ${NC}"
-kubectl apply --context $KDC3 -f ./kube/configs/dc3/intentions/dc3-unicorn_frontend-allow.yaml
+echo -e "${GRN}DC3 (default): Create Allow intention DC3/default/unicorn/unicorn-frontend > DC3/default/unicorn/unicorn-backend ${NC}"
+kubectl apply --context $KDC3 -f ./kube/configs/dc3/intentions/dc3-unicorn_backend-allow.yaml
 
 echo -e ""
 echo -e "${GRN}DC3 (cernunnos): Intention allow DC3/default/unicorn/unicorn-frontend to DC3/cernunnos/unicorn/unicorn-backend ${NC}"
 kubectl apply --context $KDC3_P1 -f ./kube/configs/dc3/intentions/dc3-cernunnos-unicorn_backend-allow.yaml
+
+echo -e ""
+echo -e "${GRN}DC3 (default): Create Allow intention DC3/default/unicorn/unicorn-frontend > DC3/default/unicorn/unicorn-tp-backend ${NC}"
+kubectl apply --context $KDC3 -f ./kube/configs/dc3/intentions/dc3-unicorn_tp_backend-allow.yaml
+
+echo -e ""
+echo -e "${GRN}DC3 (cernunnos): Intention allow DC3/default/unicorn/unicorn-frontend to DC3/cernunnos/unicorn/unicorn-tp-backend ${NC}"
+kubectl apply --context $KDC3_P1 -f ./kube/configs/dc3/intentions/dc3-cernunnos-unicorn_tp_backend-allow.yaml
 
 
 # ------------------------------------------

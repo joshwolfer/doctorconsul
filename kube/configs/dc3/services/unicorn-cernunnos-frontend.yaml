@@ -67,9 +67,16 @@ spec:
       containers:
         - name: unicorn-frontend
           image: nicholasjackson/fake-service:v0.25.0
-          imagePullPolicy: Always       # Probably don't need this
+          # imagePullPolicy: Always       # Probably don't need this
           ports:
             - containerPort: 10000
+          readinessProbe:
+            httpGet:
+              scheme: HTTP
+              path: /
+              port: 10000
+            initialDelaySeconds: 10
+            periodSeconds: 5
           env:
             - name: 'LISTEN_ADDR'
               value: '0.0.0.0:10000'
