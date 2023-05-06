@@ -62,6 +62,7 @@ spec:
         # consul.hashicorp.com/connect-service-upstreams: "unicorn-backend.unicorn.cernunnos:12000:dc3"
         # consul.hashicorp.com/connect-service-upstreams: "unicorn-backend.unicorn.default:11000:dc3"
         consul.hashicorp.com/connect-service-upstreams: "unicorn-backend.unicorn:11000:dc3,unicorn-backend.unicorn.cernunnos:12000"
+        consul.hashicorp.com/transparent-proxy-exclude-inbound-ports: "10000"   # Without this exclusion the FakeService UI is shitcanned.
     spec:
       serviceAccountName: unicorn-frontend
       containers:
