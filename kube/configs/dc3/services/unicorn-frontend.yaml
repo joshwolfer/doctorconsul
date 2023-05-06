@@ -54,7 +54,7 @@ spec:
         # service: fake-service     # do I need this?
       annotations:
         consul.hashicorp.com/connect-inject: 'true'
-        consul.hashicorp.com/transparent-proxy: 'false'
+        consul.hashicorp.com/transparent-proxy: 'true'
         consul.hashicorp.com/service-tags: 'dc3'
         # consul.hashicorp.com/service-meta-version: 'v1'
         # consul.hashicorp.com/connect-service-upstreams: "unicorn-backend.unicorn:11000:dc3"
@@ -62,20 +62,30 @@ spec:
         # consul.hashicorp.com/connect-service-upstreams: "unicorn-backend.unicorn.cernunnos:12000:dc3"
         # consul.hashicorp.com/connect-service-upstreams: "unicorn-backend.unicorn.default:11000:dc3"
         consul.hashicorp.com/connect-service-upstreams: "unicorn-backend.unicorn:11000:dc3,unicorn-backend.unicorn.cernunnos:12000"
+        consul.hashicorp.com/transparent-proxy-exclude-inbound-ports: "10000"   # Without this exclusion the FakeService UI is shitcanned.
     spec:
       serviceAccountName: unicorn-frontend
       containers:
         - name: unicorn-frontend
           image: nicholasjackson/fake-service:v0.25.0
-          imagePullPolicy: Always       # Probably don't need this
+          # imagePullPolicy: Always       # Probably don't need this
           ports:
             - containerPort: 10000
+          # readinessProbe:
+          #   httpGet:
+          #     scheme: HTTP
+          #     path: /
+          #     port: 10000
+            # initialDelaySeconds: 10
+            # periodSeconds: 5
           env:
             - name: 'LISTEN_ADDR'
               value: '0.0.0.0:10000'
             - name: 'UPSTREAM_URIS'
-              value: 'http://127.0.0.1:11000,http://127.0.0.1:12000'
-            #  value: 'grpc://127.0.0.1:11000,http://payments.payments-ns:9090'
+              value: 'http://127.0.0.1:11000,http://127.0.0.1:12000,http://unicorn-tp-backend.virtual.unicorn.ns.dc3.dc.consul,http://unicorn-tp-backend.virtual.unicorn.ns.cernunnos.ap.dc3.dc.consul'
+              # value: 'http://127.0.0.1:11000,http://127.0.0.1:12000'
+              # value: 'http://127.0.0.1:11000,http://127.0.0.1:12000,http://unicorn-tp-backend.virtual.unicorn.ns.dc3.dc.consul'
+              # value: 'http://unicorn-tp-backend.virtual.unicorn.ns.dc3.dc.consul'
             - name: 'NAME'
               value: 'unicorn-frontend (DC3)'
             - name: 'MESSAGE'

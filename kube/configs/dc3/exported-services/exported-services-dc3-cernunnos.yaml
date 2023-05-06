@@ -9,6 +9,10 @@ spec:
       namespace: "unicorn"
       consumers:
       - partition: default 
+    - name: "unicorn-tp-backend" ## The name of the service you want to export
+      namespace: "unicorn"
+      consumers:
+      - partition: default 
     - name: "mesh-gateway" ## The name of the service you want to export
       namespace: "default"
       consumers:

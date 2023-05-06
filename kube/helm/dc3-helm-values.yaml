@@ -101,6 +101,7 @@ connectInject:
     defaultEnabled: true         # Default
   cni:
     enabled: true
+    # enabled: false
   consulNamespaces:
     consulDestinationNamespace: "default"   # Ignored when mirroringK8S is true
     mirroringK8S: true

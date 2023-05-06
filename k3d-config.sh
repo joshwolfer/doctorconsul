@@ -4,6 +4,9 @@ set -e
 
 export CONSUL_HTTP_TOKEN=root
 
+# HOME=$(pwd)
+# For some stupid reason k3d won't allow "./" in the path for config files so we have to do this non-sense for the Calico config to load...
+
 DC1="http://127.0.0.1:8500"
 DC2="http://127.0.0.1:8501"
 DC3="https://127.0.0.1:8502"
@@ -42,12 +45,22 @@ if [[ "$*" == *"-update"* ]]
     exit 0
 fi
 
-echo ""
-echo -e "${GRN}Checking that Docker is running - If not starting it. ${NC}"
-pgrep dockerd || sudo service docker start
-echo ""
 
-sleep 2
+# Start docker service if it's not running:
+
+OS_NAME=$(uname)
+
+if [ "$OS_NAME" == "Linux" ]; then
+    echo ""
+    echo -e "${GRN}Checking that Docker is running - If not starting it. ${NC}"
+    pgrep dockerd || sudo service docker start
+    echo ""
+
+    sleep 2
+else
+    # Eventually put in mac syntax to start docker, its not the same as linux
+    echo ""
+fi
 
 # (4/18/23) New K3d errors regarding cgroups fixed via %UserProfile%\.wslconfig
 # 
@@ -59,6 +72,16 @@ sleep 2
 # ==========================================
 #             Setup K3d clusters
 # ==========================================
+
+echo -e "${GRN}"
+echo -e "------------------------------------------"
+echo -e " Download Calico Config files"
+echo -e "------------------------------------------${NC}"
+
+# Fetch the Calico setup file to use with k3d. 
+# K3D default CNI (flannel) doesn't work with Consul Tproxy / DNS proxy
+
+curl -s https://k3d.io/v5.0.1/usage/advanced/calico.yaml -o ./kube/calico.yaml
 
 # ------------------------------------------
 #                    DC3
@@ -74,8 +97,13 @@ k3d cluster create dc3 --network doctorconsul_wan \
     -p "8502:443@loadbalancer" \
     -p "11000:8000" \
     -p "9091:9090" \
+    --k3s-arg '--flannel-backend=none@server:*' \
     --k3s-arg="--disable=traefik@server:0"
 
+
+    kubectl apply --context=$KDC3 -f ./kube/calico.yaml 
+    
+    # --volume "$HOME/kube/calico.yaml:/var/lib/rancher/k3s/server/manifests/calico.yaml" \
     # -p "11000:8000"    DC3/unicorn/unicorn-frontend (fake service UI)
     # -p "9091:9090"     Prometheus UI
 
@@ -92,8 +120,15 @@ k3d cluster create dc3-p1 --network doctorconsul_wan \
     --api-port 127.0.0.1:6444 \
     -p "8443:8443" \
     -p "12000:8000" \
-    --k3s-arg="--disable=traefik@server:0"
+    --k3s-arg="--disable=traefik@server:0" \
+    --k3s-arg '--flannel-backend=none@server:*'
+    
+    kubectl apply --context=$KDC3_P1 -f ./kube/calico.yaml 
 
+    # --volume "$HOME/kube/calico.yaml:/var/lib/rancher/k3s/server/manifests/calico.yaml"  
+
+    # Disable flannel
+    # install Calico (tproxy compatability)
 
     # -p "8443:8443"      api-gateway ingress
     # -p "12000:8000"     reserved for fakeservice something
@@ -376,22 +411,38 @@ echo -e "------------------------------------------${NC}"
 
 echo -e ""
 echo -e "${GRN}DC3 (default): Apply Unicorn-frontend serviceAccount, serviceDefaults, service, deployment ${NC}"
-
 kubectl apply --context $KDC3 -f ./kube/configs/dc3/services/unicorn-frontend.yaml
 # kubectl delete --context $KDC3 -f ./kube/configs/dc3/services/unicorn-frontend.yaml
 
+# ----------------
+# Unicorn-backends
+# ----------------
+
 echo -e ""
 echo -e "${GRN}DC3 (default): Apply Unicorn-backend serviceAccount, serviceDefaults, service, deployment ${NC}"
-
 kubectl apply --context $KDC3 -f ./kube/configs/dc3/services/unicorn-backend.yaml
 # kubectl delete --context $KDC3 -f ./kube/configs/dc3/services/unicorn-backend.yaml
 
 
 echo -e ""
 echo -e "${GRN}DC3 (cernunnos): Apply Unicorn-backend serviceAccount, serviceDefaults, service, deployment ${NC}"
-
 kubectl apply --context $KDC3_P1 -f ./kube/configs/dc3/services/unicorn-cernunnos-backend.yaml
 # kubectl delete --context $KDC3_P1 -f ./kube/configs/dc3/services/unicorn-cernunnos-backend.yaml
+
+
+# ----------------
+# Transparent Unicorn-backends
+# ----------------
+
+echo -e ""
+echo -e "${GRN}DC3 (default): Apply Unicorn-backend serviceAccount, serviceDefaults, service, deployment ${NC}"
+kubectl apply --context $KDC3 -f ./kube/configs/dc3/services/unicorn-tp_backend.yaml
+# kubectl delete --context $KDC3 -f ./kube/configs/dc3/services/unicorn-tp_backend.yaml
+
+echo -e ""
+echo -e "${GRN}DC3 (cernunnos): Apply Unicorn-backend serviceAccount, serviceDefaults, service, deployment ${NC}"
+kubectl apply --context $KDC3_P1 -f ./kube/configs/dc3/services/unicorn-cernunnos-tp_backend.yaml
+# kubectl delete --context $KDC3_P1 -f ./kube/configs/dc3/services/unicorn-cernunnos-tp_backend.yaml
 
 # ------------------------------------------
 #                    Defaults
@@ -418,12 +469,20 @@ echo -e "              Intentions"
 echo -e "------------------------------------------${NC}"
 
 echo -e ""
-echo -e "${GRN}DC3 (default): Create Allow intention unicorn-frontend > unicorn-backend ${NC}"
-kubectl apply --context $KDC3 -f ./kube/configs/dc3/intentions/dc3-unicorn_frontend-allow.yaml
+echo -e "${GRN}DC3 (default): Create Allow intention DC3/default/unicorn/unicorn-frontend > DC3/default/unicorn/unicorn-backend ${NC}"
+kubectl apply --context $KDC3 -f ./kube/configs/dc3/intentions/dc3-unicorn_backend-allow.yaml
 
 echo -e ""
 echo -e "${GRN}DC3 (cernunnos): Intention allow DC3/default/unicorn/unicorn-frontend to DC3/cernunnos/unicorn/unicorn-backend ${NC}"
 kubectl apply --context $KDC3_P1 -f ./kube/configs/dc3/intentions/dc3-cernunnos-unicorn_backend-allow.yaml
+
+echo -e ""
+echo -e "${GRN}DC3 (default): Create Allow intention DC3/default/unicorn/unicorn-frontend > DC3/default/unicorn/unicorn-tp-backend ${NC}"
+kubectl apply --context $KDC3 -f ./kube/configs/dc3/intentions/dc3-unicorn_tp_backend-allow.yaml
+
+echo -e ""
+echo -e "${GRN}DC3 (cernunnos): Intention allow DC3/default/unicorn/unicorn-frontend to DC3/cernunnos/unicorn/unicorn-tp-backend ${NC}"
+kubectl apply --context $KDC3_P1 -f ./kube/configs/dc3/intentions/dc3-cernunnos-unicorn_tp_backend-allow.yaml
 
 
 # ------------------------------------------
