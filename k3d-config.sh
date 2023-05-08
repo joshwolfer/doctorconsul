@@ -17,6 +17,7 @@ DC6=""
 KDC3="k3d-dc3"
 KDC3_P1="k3d-dc3-p1"
 KDC4="k3d-dc4"
+KDC4_P1="k3d-dc4-p1"
 
 RED='\033[1;31m'
 BLUE='\033[1;34m'
@@ -99,7 +100,6 @@ k3d cluster create dc3 --network doctorconsul_wan \
     -p "9091:9090" \
     --k3s-arg '--flannel-backend=none@server:*' \
     --k3s-arg="--disable=traefik@server:0"
-
 
     kubectl apply --context=$KDC3 -f ./kube/calico.yaml 
     

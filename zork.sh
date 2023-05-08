@@ -300,6 +300,8 @@ Kubernetes () {
     options=(
         "Get DC3 LoadBalancer Address"
         "Get DC3 Cernunnos LoadBalancer Address"
+        "(DC3) Helm Upgrade (config change)"
+        "(DC3 P1 Cernunnos) Helm Upgrade (config change)"
         "Kube ${GRN}Apply${NC} DC3/default/unicorn/unicorn-frontend"
         "Kube ${RED}Delete${NC} DC3/default/unicorn/unicorn-frontend"
         "Kube ${GRN}Apply${NC} DC3/default/unicorn/unicorn-backend"
@@ -326,6 +328,28 @@ Kubernetes () {
                 COLUMNS=1
                 REPLY=
                 ;;
+            "(DC3) Helm Upgrade (config change)")
+                echo ""
+                echo -e "${YELL}helm upgrade --kube-context $KDC3 consul hashicorp/consul -f ./kube/helm/dc3-helm-values.yaml --namespace consul --debug${NC}"
+                helm upgrade --kube-context $KDC3 consul hashicorp/consul -f ./kube/helm/dc3-helm-values.yaml --namespace consul --debug
+                echo ""
+                COLUMNS=1
+                REPLY=
+                ;;
+            "(DC3 P1 Cernunnos) Helm Upgrade (config change)")
+                echo ""
+                echo -e "${YELL}helm upgrade --kube-context $KDC3_P1 consul hashicorp/consul -f ./kube/helm/dc3-p1-helm-values.yaml --namespace consul \\"
+                echo -e "--set externalServers.k8sAuthMethodHost=$DC3_K8S_IP \\"
+                echo -e "--set externalServers.hosts[0]=$DC3_LB_IP \\"
+                echo -e "--debug ${NC}"
+                helm upgrade --kube-context $KDC3_P1 consul hashicorp/consul -f ./kube/helm/dc3-p1-helm-values.yaml --namespace consul \
+                --set externalServers.k8sAuthMethodHost=$DC3_K8S_IP \
+                --set externalServers.hosts[0]=$DC3_LB_IP \
+                --debug
+                echo ""
+                COLUMNS=1
+                REPLY=
+                ;;           
             "Kube ${GRN}Apply${NC} DC3/default/unicorn/unicorn-frontend")
                 echo ""
                 echo -e "${YELL}kubectl apply --context=$KDC3 -f ./kube/configs/dc3/services/unicorn-frontend.yaml ${NC}"

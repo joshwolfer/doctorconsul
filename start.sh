@@ -22,13 +22,31 @@ fi
 
 clear
 
-echo -e "${GRN}syncing the WSL clock to hardware...${NC}"
 # Because WSL is pissing me off and the UI metrics grab from Prometheus breaks if the clock is out of sync.
-sudo hwclock -s
 
-echo -e "${GRN} Checking that Docker is running - If not starting it. ${NC}"
-pgrep dockerd || sudo service docker start
-echo ""
+WSL=$(uname -a)
+
+if [[ $WSL == *"WSL"* ]]; then
+  echo -e "${GRN}syncing the WSL clock to hardware...${NC}"
+  sudo hwclock -s
+fi
+
+# Start docker service if it's not running:
+
+OS_NAME=$(uname)
+
+if [ "$OS_NAME" == "Linux" ]; then
+    echo ""
+    echo -e "${GRN}Checking that Docker is running - If not starting it. ${NC}"
+    pgrep dockerd || sudo service docker start
+    echo ""
+
+    sleep 2
+else
+    # Eventually put in mac syntax to start docker, its not the same as linux
+    echo ""
+fi
+
 
 if [[ $(docker ps -aq) ]]; then
     echo -e "${GRN}------------------------------------------"

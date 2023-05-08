@@ -113,7 +113,7 @@ connectInject:
 syncCatalog:
   enabled: true
   k8sPrefix: null
-  k8sDenyNamespaces: ["kube-system", "kube-public"]
+  k8sDenyNamespaces: ["kube-system", "kube-public", "unicorn"]
   consulNamespaces:
     mirroringK8S: true
     mirroringK8SPrefix: ""
