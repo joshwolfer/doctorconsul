@@ -61,7 +61,8 @@ spec:
         # consul.hashicorp.com/connect-service-upstreams: "unicorn-backend.unicorn.cernunnos:12000"
         # consul.hashicorp.com/connect-service-upstreams: "unicorn-backend.unicorn.cernunnos:12000:dc3"
         # consul.hashicorp.com/connect-service-upstreams: "unicorn-backend.unicorn.default:11000:dc3"
-        consul.hashicorp.com/connect-service-upstreams: "unicorn-backend.unicorn:11000:dc3,unicorn-backend.unicorn.cernunnos:12000"
+        # consul.hashicorp.com/connect-service-upstreams: "unicorn-backend.unicorn:11000:dc3,unicorn-backend.unicorn.cernunnos:12000"
+        consul.hashicorp.com/connect-service-upstreams: "unicorn-backend.unicorn:11000:dc3,unicorn-backend.unicorn.cernunnos:12000,unicorn-backend.svc.unicorn.ns.dc4-default.peer:13000,unicorn-backend.svc.unicorn.ns.dc4-taranis.peer:14000"
         consul.hashicorp.com/transparent-proxy-exclude-inbound-ports: "10000"   # Without this exclusion the FakeService UI is shitcanned.
     spec:
       serviceAccountName: unicorn-frontend
@@ -82,10 +83,8 @@ spec:
             - name: 'LISTEN_ADDR'
               value: '0.0.0.0:10000'
             - name: 'UPSTREAM_URIS'
-              value: 'http://127.0.0.1:11000,http://127.0.0.1:12000,http://unicorn-tp-backend.virtual.unicorn.ns.dc3.dc.consul,http://unicorn-tp-backend.virtual.unicorn.ns.cernunnos.ap.dc3.dc.consul'
-              # value: 'http://127.0.0.1:11000,http://127.0.0.1:12000'
-              # value: 'http://127.0.0.1:11000,http://127.0.0.1:12000,http://unicorn-tp-backend.virtual.unicorn.ns.dc3.dc.consul'
-              # value: 'http://unicorn-tp-backend.virtual.unicorn.ns.dc3.dc.consul'
+              value: 'http://127.0.0.1:11000,http://127.0.0.1:12000,http://127.0.0.1:13000,http://127.0.0.1:14000,http://unicorn-tp-backend.virtual.unicorn.ns.dc3.dc.consul,http://unicorn-tp-backend.virtual.unicorn.ns.cernunnos.ap.dc3.dc.consul,http://unicorn-tp-backend.virtual.unicorn.dc4-default.consul,http://unicorn-tp-backend.virtual.unicorn.dc4-taranis.consul'
+              # value: 'http://127.0.0.1:11000,http://127.0.0.1:12000,http://unicorn-tp-backend.virtual.unicorn.ns.dc3.dc.consul,http://unicorn-tp-backend.virtual.unicorn.ns.cernunnos.ap.dc3.dc.consul'
             - name: 'NAME'
               value: 'unicorn-frontend (DC3)'
             - name: 'MESSAGE'

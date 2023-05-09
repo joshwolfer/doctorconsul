@@ -1,0 +1,15 @@
+apiVersion: consul.hashicorp.com/v1alpha1
+kind: ExportedServices
+metadata:
+  name: default ## The name of the partition containing the service
+  namespace: unicorn      # I believe ExportedServices are scoped to partition only, yet this still works... fun. 
+spec:
+  services:
+    - name: "unicorn-backend" ## The name of the service you want to export
+      namespace: "unicorn"
+      consumers:
+      - peer: dc3-default ## The name of the peer that receives the service
+    - name: "unicorn-tp-backend" 
+      namespace: "unicorn"
+      consumers:
+      - peer: dc3-default 

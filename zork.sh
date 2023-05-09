@@ -69,6 +69,7 @@ DonkeyDiscovery () {
             "Go Back")
                 echo ""
                 clear
+                COLUMNS=1
                 break
                 ;;
             *) echo "invalid option $REPLY";;
@@ -101,6 +102,7 @@ ServiceDiscovery () {
             "Go Back")
                 echo ""
                 clear
+                COLUMNS=1
                 break
                 ;;
             *) echo "invalid option $REPLY";;
@@ -161,6 +163,7 @@ ManipulateServices () {
             "Go Back")
                 echo ""
                 clear
+                COLUMNS=1
                 break
                 ;;
             *) echo "invalid option $REPLY";;
@@ -276,6 +279,7 @@ UnicornDemo () {
             "Go Back")
                 echo ""
                 clear
+                COLUMNS=1
                 break
                 ;;
             *) echo "invalid option $REPLY";;
@@ -401,6 +405,7 @@ Kubernetes () {
             "Go Back")
                 echo ""
                 clear
+                COLUMNS=1
                 break
                 ;;
             *) echo "invalid option $REPLY";;
@@ -436,6 +441,7 @@ DockerFunction () {
                 echo ""
                 docker-compose --env-file docker_vars/acl-root.env up -d
                 echo ""
+                COLUMNS=1
                 break
                 ;;
             "Reload Docker Compose (Secure Tokens)")
@@ -444,6 +450,7 @@ DockerFunction () {
                 echo ""
                 docker-compose --env-file docker_vars/acl-secure.env up -d
                 echo ""
+                COLUMNS=1
                 break
                 ;;
             "Reload Docker Compose (Custom Tokens)")
@@ -452,11 +459,13 @@ DockerFunction () {
                 echo ""
                 docker-compose --env-file docker_vars/acl-custom.env up -d
                 echo ""
+                COLUMNS=1
                 break
                 ;;
             "Go Back")
                 echo ""
                 clear
+                COLUMNS=1
                 break
                 ;;
             *) echo "invalid option $REPLY";;
@@ -511,6 +520,7 @@ ElseFunction () {
             "Go Back")
                 echo ""
                 clear
+                COLUMNS=1
                 break
                 ;;
             *) echo "invalid option $REPLY";;

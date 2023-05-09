@@ -1,0 +1,114 @@
+global:
+  enabled: false
+  name: consul-taranis                          # Must be unique (not collide) with any other clusters in the same Consul DC. Because K8s auth. Oof 
+  domain: consul
+  datacenter: dc4
+  image: hashicorp/consul-enterprise:1.15.2-ent    # Select an image from: https://hub.docker.com/r/hashicorp/consul-enterprise/tags
+
+  # gossipEncryption:
+  #   secretName: consul-gossip-encryption-key
+  #   secretKey: key
+
+  # ^^^ I shouldn't need a gossip key when it's a dataplane cluster
+
+  acls:
+    manageSystemACLs: true
+    bootstrapToken:
+      secretName: consul-partitions-acl-token     # Partition token exported from DC4 and imported via k3d-config.sh
+      secretKey: token
+
+  tls:
+    enabled: true                                 # Required for Peering
+    httpsOnly: false                              # Turns on the HTTP UI
+    enableAutoEncrypt: true
+    caCert:                                     # Root CA Cert and Key exported from DC4 and imported via k3d-config.sh
+      secretName: consul-ca-cert
+      secretKey: tls.crt
+    caKey:
+      secretName: consul-ca-key
+      secretKey: tls.key
+
+  enableConsulNamespaces: true                        # CRDs won't setup Consul namespaces correctly if this is false (default)
+
+  peering:
+    enabled: true
+
+  adminPartitions:
+    enabled: true
+    name: "taranis"
+
+  enterpriseLicense:
+    secretName: consul-license
+    secretKey: key
+    enableLicenseAutoload: true
+
+externalServers:
+  enabled: true
+  # hosts: ["{{ .Values.DC4_LB_IP }}"]
+  httpsPort: 443       # DC4 HTTPS API port (consul-ui loadbalancer)
+  grpcPort: 8502       # DC4 exposed gRPC port (consul-expose-servers loadbalancer)
+  # k8sAuthMethodHost: "{{ .Values.DC4_LB_IP }}"
+  tlsServerName: "server.dc4.consul"
+  skipServerWatch: true
+
+meshGateway:
+  enabled: True
+  replicas: 1
+  wanAddress:
+    source: "Service"
+    port: 8443
+  service:
+    type: LoadBalancer
+    port: 8443
+
+ui:
+  enabled: false      # The UI can only be enabled on Servers. This is a Consul Dataplane + Partition cluster.
+
+
+# prometheus:
+#   enabled: true       
+
+                      # How are we going to get UI prometheus stats from services in this kube cluster when the prometheus server is in DC4 cluster? 
+                      # Who knows. 
+
+apiGateway:
+  enabled: false
+
+connectInject:
+  enabled: true
+  default: false                 # Default
+  transparentProxy:
+    defaultEnabled: true         # Default
+  cni:
+    enabled: true
+  consulNamespaces:
+    consulDestinationNamespace: "default"   # Ignored when mirroringK8S is true
+    mirroringK8S: true
+    mirroringK8SPrefix: ""
+  metrics:
+    defaultEnabled: true
+    defaultEnableMerging: false
+
+syncCatalog:
+  enabled: true
+  k8sPrefix: null
+  k8sDenyNamespaces: ["kube-system", "kube-public", "unicorn"]
+  consulNamespaces:
+    mirroringK8S: true
+    mirroringK8SPrefix: ""
+  # addK8SNamespaceSuffix: false        # Leave this disabled. It's a TRAP!!! if the service name matches the pod name, it'll get stomped.
+
+# apiGateway:
+#   enabled: true
+#   imageEnvoy: envoyproxy/envoy:v1.23.1 # changed from 'latest'
+#   image: hashicorppreview/consul-api-gateway:0.5-dev-b2f0fd134ce4a95f9097942cbfb73dc11c260f82
+#   managedGatewayClass:
+#     enabled: true
+#     serviceType: LoadBalancer
+#     copyAnnotations:
+#       service:
+#         annotations: |
+#           - service.beta.kubernetes.io/aws-load-balancer-name
+#           - service.beta.kubernetes.io/aws-load-balancer-type
+#           - service.beta.kubernetes.io/aws-load-balancer-nlb-target-type
+#           - service.beta.kubernetes.io/aws-load-balancer-scheme
