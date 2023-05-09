@@ -28,7 +28,7 @@ fi
 
 if [[ $(docker ps -aq) ]]; then
     echo -e "${GRN}------------------------------------------"
-    echo -e "        Nuking all the things..."
+    echo -e "Nuking all the things... except images of course :D"
     echo -e "------------------------------------------"
     echo -e "${NC}"
     docker ps -a | grep -v CONTAINER | awk '{print $1}' | xargs docker stop; docker ps -a | grep -v CONTAINER | awk '{print $1}' | xargs docker rm; docker volume ls | grep -v DRIVER | awk '{print $2}' | xargs docker volume rm; docker network prune -f
