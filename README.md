@@ -10,7 +10,7 @@ This repo contains a full featured environment for setting up and testing HashiC
 
 **Software Versions used in this environment**:
 
-* Consul: 1.15.1 (Enterprise)
+* Consul: 1.15.2 (Enterprise)
 * Envoy: 1.25.1
 * FakeService: 0.25.0
 * Prometheus: 2.42.0

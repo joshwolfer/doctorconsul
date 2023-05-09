@@ -1,7 +1,7 @@
 global:
   name: consul
   domain: consul
-  datacenter: dc3
+  datacenter: dc4
   image: hashicorp/consul-enterprise:1.15.2-ent                                             # Select an image from: https://hub.docker.com/r/hashicorp/consul-enterprise/tags
   # imageEnvoy: "envoyproxy/envoy:v1.25.1"                                                  # Pulls the latest supported when unspecified.
   # imageK8S: docker.mirror.hashicorp.services/hashicorp/consul-k8s-control-plane:1.0.1     # What's this for?
@@ -101,8 +101,6 @@ connectInject:
     defaultEnabled: true         # Default
   cni:
     enabled: true
-    # cniBinDir: /var/lib/rancher/k3s/data/current/bin/         # K3s puts CNIs in a weird place with the flannel CNI. K3d breaks tproxy / dns proxy without this. This didn't work. back to calico...
-    # cniNetDir: /var/lib/rancher/k3s/agent/etc/cni/net.d       # K3s puts CNIs in a weird place with the flannel CNI. K3d breaks tproxy / dns proxy without this. This didn't work. back to calico...
     # enabled: false
   consulNamespaces:
     consulDestinationNamespace: "default"   # Ignored when mirroringK8S is true
