@@ -304,6 +304,7 @@ Kubernetes () {
     options=(
         "Get DC3 LoadBalancer Address"
         "Get DC3 Cernunnos LoadBalancer Address"
+        "Update FakeService version in ALL DCs"
         "(DC3) Helm Upgrade (config change)"
         "(DC3 P1 Cernunnos) Helm Upgrade (config change)"
         "Kube ${GRN}Apply${NC} DC3/default/unicorn/unicorn-frontend"
@@ -329,6 +330,32 @@ Kubernetes () {
                 echo -e "${YELL}kubectl get node k3d-dc3-p1-server-0 --context $KDC3_P1 -o json | jq -r '.metadata.annotations."k3s.io/internal-ip"' ${NC}"
                 kubectl get node k3d-dc3-p1-server-0 --context $KDC3_P1 -o json | jq -r '.metadata.annotations."k3s.io/internal-ip"'
                 echo ""
+                COLUMNS=1
+                REPLY=
+                ;;
+            "Update FakeService version in ALL DCs")
+                clear
+                FAKESERVICE_CUR_VERSION=$(egrep -o 'v[0-9]+\.[0-9]+\.[0-9]+' ./kube/configs/dc3/services/unicorn-frontend.yaml | cut -c 2-)
+                echo "FAKESERVICE_VERSION is currently set to: ${GRN}$FAKESERVICE_CUR_VERSION${NC}"
+
+                echo "Enter the desired new version for Fake Service (x.yy.z):"
+                while true; do
+
+                    read user_input
+
+                    # Validate the user input against the regex pattern
+                    if [[ $user_input =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+                        export FAKESERVICE_VERSION="$user_input"
+                        find ./kube/configs/dc*/services/ -type f -name "*.yaml" -exec grep -l "nicholasjackson/fake-service:v[0-9]*\.[0-9]*\.[0-9]*" {} \; -exec sed -i "s|\(nicholasjackson/fake-service:\)v[0-9]*\.[0-9]*\.[0-9]*|\1v$FAKESERVICE_VERSION|g" {} \;
+                        echo ""
+                        echo "FAKESERVICE_VERSION is now set to: ${YELL}$FAKESERVICE_VERSION${NC}"
+                        echo ""
+                        break
+                    else
+                    # If the input is not valid, print an error message
+                    echo "Invalid version number. Enter the desired new version for Fake Service (${RED}x.yy.z${NC}):"
+                    fi
+                done                
                 COLUMNS=1
                 REPLY=
                 ;;

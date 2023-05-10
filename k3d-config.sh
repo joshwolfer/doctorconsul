@@ -3,6 +3,7 @@
 set -e
 
 export CONSUL_HTTP_TOKEN=root
+export CONSUL_HTTP_SSL_VERIFY=false
 
 # HOME=$(pwd)
 # For some stupid reason k3d won't allow "./" in the path for config files so we have to do this non-sense for the Calico config to load...
@@ -46,12 +47,15 @@ if [[ "$*" == *"-update"* ]]
     exit 0
 fi
 
+# ==========================================  
+# Is Docker running? Start docker service if not
+# ========================================== 
 
-# Start docker service if it's not running:
+# service syntax to start docker differs between OSes. This checks if you're on Linux vs Mac. 
 
-OS_NAME=$(uname)
+OS_NAME=$(uname -a)
 
-if [ "$OS_NAME" == "Linux" ]; then
+if [[ "$OS_NAME" == *"Linux"* ]]; then
     echo ""
     echo -e "${GRN}Checking that Docker is running - If not starting it. ${NC}"
     pgrep dockerd || sudo service docker start
@@ -63,6 +67,10 @@ else
     echo ""
 fi
 
+# ==========================================  
+# MS Previous broke WSL cgroups (Not an issue anymore). The Fix:
+# ========================================== 
+
 # (4/18/23) New K3d errors regarding cgroups fixed via %UserProfile%\.wslconfig
 # 
 # [wsl2]
@@ -71,19 +79,49 @@ fi
 # wsl.exe --shutdown
 
 # ==========================================
-#             Setup K3d clusters
+#            Setup K3d Registry
 # ==========================================
 
-echo -e "${GRN}"
-echo -e "------------------------------------------"
-echo -e " Download Calico Config files"
-echo -e "------------------------------------------${NC}"
+# ------------------------------------------ 
+# Verify / Setup DNS resolution for the registry
+# ------------------------------------------ 
 
-# Fetch the Calico setup file to use with k3d. 
-# K3D default CNI (flannel) doesn't work with Consul Tproxy / DNS proxy
+OS_NAME=$(uname -a)
 
-# curl -s https://k3d.io/v5.0.1/usage/advanced/calico.yaml -o ./kube/calico.yaml    
-# ^^^ Not downloading every time now. File is already in the doctor consul repo.
+if [[ "$OS_NAME" == *"Linux"* ]]; then
+    # Match WSL2, since it handles DNS all weird like...
+    echo "Linux Detected"
+
+    HOSTS_EXISTS=$(grep "doctorconsul" /etc/hosts)
+
+    if [[ -z "$HOSTS_EXISTS" ]]; then   # If the grep returns nothing...
+      echo -e "${YELL}k3d-doctorconsul.localhost does not exist (${GRN}Adding entry${NC})"
+      echo "127.0.0.1       k3d-doctorconsul.localhost" | sudo tee -a /etc/hosts > /dev/null
+      grep "doctorconsul" /etc/hosts
+
+    else
+      echo -e "${YELL}k3d-doctorconsul.localhost already exists (${RED}Skipping..${NC})"
+    fi
+
+    echo ""
+
+else
+    echo "Linux not detected (${RED}Skipping..${NC}"
+fi
+
+# Pulling images from docker hub repeatedly, will eventually get you rate limited :(
+# This sets up a local registry so images can be pulled and cached locally. 
+# This is better in the long run anyway, beecause it'll save on time and bandwidth.
+
+REGISTRY_EXISTS=$(k3d registry list | grep doctorconsul)
+
+if [[ "$REGISTRY_EXISTS" == *"doctorconsul"* ]]; then
+    echo ""
+    echo -e "${GRN}Checking if the k3d registry (doctorconsul) already exist${NC}"
+    echo -e "${YELL}Registry exist (${RED}Skipping...${NC})"
+else
+    k3d registry create doctorconsul.localhost --port 12345    # Creates the registry k3d-doctorconsul.localhost
+fi
 
 # Leaving these for posterity. Don't actually need to mirror the images, just cache the images locally and then import into k3d.
     # docker pull calico/cni:v3.15.0
@@ -104,16 +142,47 @@ IMAGE_CALICO_NODE="calico/node:v3.15.0"
 IMAGE_CALICO_CONTROLLER="calico/kube-controllers:v3.15.0"
 IMAGE_FAKESERVICE="nicholasjackson/fake-service:v0.25.0"
 
-echo -e "${GRN}Caching calico images locally${NC}"
+echo -e "${GRN}Caching docker images locally${NC}"
 
-docker pull $IMAGE_CALICO_CNI                   # Pull the mirrored Calico CNI images locally
-docker pull $IMAGE_CALICO_FLEXVOL    # Pull the mirrored Calico CNI images locally
-docker pull $IMAGE_CALICO_NODE                  # Pull the mirrored Calico CNI images locally
+# Pull the public images, tag them for the k3d registry, and push them into the k3d registry
+# Probably going to have to add all the Consul images in there as well - only a matter of time before Docker Hub gets mad about those.
+# Will add them when k8s starts getting Image pull errors again ;)
+
+docker pull $IMAGE_CALICO_CNI
+docker tag $IMAGE_CALICO_CNI k3d-doctorconsul.localhost:12345/$IMAGE_CALICO_CNI
+docker push k3d-doctorconsul.localhost:12345/$IMAGE_CALICO_CNI
+
+docker pull $IMAGE_CALICO_FLEXVOL
+docker tag $IMAGE_CALICO_FLEXVOL k3d-doctorconsul.localhost:12345/$IMAGE_CALICO_FLEXVOL
+docker push k3d-doctorconsul.localhost:12345/$IMAGE_CALICO_FLEXVOL
+
+docker pull $IMAGE_CALICO_NODE
+docker tag $IMAGE_CALICO_NODE k3d-doctorconsul.localhost:12345/$IMAGE_CALICO_NODE
+docker push k3d-doctorconsul.localhost:12345/$IMAGE_CALICO_NODE
+
 docker pull $IMAGE_CALICO_CONTROLLER
+docker tag $IMAGE_CALICO_CONTROLLER k3d-doctorconsul.localhost:12345/$IMAGE_CALICO_CONTROLLER
+docker push k3d-doctorconsul.localhost:12345/$IMAGE_CALICO_CONTROLLER
+
 docker pull $IMAGE_FAKESERVICE
+docker tag $IMAGE_FAKESERVICE k3d-doctorconsul.localhost:12345/$IMAGE_FAKESERVICE
+docker push k3d-doctorconsul.localhost:12345/$IMAGE_FAKESERVICE
 
 
+# ==========================================
+#             Setup K3d clusters
+# ==========================================
 
+echo -e "${GRN}"
+echo -e "------------------------------------------"
+echo -e " Download Calico Config files"
+echo -e "------------------------------------------${NC}"
+
+# Fetch the Calico setup file to use with k3d. 
+# K3D default CNI (flannel) doesn't work with Consul Tproxy / DNS proxy
+
+# curl -s https://k3d.io/v5.0.1/usage/advanced/calico.yaml -o ./kube/calico.yaml    
+# ^^^ Don't downloading again. the image locations have been changed to the local k3d registry.
 
 # ------------------------------------------
 #                    DC3
@@ -130,21 +199,14 @@ k3d cluster create dc3 --network doctorconsul_wan \
     -p "11000:8000" \
     -p "9091:9090" \
     --k3s-arg '--flannel-backend=none@server:*' \
+    --registry-use k3d-doctorconsul.localhost:12345 \
     --k3s-arg="--disable=traefik@server:0"
-
     
-    
-    # --volume "$HOME/kube/calico.yaml:/var/lib/rancher/k3s/server/manifests/calico.yaml" \
     # -p "11000:8000"    DC3/unicorn/unicorn-frontend (fake service UI)
     # -p "9091:9090"     Prometheus UI
-
-
-echo -e "${GRN}(DC3) importing calico images into k3d cluster${NC}"
-k3d image import $IMAGE_CALICO_CNI -c dc3
-k3d image import $IMAGE_CALICO_FLEXVOL -c dc3
-k3d image import $IMAGE_CALICO_NODE -c dc3
-k3d image import $IMAGE_CALICO_CONTROLLER -c dc3
-k3d image import $IMAGE_FAKESERVICE -c dc3
+    
+    # Disable flannel
+    # install Calico (tproxy compatability)
 
 kubectl apply --context=$KDC3 -f ./kube/calico.yaml 
 
@@ -161,21 +223,10 @@ k3d cluster create dc3-p1 --network doctorconsul_wan \
     --api-port 127.0.0.1:6444 \
     -p "8443:8443" \
     --k3s-arg="--disable=traefik@server:0" \
+    --registry-use k3d-doctorconsul.localhost:12345 \
     --k3s-arg '--flannel-backend=none@server:*'
 
-echo -e "${GRN}(DC3-P1) importing calico images into k3d cluster${NC}"
-k3d image import $IMAGE_CALICO_CNI -c dc3-p1
-k3d image import $IMAGE_CALICO_FLEXVOL -c dc3-p1
-k3d image import $IMAGE_CALICO_NODE -c dc3-p1
-k3d image import $IMAGE_CALICO_CONTROLLER -c dc3-p1
-k3d image import $IMAGE_FAKESERVICE -c dc3-p1
-
 kubectl apply --context=$KDC3_P1 -f ./kube/calico.yaml 
-
-    # --volume "$HOME/kube/calico.yaml:/var/lib/rancher/k3s/server/manifests/calico.yaml"  
-
-    # Disable flannel
-    # install Calico (tproxy compatability)
 
     # -p "8443:8443"      api-gateway ingress
     # -p "12000:8000"     reserved for fakeservice something
@@ -196,14 +247,8 @@ k3d cluster create dc4 --network doctorconsul_wan \
     -p "12000:8000" \
     -p "9092:9090" \
     --k3s-arg '--flannel-backend=none@server:*' \
+    --registry-use k3d-doctorconsul.localhost:12345 \
     --k3s-arg="--disable=traefik@server:0"
-
-echo -e "${GRN}(DC4) importing calico images into k3d cluster${NC}"
-k3d image import $IMAGE_CALICO_CNI -c dc4
-k3d image import $IMAGE_CALICO_FLEXVOL -c dc4
-k3d image import $IMAGE_CALICO_NODE -c dc4
-k3d image import $IMAGE_CALICO_CONTROLLER -c dc4
-k3d image import $IMAGE_FAKESERVICE -c dc4
 
 kubectl apply --context=$KDC4 -f ./kube/calico.yaml 
 
@@ -222,14 +267,8 @@ echo -e "==========================================${NC}"
 k3d cluster create dc4-p1 --network doctorconsul_wan \
     --api-port 127.0.0.1:6446 \
     --k3s-arg="--disable=traefik@server:0" \
+    --registry-use k3d-doctorconsul.localhost:12345 \
     --k3s-arg '--flannel-backend=none@server:*'
-    
-echo -e "${GRN}(DC4-P1) importing calico images into k3d cluster${NC}"
-k3d image import $IMAGE_CALICO_CNI -c dc4-p1
-k3d image import $IMAGE_CALICO_FLEXVOL -c dc4-p1
-k3d image import $IMAGE_CALICO_NODE -c dc4-p1
-k3d image import $IMAGE_CALICO_CONTROLLER -c dc4-p1
-k3d image import $IMAGE_FAKESERVICE -c dc4-p1
 
 kubectl apply --context=$KDC4_P1 -f ./kube/calico.yaml 
 

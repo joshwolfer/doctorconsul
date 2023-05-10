@@ -5,6 +5,7 @@ set -e
 # export the variable to be used by the commands below
 export CONSUL_HTTP_TOKEN=root
 export CONSUL_HTTP_ADDR=127.0.0.1:8500
+export CONSUL_HTTP_SSL_VERIFY=false
 
 DC1="http://127.0.0.1:8500"
 DC2="http://127.0.0.1:8501"
