@@ -37,6 +37,13 @@ service {
             local_bind_address = "127.0.0.1"
             local_bind_port = 11002
         }
+        upstreams {
+            destination_name = "web-upstream"
+            destination_partition = "default"
+            destination_namespace = "default"
+            local_bind_address = "127.0.0.1"
+            local_bind_port = 11003
+        }
       }
     }
   }

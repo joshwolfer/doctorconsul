@@ -277,23 +277,23 @@ echo -e "${GRN}ACL Token: 000000004444 (-policy-name=unicorn):${NC}"
 
 consul acl policy create -name unicorn -partition=unicorn -namespace=default -rules @./acl/dc1-unicorn-frontend.hcl
 
-consul acl token create \
-    -partition=unicorn \
-    -namespace=default \
-    -secret="00000000-0000-0000-0000-000000004444" \
-    -accessor="00000000-0000-0000-0000-000000004444" \
-    -policy-name=unicorn \
-    -http-addr="$DC1"
+# consul acl token create \
+#     -partition=unicorn \
+#     -namespace=default \
+#     -secret="00000000-0000-0000-0000-000000004444" \
+#     -accessor="00000000-0000-0000-0000-000000004444" \
+#     -policy-name=unicorn \
+#     -http-addr="$DC1"
 
 ### ^^^ Temporary scoping of the token to the default namespace to figure out what's broken in cluster peering
 
-# consul acl token create \
-#     -service-identity=unicorn-frontend:dc1 \
-#     -partition=unicorn \
-#     -namespace=frontend \
-#     -secret="00000000-0000-0000-0000-000000004444" \
-#     -accessor="00000000-0000-0000-0000-000000004444" \
-#     -http-addr="$DC1"
+consul acl token create \
+    -service-identity=unicorn-frontend:dc1 \
+    -partition=unicorn \
+    -namespace=frontend \
+    -secret="00000000-0000-0000-0000-000000004444" \
+    -accessor="00000000-0000-0000-0000-000000004444" \
+    -http-addr="$DC1"
 
 # Service Token for Node: unicorn-backend-dc1_envoy. Still broken with SD of peer endpoints. Keep using the temp one above. 
 
@@ -528,6 +528,9 @@ consul config write -http-addr="$DC2" ./configs/service-defaults/unicorn-backend
 
 echo -e ""
 echo -e "${GRN}exported-services:${NC}"
+
+# Exported services are scoped to the PARTITION. Only 1 monolithic config can exist per partition.
+# Multiple written configs to the same partition will stomp each other. Good times!
 
 # Export the DC1/Donkey/default/Donkey service to DC1/default/default
 consul config write -http-addr="$DC1" ./configs/exported-services/exported-services-donkey.hcl

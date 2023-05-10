@@ -13,6 +13,15 @@ Services = [
         Peer = "dc2-heimdall"
       }
     ]
+  },
+  {
+    Name = "web-upstream"
+    Namespace = "default"
+    Consumers = [
+      {
+        Partition = "unicorn"
+      }
+    ]
   }
 ]
 
