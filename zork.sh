@@ -13,13 +13,6 @@ KDC3="k3d-dc3"
 KDC3_P1="k3d-dc3-p1"
 KDC4="k3d-dc4"
 
-# RED='\033[1;31m'
-# BLUE='\033[1;34m'
-# DGRN='\033[0;32m'
-# GRN='\033[1;32m'
-# YELL='\033[0;33m'
-# NC='\033[0m' # No Color
-
 RED=$(tput setaf 1)
 BLUE=$(tput setaf 4)
 DGRN=$(tput setaf 2)
@@ -32,9 +25,9 @@ COLUMNS=12
 
 clear
 
-# ==========================================
+# ------------------------------------------
 #           1.1 Donkey Discovery
-# ==========================================
+# ------------------------------------------
 
 DonkeyDiscovery () {
 
@@ -500,6 +493,146 @@ DockerFunction () {
     done
 }
 
+
+# ------------------------------------------ 
+#      6.1 Else > Chance Component Version
+# ------------------------------------------ 
+
+UpdateFakeService () {
+    # clear
+    echo "FAKESERVICE_VERSION is currently set to: Kube:${GRN}$FAKESERVICE_KUBE_CUR_VERSION${NC} Docker:${GRN}$FAKESERVICE_DOCKER_CUR_VERSION${NC}"
+    echo "Enter the desired new version for Fake Service (x.yy.z):"
+    while true; do
+        read user_input
+        # Validate the user input against the regex pattern
+        if [[ $user_input =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            export FAKESERVICE_VERSION="$user_input"
+            find ./kube/configs/dc*/services/ -type f -name "*.yaml" -exec grep -l "nicholasjackson/fake-service:v[0-9]*\.[0-9]*\.[0-9]*" {} \; -exec sed -i "s|\(nicholasjackson/fake-service:\)v[0-9]*\.[0-9]*\.[0-9]*|\1v$FAKESERVICE_VERSION|g" {} \;
+            find ./docker_vars/ -type f -name "*.env" -exec grep -l "nicholasjackson/fake-service:v[0-9]*\.[0-9]*\.[0-9]*" {} \; -exec sed -i "s|\(nicholasjackson/fake-service:\)v[0-9]*\.[0-9]*\.[0-9]*|\1v$FAKESERVICE_VERSION|g" {} \;
+            echo ""
+            echo "FAKESERVICE_VERSION is now set to: ${YELL}$FAKESERVICE_VERSION${NC}"
+            echo ""
+            break
+        else
+        # If the input is not valid, print an error message
+        echo "Invalid version number. Enter the desired new version for Fake Service (${RED}x.yy.z${NC}):"
+        fi
+    done      
+}
+
+UpdateConsul () {
+    # clear
+    echo "Consul is currently set to: Kube:${GRN}$CONSUL_KUBE_CUR_VERSION-ent${NC} Docker:${GRN}$CONSUL_DOCKER_CUR_VERSION-ent${NC}"
+    echo "Enter the desired new version for Consul (x.yy.z-ent):"
+    while true; do
+        read user_input
+        # Validate the user input against the regex pattern
+        if [[ $user_input =~ ^[0-9]+\.[0-9]+\.[0-9]+-ent$ ]]; then
+            export CONSUL_VERSION="$user_input"
+            find ./kube/helm/dc* -type f -name "*.yaml" -exec grep -l "image: hashicorp/consul-enterprise:" {} \; -exec sed -E -i "s|(image: hashicorp/consul-enterprise:)[0-9]+\.[0-9]+\.[0-9]+-ent|\1$CONSUL_VERSION|g" {} \;
+            find ./docker_vars/ -type f -name "*.env" -exec grep -l "CONSUL_IMAGE" {} \; -exec sed -E -i "s|(hashicorp/consul-enterprise:)[0-9]+\.[0-9]+\.[0-9]+-ent|\1$CONSUL_VERSION|g" {} \;
+            echo ""
+            echo "Consul is now set to: ${YELL}$CONSUL_VERSION${NC}"
+            echo ""
+            break
+        else
+        # If the input is not valid, print an error message
+        echo "Invalid version number. Enter the desired new version for Fake Service (${RED}x.yy.z-ent${NC}):"
+        fi
+    done      
+}
+
+UpdateConvoy () {
+    echo "Convoy version is currently set to: ${GRN}$CONVOY_DOCKER_CUR_VERSION${NC}"
+    echo "Enter the desired new version for Convoy (vX.XX.X-ent_vX.XX.X):"
+    while true; do
+        read user_input
+        # Validate the user input against the regex pattern
+        if [[ $user_input =~ ^v[0-9]+\.[0-9]+\.[0-9]+-ent_v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            export CONVOY_VERSION="$user_input"
+            find ./docker_vars/ -type f -name "*.env" -exec grep -l "CONVOY_IMAGE" {} \; -exec sed -E -i "s|(joshwolfer/consul-envoy:)v[0-9]+\.[0-9]+\.[0-9]+-ent_v[0-9]+\.[0-9]+\.[0-9]+|\1$CONVOY_VERSION|g" {} \;
+            echo ""
+            echo "Convoy is now set to: ${YELL}$CONVOY_VERSION${NC}"
+            echo ""
+            break
+        else
+        # If the input is not valid, print an error message
+        echo "Invalid version number. Enter the desired new version for Fake Service (${RED}vX.XX.X-ent_vX.XX.X${NC}):"
+        fi
+    done   
+}
+
+ShowComponentVersions () {
+    echo -e "${GRN}"
+    echo -e "=========================================="
+    echo -e "         Change Component Versions  "
+    echo -e "==========================================${NC}"
+    echo ""
+    echo -e "Current Versions"
+    echo ""
+    CONSUL_KUBE_CUR_VERSION=$(egrep 'image: hashicorp/consul-enterprise' ./kube/helm/dc3-helm-values.yaml | egrep -o '[0-9]+\.[0-9]+\.[0-9]+')
+    FAKESERVICE_KUBE_CUR_VERSION=$(egrep -o 'v[0-9]+\.[0-9]+\.[0-9]+' ./kube/configs/dc3/services/unicorn-frontend.yaml | cut -c 2-)
+
+    CONSUL_DOCKER_CUR_VERSION="$(egrep 'CONSUL_IMAGE' ./docker_vars/acl-custom.env | egrep -o '[0-9]+\.[0-9]+\.[0-9]+')"
+    FAKESERVICE_DOCKER_CUR_VERSION=$(egrep 'FAKESERVICE_IMAGE' ./docker_vars/acl-custom.env | egrep -o 'v[0-9]+\.[0-9]+\.[0-9]+' | cut -c 2-)
+    CONVOY_DOCKER_CUR_VERSION="$(egrep 'CONVOY_IMAGE' ./docker_vars/acl-custom.env | egrep -o 'v[0-9]+\.[0-9]+\.[0-9]+-ent_v[0-9]+\.[0-9]+\.[0-9]+')"  
+
+    echo -e "${YELL}Kubernetes          ${NC} | ${YELL}Docker Compose${NC}"
+    echo ""
+    echo "Consul: ${GRN}$CONSUL_KUBE_CUR_VERSION-ent   ${NC}| ${GRN}$CONSUL_DOCKER_CUR_VERSION-ent${NC}"
+    echo "FakeService: ${GRN}$FAKESERVICE_KUBE_CUR_VERSION  ${NC}| ${GRN}$FAKESERVICE_DOCKER_CUR_VERSION${NC}"
+    echo "Convoy: ${GRN}N/A ${NC}         | ${GRN}$CONVOY_DOCKER_CUR_VERSION${NC}"
+    echo ""
+}
+
+ChangeVersions () {
+    clear
+    ShowComponentVersions
+    COLUMNS=1
+    PS3=$'\n\033[1;31mChoose an option: \033[0m'
+    options=(
+        "Change Consul Version"
+        "Change FakeService Version"
+        "Change Convoy Version"
+        "Go Back"
+    )
+    select option in "${options[@]}"; do
+        case $option in
+            "Change Consul Version")
+                echo ""
+                UpdateConsul
+                clear
+                ShowComponentVersions
+                echo ""
+                REPLY=
+                ;;
+            "Change FakeService Version")
+                echo ""
+                UpdateFakeService
+                clear
+                ShowComponentVersions
+                echo ""
+                REPLY=
+                ;;
+            "Change Convoy Version")
+                echo ""
+                UpdateConvoy
+                clear
+                ShowComponentVersions
+                echo ""
+                REPLY=
+                ;;
+            "Go Back")
+                echo ""
+                clear
+                COLUMNS=1
+                break
+                ;;
+            *) echo "invalid option $REPLY";;
+        esac
+    done
+}
+
 # ==========================================
 #            6 Else Function
 # ==========================================
@@ -516,6 +649,7 @@ ElseFunction () {
     options=(
         "API call template to Consul Servers"
         "Stream logs from Consul Servers"
+        "Change Component Versions"
         "Go Back"
     )
     select option in "${options[@]}"; do
@@ -540,6 +674,13 @@ ElseFunction () {
                 echo -e "${GRN}(DC1)${NC} consul monitor -http-addr=$DC1 -token=root -log-level=trace"
                 echo -e "${GRN}(DC2)${NC} consul monitor -http-addr=$DC2 -token=root -log-level=trace"
                 echo -e "${GRN}(DC3)${NC} consul monitor -http-addr=$DC3 -token=root -log-level=trace"
+                echo ""
+                COLUMNS=1
+                REPLY=
+                ;;
+            "Change Component Versions")
+                echo ""
+                ChangeVersions
                 echo ""
                 COLUMNS=1
                 REPLY=
