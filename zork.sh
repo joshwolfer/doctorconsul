@@ -509,6 +509,8 @@ UpdateFakeService () {
             export FAKESERVICE_VERSION="$user_input"
             find ./kube/configs/dc*/services/ -type f -name "*.yaml" -exec grep -l "nicholasjackson/fake-service:v[0-9]*\.[0-9]*\.[0-9]*" {} \; -exec sed -i "s|\(nicholasjackson/fake-service:\)v[0-9]*\.[0-9]*\.[0-9]*|\1v$FAKESERVICE_VERSION|g" {} \;
             find ./docker_vars/ -type f -name "*.env" -exec grep -l "nicholasjackson/fake-service:v[0-9]*\.[0-9]*\.[0-9]*" {} \; -exec sed -i "s|\(nicholasjackson/fake-service:\)v[0-9]*\.[0-9]*\.[0-9]*|\1v$FAKESERVICE_VERSION|g" {} \;
+            find ./k3d-config.sh -exec grep -l "IMAGE_FAKESERVICE=" {} \; -exec sed -i "s|\(nicholasjackson/fake-service:\)v[0-9]*\.[0-9]*\.[0-9]*|\1v$FAKESERVICE_VERSION|g" {} \;
+            
             echo ""
             echo "FAKESERVICE_VERSION is now set to: ${YELL}$FAKESERVICE_VERSION${NC}"
             echo ""

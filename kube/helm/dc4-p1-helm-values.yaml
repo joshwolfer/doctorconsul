@@ -3,7 +3,7 @@ global:
   name: consul-taranis                          # Must be unique (not collide) with any other clusters in the same Consul DC. Because K8s auth. Oof 
   domain: consul
   datacenter: dc4
-  image: hashicorp/consul-enterprise:1.15.2-ent    # Select an image from: https://hub.docker.com/r/hashicorp/consul-enterprise/tags
+  image: hashicorp/consul-enterprise:1.15.3-ent    # Select an image from: https://hub.docker.com/r/hashicorp/consul-enterprise/tags
 
   # gossipEncryption:
   #   secretName: consul-gossip-encryption-key

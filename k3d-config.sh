@@ -86,6 +86,8 @@ fi
 # Verify / Setup DNS resolution for the registry
 # ------------------------------------------ 
 
+set +e    # If we don't do this, the script will exit when there is nothing in the hosts file
+
 OS_NAME=$(uname -a)
 
 if [[ "$OS_NAME" == *"Linux"* ]]; then
@@ -93,7 +95,7 @@ if [[ "$OS_NAME" == *"Linux"* ]]; then
     echo "Linux Detected"
 
     HOSTS_EXISTS=$(grep "doctorconsul" /etc/hosts)
-
+    
     if [[ -z "$HOSTS_EXISTS" ]]; then   # If the grep returns nothing...
       echo -e "${YELL}k3d-doctorconsul.localhost does not exist (${GRN}Adding entry${NC})"
       echo "127.0.0.1       k3d-doctorconsul.localhost" | sudo tee -a /etc/hosts > /dev/null
@@ -122,6 +124,8 @@ if [[ "$REGISTRY_EXISTS" == *"doctorconsul"* ]]; then
 else
     k3d registry create doctorconsul.localhost --port 12345    # Creates the registry k3d-doctorconsul.localhost
 fi
+
+set -e    # Enabled exit on errors again.
 
 # Leaving these for posterity. Don't actually need to mirror the images, just cache the images locally and then import into k3d.
     # docker pull calico/cni:v3.15.0
