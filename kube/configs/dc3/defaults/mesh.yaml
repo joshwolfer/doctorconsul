@@ -1,0 +1,8 @@
+apiVersion: consul.hashicorp.com/v1alpha1
+kind: Mesh
+metadata:
+  name: mesh
+  namespace: default
+spec:
+  transparentProxy:
+    meshDestinationsOnly: true

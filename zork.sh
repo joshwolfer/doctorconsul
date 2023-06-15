@@ -494,9 +494,9 @@ DockerFunction () {
 }
 
 
-# ------------------------------------------ 
+# ------------------------------------------
 #      6.1 Else > Chance Component Version
-# ------------------------------------------ 
+# ------------------------------------------
 
 UpdateFakeService () {
     # clear
@@ -510,7 +510,7 @@ UpdateFakeService () {
             find ./kube/configs/dc*/services/ -type f -name "*.yaml" -exec grep -l "nicholasjackson/fake-service:v[0-9]*\.[0-9]*\.[0-9]*" {} \; -exec sed -i "s|\(nicholasjackson/fake-service:\)v[0-9]*\.[0-9]*\.[0-9]*|\1v$FAKESERVICE_VERSION|g" {} \;
             find ./docker_vars/ -type f -name "*.env" -exec grep -l "nicholasjackson/fake-service:v[0-9]*\.[0-9]*\.[0-9]*" {} \; -exec sed -i "s|\(nicholasjackson/fake-service:\)v[0-9]*\.[0-9]*\.[0-9]*|\1v$FAKESERVICE_VERSION|g" {} \;
             find ./k3d-config.sh -exec grep -l "IMAGE_FAKESERVICE=" {} \; -exec sed -i "s|\(nicholasjackson/fake-service:\)v[0-9]*\.[0-9]*\.[0-9]*|\1v$FAKESERVICE_VERSION|g" {} \;
-            
+
             echo ""
             echo "FAKESERVICE_VERSION is now set to: ${YELL}$FAKESERVICE_VERSION${NC}"
             echo ""
@@ -519,7 +519,7 @@ UpdateFakeService () {
         # If the input is not valid, print an error message
         echo "Invalid version number. Enter the desired new version for Fake Service (${RED}x.yy.z${NC}):"
         fi
-    done      
+    done
 }
 
 UpdateConsul () {
@@ -541,7 +541,7 @@ UpdateConsul () {
         # If the input is not valid, print an error message
         echo "Invalid version number. Enter the desired new version for Fake Service (${RED}x.yy.z-ent${NC}):"
         fi
-    done      
+    done
 }
 
 UpdateConvoy () {
@@ -561,7 +561,7 @@ UpdateConvoy () {
         # If the input is not valid, print an error message
         echo "Invalid version number. Enter the desired new version for Fake Service (${RED}vX.XX.X-ent_vX.XX.X${NC}):"
         fi
-    done   
+    done
 }
 
 ShowComponentVersions () {
@@ -577,7 +577,7 @@ ShowComponentVersions () {
 
     CONSUL_DOCKER_CUR_VERSION="$(egrep 'CONSUL_IMAGE' ./docker_vars/acl-custom.env | egrep -o '[0-9]+\.[0-9]+\.[0-9]+')"
     FAKESERVICE_DOCKER_CUR_VERSION=$(egrep 'FAKESERVICE_IMAGE' ./docker_vars/acl-custom.env | egrep -o 'v[0-9]+\.[0-9]+\.[0-9]+' | cut -c 2-)
-    CONVOY_DOCKER_CUR_VERSION="$(egrep 'CONVOY_IMAGE' ./docker_vars/acl-custom.env | egrep -o 'v[0-9]+\.[0-9]+\.[0-9]+-ent_v[0-9]+\.[0-9]+\.[0-9]+')"  
+    CONVOY_DOCKER_CUR_VERSION="$(egrep 'CONVOY_IMAGE' ./docker_vars/acl-custom.env | egrep -o 'v[0-9]+\.[0-9]+\.[0-9]+-ent_v[0-9]+\.[0-9]+\.[0-9]+')"
 
     echo -e "${YELL}Kubernetes          ${NC} | ${YELL}Docker Compose${NC}"
     echo ""
@@ -701,6 +701,59 @@ ElseFunction () {
 # restart prometheus
 # curl -X POST http://localhost:9090/-/reload
 
+VIPandFilterChains () {
+    # clear
+    echo "Fetch Cluster ID list with:"
+    echo "${YELL}curl -s localhost:19000/clusters | grep 'observability_name::' | egrep '\\.consul' | awk -F 'observability_name::' '{print \$2}' | sort ${NC}"
+    echo ""
+    echo "This tool fetches the VIP and Filter Chains for the matching Cluster ID:"
+    echo "${GRN}Example:${NC} unicorn-tp-backend.unicorn.cernunnos.dc3.internal-v1.fcf79bfb-8a73-bb5f-5e9c-c4f9ce725c0a.consul"
+    echo ""
+    echo "Enter the cluster ID:"
+    while true; do
+        read CLUSTER_ID
+        # Validate the user input against the regex pattern
+        if [[ -n $CLUSTER_ID ]]; then
+            export JQ="curl -s localhost:19000/config_dump | jq '.configs[2].dynamic_listeners[] | .active_state.listener.filter_chains[] | select(.filters[0].typed_config.route_config.virtual_hosts[0].routes[0].route.cluster == \"${CLUSTER_ID}\") | del(.filters[0].typed_config.access_log)'"
+            echo ""
+            echo "The correct jq filter is:"
+            echo "${YELL}$JQ${NC}"
+            echo ""
+            break
+        else
+        # If the input is not valid, print an error message
+        echo "ClusterID cannot be blank"
+        fi
+    done
+}
+
+
+jqTroubleshootingFiltersMenu () {
+    clear
+    COLUMNS=1
+    PS3=$'\n\033[1;31mChoose an option: \033[0m'
+    options=(
+        "VIP and filter chains by cluster ID"
+        "Go Back"
+    )
+    select option in "${options[@]}"; do
+        case $option in
+            "VIP and filter chains by cluster ID")
+                echo ""
+                VIPandFilterChains
+                echo ""
+                REPLY=
+                ;;
+            "Go Back")
+                echo ""
+                clear
+                COLUMNS=1
+                break
+                ;;
+            *) echo "invalid option $REPLY";;
+        esac
+    done
+}
 
 
 # ==========================================
@@ -709,7 +762,7 @@ ElseFunction () {
 
 
 PS3=$'\n\033[1;31mChoose an option: \033[0m'
-options=("Service Discovery" "Manipulate Services" "Unicorn Demo" "Kubernetes" "Docker Compose" "Else")
+options=("Service Discovery" "Manipulate Services" "Unicorn Demo" "Kubernetes" "Docker Compose" "jq troubleshooting filters" "Else")
 echo ""
 COLUMNS=1
 select option in "${options[@]}"; do
@@ -731,6 +784,13 @@ select option in "${options[@]}"; do
             ;;
         "Else")
             ElseFunction
+            ;;
+        "jq troubleshooting filters")
+            echo ""
+            jqTroubleshootingFiltersMenu
+            echo ""
+            COLUMNS=1
+            REPLY=
             ;;
         "Quit")
             echo "User requested exit"

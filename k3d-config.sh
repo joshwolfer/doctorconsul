@@ -67,6 +67,15 @@ else
     echo ""
 fi
 
+# Because WSL is pissing me off and the UI metrics grab from Prometheus breaks if the clock is out of sync.
+
+WSL=$(uname -a)
+
+if [[ $WSL == *"WSL"* ]]; then
+  echo -e "${GRN}syncing the WSL clock to hardware...${NC}"
+  sudo hwclock -s
+fi
+
 # ==========================================  
 # MS Previous broke WSL cgroups (Not an issue anymore). The Fix:
 # ========================================== 
@@ -177,10 +186,10 @@ docker push k3d-doctorconsul.localhost:12345/$IMAGE_FAKESERVICE
 #             Setup K3d clusters
 # ==========================================
 
-echo -e "${GRN}"
-echo -e "------------------------------------------"
-echo -e " Download Calico Config files"
-echo -e "------------------------------------------${NC}"
+# echo -e "${GRN}"
+# echo -e "------------------------------------------"
+# echo -e " Download Calico Config files"
+# echo -e "------------------------------------------${NC}"
 
 # Fetch the Calico setup file to use with k3d. 
 # K3D default CNI (flannel) doesn't work with Consul Tproxy / DNS proxy
@@ -779,6 +788,20 @@ echo -e "${GRN}DC3 (default): proxy-defaults ${NC}- MGW mode:${YELL}Local${NC} P
 kubectl apply --context $KDC4 -f ./kube/configs/dc3/defaults/proxy-defaults.yaml
 echo -e "${GRN}DC3 (cernunnos): proxy-defaults${NC} - MGW mode:${YELL}Local${NC} Proto:${YELL}HTTP ${NC}"
 kubectl apply --context $KDC4_P1 -f ./kube/configs/dc3/defaults/proxy-defaults.yaml
+
+# ------------------------------------------
+#                    Mesh Defaults
+# ------------------------------------------
+
+echo -e "${GRN}"
+echo -e "------------------------------------------"
+echo -e "            Mesh Defaults"
+echo -e "------------------------------------------${NC}"
+
+echo -e ""
+echo -e "${GRN}DC3 (default): mesh config: ${YELL}Mesh Destinations Only: False ${NC}"      # leave only one of these on
+# echo -e "${GRN}DC3 (default): mesh config: ${YELL}Mesh Destinations Only: True ${NC}"
+# kubectl apply --context $KDC3 -f ./kube/configs/dc3/defaults/mesh.yaml
 
 # ------------------------------------------
 #                 Intentions
