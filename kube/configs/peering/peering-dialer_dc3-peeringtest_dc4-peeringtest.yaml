@@ -1,0 +1,11 @@
+apiVersion: consul.hashicorp.com/v1alpha1
+kind: PeeringDialer
+metadata:
+  name: dc4-peering-test
+  namespace: consul
+spec:
+  peer:
+    secret:
+      name: "peering-token-dc4-peeringtest-dc3-peeringtest"
+      key: "data"
+      backend: "kubernetes"

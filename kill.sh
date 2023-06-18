@@ -22,6 +22,8 @@ if [[ "$*" == *"-k3d"* ]]
     echo ""
     k3d cluster delete dc3
     k3d cluster delete dc3-p1
+    k3d cluster delete dc4
+    k3d cluster delete dc4-p1
     echo ""
     exit 0
 fi

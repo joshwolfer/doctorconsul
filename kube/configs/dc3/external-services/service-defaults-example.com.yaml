@@ -1,0 +1,11 @@
+apiVersion: consul.hashicorp.com/v1alpha1
+kind: ServiceDefaults
+metadata:
+  name: example-https
+spec:
+  protocol: tcp
+  destination:
+    addresses:
+      - "example.com"
+      - "wolfmansound.com"
+    port: 443

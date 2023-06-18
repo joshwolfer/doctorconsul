@@ -1,0 +1,12 @@
+apiVersion: consul.hashicorp.com/v1alpha1
+kind: ServiceIntentions
+metadata:
+  name: example-https
+  namespace: default
+spec:
+  sources:
+    - name: unicorn-frontend
+      namespace: unicorn
+      action: allow
+  destination:
+    name: example-https

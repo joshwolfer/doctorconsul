@@ -711,20 +711,25 @@ VIPandFilterChains () {
     echo ""
     echo "Enter the cluster ID:"
     while true; do
-        read CLUSTER_ID
-        # Validate the user input against the regex pattern
-        if [[ -n $CLUSTER_ID ]]; then
-            export JQ="curl -s localhost:19000/config_dump | jq '.configs[2].dynamic_listeners[] | .active_state.listener.filter_chains[] | select(.filters[0].typed_config.route_config.virtual_hosts[0].routes[0].route.cluster == \"${CLUSTER_ID}\") | del(.filters[0].typed_config.access_log)'"
-            echo ""
-            echo "The correct jq filter is:"
-            echo "${YELL}$JQ${NC}"
-            echo ""
-            break
+    read -r CLUSTER_ID
+    # Validate the user input against the regex pattern
+    if [[ -n $CLUSTER_ID ]]; then
+        if [[ $CLUSTER_ID == destination.* ]]; then
+            export JQ="curl -s localhost:19000/config_dump | jq '.configs[2].dynamic_listeners[] | .active_state.listener.filter_chains[] | select(.filters[0].typed_config.cluster == \"${CLUSTER_ID}\") | {filter_chain_match, filters} | del(.filters[0].typed_config.access_log)'"
         else
+            export JQ="curl -s localhost:19000/config_dump | jq '.configs[2].dynamic_listeners[] | .active_state.listener.filter_chains[] | select(.filters[0].typed_config.route_config.virtual_hosts[0].routes[0].route.cluster == \"${CLUSTER_ID}\") | del(.filters[0].typed_config.access_log)'"
+        fi
+        echo ""
+        echo "The correct jq filter is:"
+        echo "${YELL}$JQ${NC}"
+        echo ""
+        break
+    else
         # If the input is not valid, print an error message
         echo "ClusterID cannot be blank"
-        fi
-    done
+    fi
+done
+
 }
 
 

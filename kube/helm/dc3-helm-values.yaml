@@ -75,6 +75,14 @@ meshGateway:
     type: LoadBalancer
     port: 8443
 
+terminatingGateways:
+  enabled: true
+  defaults:
+    replicas: 1
+  consulNamespace: "default"
+  gateways:
+  - name: terminating-gateway
+
 ui:
   enabled: true
   service:

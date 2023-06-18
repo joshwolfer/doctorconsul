@@ -25,7 +25,7 @@ BLUE='\033[1;34m'
 DGRN='\033[0;32m'
 GRN='\033[1;32m'
 YELL='\033[0;33m'
-NC='\033[0m' 
+NC='\033[0m'
 
 if [[ "$*" == *"help"* ]]
   then
@@ -33,6 +33,7 @@ if [[ "$*" == *"help"* ]]
     echo ""
     echo "Options:"
     echo "  -nopeer      Bypass cluster peering. Useful when launching k3d without the rest of Doctor Consul (Compose environment)"
+    echo "  -k8s-only    Bypass Consul - Only Install raw K3d clusters. Useful when you want to play with k8s alone"
     echo "  -update      Update K3d to the latest version"
     exit 0
 fi
@@ -47,11 +48,11 @@ if [[ "$*" == *"-update"* ]]
     exit 0
 fi
 
-# ==========================================  
+# ==========================================
 # Is Docker running? Start docker service if not
-# ========================================== 
+# ==========================================
 
-# service syntax to start docker differs between OSes. This checks if you're on Linux vs Mac. 
+# service syntax to start docker differs between OSes. This checks if you're on Linux vs Mac.
 
 OS_NAME=$(uname -a)
 
@@ -76,24 +77,24 @@ if [[ $WSL == *"WSL"* ]]; then
   sudo hwclock -s
 fi
 
-# ==========================================  
+# ==========================================
 # MS Previous broke WSL cgroups (Not an issue anymore). The Fix:
-# ========================================== 
+# ==========================================
 
 # (4/18/23) New K3d errors regarding cgroups fixed via %UserProfile%\.wslconfig
-# 
+#
 # [wsl2]
 # kernelCommandLine = cgroup_no_v1=all cgroup_enable=cpuset cgroup_memory=1 cgroup_enable=memory
-# 
+#
 # wsl.exe --shutdown
 
 # ==========================================
 #            Setup K3d Registry
 # ==========================================
 
-# ------------------------------------------ 
+# ------------------------------------------
 # Verify / Setup DNS resolution for the registry
-# ------------------------------------------ 
+# ------------------------------------------
 
 set +e    # If we don't do this, the script will exit when there is nothing in the hosts file
 
@@ -104,7 +105,7 @@ if [[ "$OS_NAME" == *"Linux"* ]]; then
     echo "Linux Detected"
 
     HOSTS_EXISTS=$(grep "doctorconsul" /etc/hosts)
-    
+
     if [[ -z "$HOSTS_EXISTS" ]]; then   # If the grep returns nothing...
       echo -e "${YELL}k3d-doctorconsul.localhost does not exist (${GRN}Adding entry${NC})"
       echo "127.0.0.1       k3d-doctorconsul.localhost" | sudo tee -a /etc/hosts > /dev/null
@@ -263,10 +264,10 @@ k3d cluster create dc4 --network doctorconsul_wan \
     --registry-use k3d-doctorconsul.localhost:12345 \
     --k3s-arg="--disable=traefik@server:0"
 
-kubectl apply --context=$KDC4 -f ./kube/calico.yaml 
+kubectl apply --context=$KDC4 -f ./kube/calico.yaml
 
-#  12000 > 8000 - whatever app UI   
-#  local 8503 > 443 - Consul UI 
+#  12000 > 8000 - whatever app UI
+#  local 8503 > 443 - Consul UI
 
 # ------------------------------------------
 #            DC4-P1 taranis
@@ -283,7 +284,7 @@ k3d cluster create dc4-p1 --network doctorconsul_wan \
     --registry-use k3d-doctorconsul.localhost:12345 \
     --k3s-arg '--flannel-backend=none@server:*'
 
-kubectl apply --context=$KDC4_P1 -f ./kube/calico.yaml 
+kubectl apply --context=$KDC4_P1 -f ./kube/calico.yaml
 
 # ==========================================
 #            Setup Consul-k8s
@@ -293,6 +294,14 @@ echo -e "${GRN}"
 echo -e "=========================================="
 echo -e "           Setup Consul-k8s"
 echo -e "==========================================${NC}"
+
+if [[ "$*" == *"k8s-only"* ]] || [[ "$*" == *"k3d-only"* ]]
+  then
+    echo ""
+    echo -e "${RED} K3d clusters provisioned - Aborting Consul Configs (-k8s-only) ${NC}"
+    echo ""
+    exit 0
+fi
 
 echo -e ""
 echo -e "${GRN}Adding HashiCorp Helm Chart:${NC}"
@@ -644,9 +653,9 @@ echo -e "${GRN}DC4/default -> DC3/default${NC}"
 consul peering generate-token -name dc4-default -http-addr="$DC3" > tokens/peering-dc3_default-dc4-default.token
 consul peering establish -name dc3-default -http-addr="$DC4" -peering-token $(cat tokens/peering-dc3_default-dc4-default.token)
 
-## Doing the peering through Consul CLI/API, because it's gonna be a pain to inject MGW addresses into CRD YAML. 
+## Doing the peering through Consul CLI/API, because it's gonna be a pain to inject MGW addresses into CRD YAML.
 ## Should probably do that at some point
-## It's also a royal pain in the ass to create kube secrets for every peer relationship between Kube. 
+## It's also a royal pain in the ass to create kube secrets for every peer relationship between Kube.
 
 # ------------------------------------------
 # Peer DC4/taranis -> DC3/default
@@ -701,12 +710,41 @@ echo -e "${GRN}DC4 (taranis): Create unicorn namespace${NC}"
 kubectl create namespace unicorn --context $KDC4_P1
 
 # ------------------------------------------
+#           Exported-services
+# ------------------------------------------
+
+# If exports aren't before services are launch, it shits in Consul Dataplane mode.
+
+echo -e "${GRN}"
+echo -e "------------------------------------------"
+echo -e "           Exported Services"
+echo -e "------------------------------------------${NC}"
+
+echo -e ""
+echo -e "${GRN}DC3 (default): Export services from the ${YELL}default ${GRN}partition ${NC}"
+kubectl apply --context $KDC3 -f ./kube/configs/dc3/exported-services/exported-services-dc3-default.yaml
+
+echo -e ""
+echo -e "${GRN}DC3 (cernunnos): Export services from the ${YELL}cernunnos ${GRN}partition ${NC}"
+kubectl apply --context $KDC3_P1 -f ./kube/configs/dc3/exported-services/exported-services-dc3-cernunnos.yaml
+
+echo -e ""
+echo -e "${GRN}DC4 (default): Export services from the ${YELL}default ${GRN}partition ${NC}"
+kubectl apply --context $KDC4 -f ./kube/configs/dc4/exported-services/exported-services-dc4-default.yaml
+
+echo -e ""
+echo -e "${GRN}DC4 (taranis): Export services from the ${YELL}taranis ${GRN}partition ${NC}"
+kubectl apply --context $KDC4_P1 -f ./kube/configs/dc4/exported-services/exported-services-dc4-taranis.yaml
+
+echo -e ""
+
+# ------------------------------------------
 #     Services
 # ------------------------------------------
 
 echo -e "${GRN}"
 echo -e "------------------------------------------"
-echo -e "        Launch Kube Configs"
+echo -e "    Launch Kube Consul Service Configs"
 echo -e "------------------------------------------${NC}"
 
 # ----------------
@@ -770,12 +808,12 @@ kubectl apply --context $KDC4_P1 -f ./kube/configs/dc4/services/unicorn-taranis-
 # kubectl delete --context $KDC4_P1 -f ./kube/configs/dc4/services/unicorn-taranis-tp_backend.yaml
 
 # ------------------------------------------
-#                    Defaults
+#               proxy-defaults
 # ------------------------------------------
 
 echo -e "${GRN}"
 echo -e "------------------------------------------"
-echo -e "               Defaults"
+echo -e "             proxy-defaults"
 echo -e "------------------------------------------${NC}"
 
 echo -e ""
@@ -872,6 +910,46 @@ kubectl apply --context $KDC4_P1 -f ./kube/configs/dc4/exported-services/exporte
 
 echo -e ""
 
+# ------------------------------------------
+#           External Services
+# ------------------------------------------
+
+echo -e "${GRN}"
+echo -e "------------------------------------------"
+echo -e "           External Services"
+echo -e "------------------------------------------${NC}"
+
+echo -e "${GRN}DC3 (default): External Service-default - Example.com  ${NC}"
+kubectl apply --context $KDC3 -f ./kube/configs/dc3/external-services/service-defaults-example.com.yaml
+# kubectl delete --context $KDC3 -f ./kube/configs/dc3/external-services/service-defaults-example.com.yaml
+
+echo -e "${GRN}DC3 (default): Service Intention - External Service - Example.com ${NC}"
+kubectl apply --context $KDC3 -f ./kube/configs/dc3/intentions/external-example_unicorn-frontend-allow.yaml
+# kubectl delete --context $KDC3 -f ./kube/configs/dc3/intentions/external-example_unicorn-frontend-allow.yaml
+
+# ------------------------------------------
+#           Terminating Gateway
+# ------------------------------------------
+
+echo -e "${GRN}"
+echo -e "------------------------------------------"
+echo -e "           Terminating Gateway"
+echo -e "------------------------------------------${NC}"
+
+# Add the terminating-gateway ACL policy to the TGW Role, so it can actually service:write the services it fronts. DUMB.
+consul acl policy create -name "Terminating-Gateway-Service-Write" -rules @./kube/configs/dc3/acl/terminating-gateway.hcl -http-addr="$DC3"
+export DC3_TGW_ROLEID=$(consul acl role list -http-addr="$DC3" -format=json | jq -r '.[] | select(.Name == "consul-terminating-gateway-acl-role") | .ID')
+consul acl role update -id $DC3_TGW_ROLEID -policy-name "Terminating-Gateway-Service-Write"
+
+echo -e "${GRN}DC3 (default): Terminating-Gateway config   ${NC}"
+kubectl apply --context $KDC3 -f ./kube/configs/dc3/tgw/terminating-gateway.yaml
+# kubectl delete --context $KDC3 -f ./kube/configs/dc3/tgw/terminating-gateway.yaml
+
+echo -e "${GRN}DC3 (default): Terminating-Gateway config   ${NC}"
+kubectl apply --context $KDC3 -f ./kube/configs/dc3/tgw/terminating-gateway.yaml
+# kubectl delete --context $KDC3 -f ./kube/configs/dc3/tgw/terminating-gateway.yaml
+
+
 
 # ==========================================
 #              Useful Commands
@@ -896,4 +974,21 @@ echo -e ""
 # consul-k8s proxy list -n unicorn | grep unicorn-frontend | cut -f1 | tr -d " " | xargs -I {} kubectl exec -nunicorn -it {} -- /usr/bin/curl -s localhost:19000/config_dump
 # consul-k8s proxy list -n unicorn | grep unicorn-backend | cut -f1 | tr -d " " | xargs -I {} kubectl exec -nunicorn -it {} -- /usr/bin/curl -s localhost:19000/clusters
 # consul-k8s proxy list -n unicorn | grep unicorn-backend | cut -f1 | tr -d " " | xargs -I {} kubectl exec -nunicorn -it {} -- /usr/bin/curl -s localhost:19000/config_dump
+
+# consul peering generate-token -name dc3-default -http-addr="$DC1"
+
+
+
+# -------------------------------------------
+#      Peering with CRDs - works-ish
+# -------------------------------------------
+
+# consul partition create -name "peering-test" -http-addr="$DC3"
+# consul partition create -name "peering-test" -http-addr="$DC4"
+
+# kubectl apply --context $KDC4 -f ./kube/configs/peering/peering-acceptor_dc3-peeringtest_dc4-peeringtest.yaml
+# kubectl --context $KDC4 get secret peering-token-dc4-peeringtest-dc3-peeringtest -nconsul --output yaml > ./tokens/peering-token-dc4-peeringtest-dc3-peeringtest.yaml
+
+# kubectl apply --context $KDC3 -f ./tokens/peering-token-dc4-peeringtest-dc3-peeringtest.yaml
+# kubectl apply --context $KDC3 -f ./kube/configs/peering/peering-dialer_dc3-peeringtest_dc4-peeringtest.yaml
 
