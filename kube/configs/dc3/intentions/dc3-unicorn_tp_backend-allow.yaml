@@ -4,6 +4,8 @@ metadata:
   name: unicorn-tp-backend
   namespace: unicorn
 spec:
+  destination:
+    name: unicorn-tp-backend
   sources:
     - name: unicorn-frontend
       namespace: unicorn
@@ -12,5 +14,7 @@ spec:
       namespace: frontend
       peer: dc1-unicorn
       action: allow
-  destination:
-    name: unicorn-tp-backend
+    - name: unicorn-ssg-frontend
+      namespace: unicorn
+      samenessGroup: ssg-unicorn        # This is horking the intention for unicorn-ssg-frontend on local unicorn-backend
+      action: allow

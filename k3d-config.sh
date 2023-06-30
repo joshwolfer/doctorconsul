@@ -20,6 +20,9 @@ KDC3_P1="k3d-dc3-p1"
 KDC4="k3d-dc4"
 KDC4_P1="k3d-dc4-p1"
 
+HELM_CHART_VER=""
+# HELM_CHART_VER="--version 1.2.0-rc1"                # pinned consul-k8s chart version
+
 RED='\033[1;31m'
 BLUE='\033[1;34m'
 DGRN='\033[0;32m'
@@ -121,8 +124,13 @@ else
     echo "Linux not detected (${RED}Skipping..${NC}"
 fi
 
+if [[ "$*" == *"k8s-only"* ]] || [[ "$*" == *"k3d-only"* ]]
+  then
+    echo -e "${RED} Building K3d clusters ONLY (-k8s-only) ${NC}"
+fi
+
 # Pulling images from docker hub repeatedly, will eventually get you rate limited :(
-# This sets up a local registry so images can be pulled and cached locally. 
+# This sets up a local registry so images can be pulled and cached locally.
 # This is better in the long run anyway, beecause it'll save on time and bandwidth.
 
 REGISTRY_EXISTS=$(k3d registry list | grep doctorconsul)
@@ -192,10 +200,10 @@ docker push k3d-doctorconsul.localhost:12345/$IMAGE_FAKESERVICE
 # echo -e " Download Calico Config files"
 # echo -e "------------------------------------------${NC}"
 
-# Fetch the Calico setup file to use with k3d. 
+# Fetch the Calico setup file to use with k3d.
 # K3D default CNI (flannel) doesn't work with Consul Tproxy / DNS proxy
 
-# curl -s https://k3d.io/v5.0.1/usage/advanced/calico.yaml -o ./kube/calico.yaml    
+# curl -s https://k3d.io/v5.0.1/usage/advanced/calico.yaml -o ./kube/calico.yaml
 # ^^^ Don't downloading again. the image locations have been changed to the local k3d registry.
 
 # ------------------------------------------
@@ -211,18 +219,21 @@ k3d cluster create dc3 --network doctorconsul_wan \
     --api-port 127.0.0.1:6443 \
     -p "8502:443@loadbalancer" \
     -p "11000:8000" \
+    -p "11001:8001" \
     -p "9091:9090" \
     --k3s-arg '--flannel-backend=none@server:*' \
     --registry-use k3d-doctorconsul.localhost:12345 \
     --k3s-arg="--disable=traefik@server:0"
-    
-    # -p "11000:8000"    DC3/unicorn/unicorn-frontend (fake service UI)
+
+    # -p "11000:8000"    DC3/unicorn/unicorn-frontend (fake service UI)     - Mapped to local http://127.0.0.1:11000/ui/
+    # -p "11001:8001"    DC3/unicorn/unicorn-ssg-frontend (fake service UI) - Mapped to local http://127.0.0.1:11001/ui/
     # -p "9091:9090"     Prometheus UI
-    
+
+
     # Disable flannel
     # install Calico (tproxy compatability)
 
-kubectl apply --context=$KDC3 -f ./kube/calico.yaml 
+kubectl apply --context=$KDC3 -f ./kube/calico.yaml
 
 # ------------------------------------------
 #            DC3-P1 cernunnos
@@ -240,7 +251,7 @@ k3d cluster create dc3-p1 --network doctorconsul_wan \
     --registry-use k3d-doctorconsul.localhost:12345 \
     --k3s-arg '--flannel-backend=none@server:*'
 
-kubectl apply --context=$KDC3_P1 -f ./kube/calico.yaml 
+kubectl apply --context=$KDC3_P1 -f ./kube/calico.yaml
 
     # -p "8443:8443"      api-gateway ingress
     # -p "12000:8000"     reserved for fakeservice something
@@ -313,7 +324,7 @@ helm repo update
 
 echo -e ""
 echo -e "${YELL}Currently installed Consul Helm Version:${NC}"
-helm search repo hashicorp/consul --versions | head -n2
+helm search repo hashicorp/consul --versions --devel | head -n4
 
 # Should probably pin a specific helm chart version, but I love living on the wild side!!!
 
@@ -349,8 +360,9 @@ kubectl create secret generic consul-license --namespace consul --from-literal=k
 echo -e ""
 echo -e "${GRN}DC3: Helm consul-k8s install${NC}"
 
-helm install consul hashicorp/consul -f ./kube/helm/dc3-helm-values.yaml --namespace consul --debug
-# helm upgrade consul hashicorp/consul -f ./kube/helm/dc3-helm-values.yaml --namespace consul --debug
+helm install consul hashicorp/consul -f ./kube/helm/dc3-helm-values.yaml --namespace consul --debug $HELM_CHART_VER
+# helm upgrade consul hashicorp/consul -f ./kube/helm/dc3-helm-values.yaml --namespace consul --kube-context $KDC3 --debug
+# helm list --namespace consul        # To see which chart version was actually installed. Can be an issue when using RC versions with version mismatch.
 
 echo -e ""
 echo -e "${GRN}DC3: Extract CA cert / key, bootstrap token, and partition token for child Consul Dataplane clusters ${NC}"
@@ -399,8 +411,8 @@ echo -e "${YELL}DC3 External Load Balancer IP is:${NC} $DC3_LB_IP"
 echo -e ""
 echo -e "${GRN}Discover the DC3 Cernunnos cluster Kube API${NC}"
 
-export DC3_K8S_IP="https://$(kubectl get node k3d-dc3-p1-server-0 --context $KDC3_P1 -o json | jq -r '.metadata.annotations."k3s.io/internal-ip"'):6443"
-echo -e "${YELL}DC3 K8s API address is:${NC} $DC3_K8S_IP"
+export DC3_P1_K8S_IP="https://$(kubectl get node k3d-dc3-p1-server-0 --context $KDC3_P1 -o json | jq -r '.metadata.annotations."k3s.io/internal-ip"'):6443"
+echo -e "${YELL}DC3-P1 K8s API address is:${NC} $DC3_P1_K8S_IP"
 
   # kubectl get services --selector="app=consul,component=server" --namespace consul --output jsonpath="{range .items[*]}{@.status.loadBalancer.ingress[*].ip}{end}"
   #  ^^^ Potentially better way to get list of all LB IPs, but I don't care for Doctor Consul right now.
@@ -411,11 +423,15 @@ echo -e "${YELL}DC3 K8s API address is:${NC} $DC3_K8S_IP"
 echo -e ""
 echo -e "${GRN}DC3-P1 (Cernunnos): Helm consul-k8s install${NC}"
 
-helm install consul hashicorp/consul -f ./kube/helm/dc3-p1-helm-values.yaml --namespace consul \
-  --set externalServers.k8sAuthMethodHost=$DC3_K8S_IP \
+helm install consul hashicorp/consul -f ./kube/helm/dc3-p1-helm-values.yaml --namespace consul $HELM_CHART_VER \
+  --set externalServers.k8sAuthMethodHost=$DC3_P1_K8S_IP \
   --set externalServers.hosts[0]=$DC3_LB_IP \
   --debug
 # ^^^ --dry-run to test variable interpolation... if it actually worked.
+
+# export DC3_LB_IP="$(kubectl get svc consul-ui -nconsul --context $KDC3 -o json | jq -r '.status.loadBalancer.ingress[0].ip')"
+# export DC3_P1_K8S_IP="https://$(kubectl get node k3d-dc3-p1-server-0 --context $KDC3_P1 -o json | jq -r '.metadata.annotations."k3s.io/internal-ip"'):6443"
+# helm upgrade consul hashicorp/consul -f ./kube/helm/dc3-p1-helm-values.yaml --namespace consul --kube-context $KDC3_P1 --set externalServers.k8sAuthMethodHost=$DC3_P1_K8S_IP --set externalServers.hosts[0]=$DC3_LB_IP --debug
 
 # ==========================================
 #         Install Consul-k8s (DC4)
@@ -445,7 +461,8 @@ kubectl create secret generic consul-license --namespace consul --from-literal=k
 echo -e ""
 echo -e "${GRN}DC4: Helm consul-k8s install${NC}"
 
-helm install consul hashicorp/consul -f ./kube/helm/dc4-helm-values.yaml --namespace consul --debug
+helm install consul hashicorp/consul -f ./kube/helm/dc4-helm-values.yaml --namespace consul --debug $HELM_CHART_VER
+# helm upgrade consul hashicorp/consul -f ./kube/helm/dc4-helm-values.yaml --namespace consul --kube-context $KDC4 --debug
 
 echo -e ""
 echo -e "${GRN}DC4: Extract CA cert / key, bootstrap token, and partition token for child Consul Dataplane clusters ${NC}"
@@ -501,11 +518,15 @@ echo -e "${YELL}DC4 K8s API address is:${NC} $DC4_K8S_IP"
 echo -e ""
 echo -e "${GRN}DC4-P1 (Taranis): Helm consul-k8s install${NC}"
 
-helm install consul hashicorp/consul -f ./kube/helm/dc4-p1-helm-values.yaml --namespace consul \
+helm install consul hashicorp/consul -f ./kube/helm/dc4-p1-helm-values.yaml --namespace consul $HELM_CHART_VER \
   --set externalServers.k8sAuthMethodHost=$DC4_K8S_IP \
   --set externalServers.hosts[0]=$DC4_LB_IP \
   --debug
 # ^^^ --dry-run to test variable interpolation... if it actually worked.
+
+# export DC4_LB_IP="$(kubectl get svc consul-ui -nconsul --context $KDC4 -o json | jq -r '.status.loadBalancer.ingress[0].ip')"
+# export DC4_K8S_IP="https://$(kubectl get node k3d-dc4-p1-server-0 --context $KDC4_P1 -o json | jq -r '.metadata.annotations."k3s.io/internal-ip"'):6443"
+# helm upgrade consul hashicorp/consul -f ./kube/helm/dc4-p1-helm-values.yaml --namespace consul --kube-context $KDC4_P1 --set externalServers.k8sAuthMethodHost=$DC3_P1_K8S_IP --set externalServers.hosts[0]=$DC3_LB_IP --debug
 
 
 # ==========================================
@@ -709,6 +730,34 @@ echo -e "${GRN}DC4 (taranis): Create unicorn namespace${NC}"
 
 kubectl create namespace unicorn --context $KDC4_P1
 
+# Ideal order of operations, per Derek:
+
+#    1. Setup your service-defaults or proxy-defaults or whatever is setting the protocol
+#    2. Create the SG
+#    3. Create the exports
+#    4. Create everything else
+
+
+# ------------------------------------------
+#               proxy-defaults
+# ------------------------------------------
+
+echo -e "${GRN}"
+echo -e "------------------------------------------"
+echo -e "             proxy-defaults"
+echo -e "------------------------------------------${NC}"
+
+echo -e ""
+echo -e "${GRN}DC3 (default): proxy-defaults ${NC}- MGW mode:${YELL}Local${NC} Proto:${YELL}HTTP ${NC}"
+kubectl apply --context $KDC3 -f ./kube/configs/dc3/defaults/proxy-defaults.yaml
+echo -e "${GRN}DC3 (cernunnos): proxy-defaults${NC} - MGW mode:${YELL}Local${NC} Proto:${YELL}HTTP ${NC}"
+kubectl apply --context $KDC3_P1 -f ./kube/configs/dc3/defaults/proxy-defaults.yaml
+
+echo -e "${GRN}DC3 (default): proxy-defaults ${NC}- MGW mode:${YELL}Local${NC} Proto:${YELL}HTTP ${NC}"
+kubectl apply --context $KDC4 -f ./kube/configs/dc3/defaults/proxy-defaults.yaml
+echo -e "${GRN}DC3 (cernunnos): proxy-defaults${NC} - MGW mode:${YELL}Local${NC} Proto:${YELL}HTTP ${NC}"
+kubectl apply --context $KDC4_P1 -f ./kube/configs/dc3/defaults/proxy-defaults.yaml
+
 # ------------------------------------------
 #           Exported-services
 # ------------------------------------------
@@ -737,6 +786,18 @@ echo -e "${GRN}DC4 (taranis): Export services from the ${YELL}taranis ${GRN}part
 kubectl apply --context $KDC4_P1 -f ./kube/configs/dc4/exported-services/exported-services-dc4-taranis.yaml
 
 echo -e ""
+
+# ------------------------------------------
+#          Service Sameness Groups
+# ------------------------------------------
+
+echo -e "${GRN}"
+echo -e "------------------------------------------"
+echo -e "       Service Sameness Groups"
+echo -e "------------------------------------------${NC}"
+
+echo -e "${GRN}DC3 (default): Apply Sameness Group: ssg-unicorn ${NC}"
+kubectl apply --context $KDC3 -f ./kube/configs/dc3/sameness-groups/sameness-group-unicorn.yaml
 
 # ------------------------------------------
 #     Services
@@ -808,26 +869,6 @@ kubectl apply --context $KDC4_P1 -f ./kube/configs/dc4/services/unicorn-taranis-
 # kubectl delete --context $KDC4_P1 -f ./kube/configs/dc4/services/unicorn-taranis-tp_backend.yaml
 
 # ------------------------------------------
-#               proxy-defaults
-# ------------------------------------------
-
-echo -e "${GRN}"
-echo -e "------------------------------------------"
-echo -e "             proxy-defaults"
-echo -e "------------------------------------------${NC}"
-
-echo -e ""
-echo -e "${GRN}DC3 (default): proxy-defaults ${NC}- MGW mode:${YELL}Local${NC} Proto:${YELL}HTTP ${NC}"
-kubectl apply --context $KDC3 -f ./kube/configs/dc3/defaults/proxy-defaults.yaml
-echo -e "${GRN}DC3 (cernunnos): proxy-defaults${NC} - MGW mode:${YELL}Local${NC} Proto:${YELL}HTTP ${NC}"
-kubectl apply --context $KDC3_P1 -f ./kube/configs/dc3/defaults/proxy-defaults.yaml
-
-echo -e "${GRN}DC3 (default): proxy-defaults ${NC}- MGW mode:${YELL}Local${NC} Proto:${YELL}HTTP ${NC}"
-kubectl apply --context $KDC4 -f ./kube/configs/dc3/defaults/proxy-defaults.yaml
-echo -e "${GRN}DC3 (cernunnos): proxy-defaults${NC} - MGW mode:${YELL}Local${NC} Proto:${YELL}HTTP ${NC}"
-kubectl apply --context $KDC4_P1 -f ./kube/configs/dc3/defaults/proxy-defaults.yaml
-
-# ------------------------------------------
 #                    Mesh Defaults
 # ------------------------------------------
 
@@ -883,31 +924,6 @@ echo -e "${GRN}DC4 (taranis): Intention allow DC3/default/unicorn/unicorn-fronte
 kubectl apply --context $KDC4_P1 -f ./kube/configs/dc4/intentions/dc4-taranis-unicorn_tp_backend-allow.yaml
 
 
-# ------------------------------------------
-#           Exported-services
-# ------------------------------------------
-
-echo -e "${GRN}"
-echo -e "------------------------------------------"
-echo -e "           Exported Services"
-echo -e "------------------------------------------${NC}"
-
-echo -e ""
-echo -e "${GRN}DC3 (default): Export services from the ${YELL}default ${GRN}partition ${NC}"
-kubectl apply --context $KDC3 -f ./kube/configs/dc3/exported-services/exported-services-dc3-default.yaml
-
-echo -e ""
-echo -e "${GRN}DC3 (cernunnos): Export services from the ${YELL}cernunnos ${GRN}partition ${NC}"
-kubectl apply --context $KDC3_P1 -f ./kube/configs/dc3/exported-services/exported-services-dc3-cernunnos.yaml
-
-echo -e ""
-echo -e "${GRN}DC4 (default): Export services from the ${YELL}default ${GRN}partition ${NC}"
-kubectl apply --context $KDC4 -f ./kube/configs/dc4/exported-services/exported-services-dc4-default.yaml
-
-echo -e ""
-echo -e "${GRN}DC4 (taranis): Export services from the ${YELL}taranis ${GRN}partition ${NC}"
-kubectl apply --context $KDC4_P1 -f ./kube/configs/dc4/exported-services/exported-services-dc4-taranis.yaml
-
 echo -e ""
 
 # ------------------------------------------
@@ -939,15 +955,34 @@ echo -e "------------------------------------------${NC}"
 # Add the terminating-gateway ACL policy to the TGW Role, so it can actually service:write the services it fronts. DUMB.
 consul acl policy create -name "Terminating-Gateway-Service-Write" -rules @./kube/configs/dc3/acl/terminating-gateway.hcl -http-addr="$DC3"
 export DC3_TGW_ROLEID=$(consul acl role list -http-addr="$DC3" -format=json | jq -r '.[] | select(.Name == "consul-terminating-gateway-acl-role") | .ID')
-consul acl role update -id $DC3_TGW_ROLEID -policy-name "Terminating-Gateway-Service-Write"
+consul acl role update -id $DC3_TGW_ROLEID -policy-name "Terminating-Gateway-Service-Write" -http-addr="$DC3"
 
 echo -e "${GRN}DC3 (default): Terminating-Gateway config   ${NC}"
 kubectl apply --context $KDC3 -f ./kube/configs/dc3/tgw/terminating-gateway.yaml
 # kubectl delete --context $KDC3 -f ./kube/configs/dc3/tgw/terminating-gateway.yaml
 
-echo -e "${GRN}DC3 (default): Terminating-Gateway config   ${NC}"
-kubectl apply --context $KDC3 -f ./kube/configs/dc3/tgw/terminating-gateway.yaml
-# kubectl delete --context $KDC3 -f ./kube/configs/dc3/tgw/terminating-gateway.yaml
+
+# ------------------------------------------
+# Service Sameness Group Application (unicorn-ssg-frontend)
+# ------------------------------------------
+
+echo -e "${GRN}"
+echo -e "------------------------------------------"
+echo -e " Service Sameness Group Application (unicorn-ssg-frontend)"
+echo -e "------------------------------------------${NC}"
+
+echo -e "${GRN}DC3 (default): Apply service-resolver: unicorn-backend/unicorn ${NC}"    # Matches the upstream unicorn-backend and applies the SSG.
+kubectl apply --context $KDC3 -f ./kube/configs/dc3/service-resolver/service-resolver-unicorn_sameness.yaml
+
+echo -e "${GRN}DC3 (default): Apply Unicorn-ssg-frontend serviceAccount, serviceDefaults, service, deployment ${NC}"
+kubectl apply --context $KDC3 -f ./kube/configs/dc3/services/unicorn-ssg_frontend.yaml
+
+# We can't create a new intentions file for SGs where an intention for the upstream service already exists. Have to just modify the original intention file.
+
+# Exported Services
+#   unicorn-tp-backend is added to the exported-services configs using "SamenessGroup: ssg-unicorn".
+#   Exported on dc3-cernunnos, dc4-default, and dc4-taranis
+
 
 
 
@@ -986,9 +1021,9 @@ kubectl apply --context $KDC3 -f ./kube/configs/dc3/tgw/terminating-gateway.yaml
 # consul partition create -name "peering-test" -http-addr="$DC3"
 # consul partition create -name "peering-test" -http-addr="$DC4"
 
-# kubectl apply --context $KDC4 -f ./kube/configs/peering/peering-acceptor_dc3-peeringtest_dc4-peeringtest.yaml
-# kubectl --context $KDC4 get secret peering-token-dc4-peeringtest-dc3-peeringtest -nconsul --output yaml > ./tokens/peering-token-dc4-peeringtest-dc3-peeringtest.yaml
+# kubectl apply --context $KDC4 -f ./kube/configs/peering/peering-acceptor_dc3-default_dc4-default.yaml
+# kubectl --context $KDC4 get secret peering-token-dc3-default-dc4-default -nconsul --output yaml > ./tokens/peering-token-dc3-default-dc4-default.yaml
 
-# kubectl apply --context $KDC3 -f ./tokens/peering-token-dc4-peeringtest-dc3-peeringtest.yaml
-# kubectl apply --context $KDC3 -f ./kube/configs/peering/peering-dialer_dc3-peeringtest_dc4-peeringtest.yaml
+# kubectl apply --context $KDC3 -f ./tokens/peering-token-dc3-default-dc4-default.yaml
+# kubectl apply --context $KDC3 -f ./kube/configs/peering/peering-dialer_dc3-default_dc4-default.yaml
 

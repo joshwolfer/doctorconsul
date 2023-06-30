@@ -3,13 +3,16 @@ global:
   name: consul-cernunnos                          # Must be unique (not collide) with any other clusters in the same Consul DC. Because K8s auth. Oof 
   domain: consul
   datacenter: dc3
-  image: hashicorp/consul-enterprise:1.15.3-ent    # Select an image from: https://hub.docker.com/r/hashicorp/consul-enterprise/tags
+  image: hashicorp/consul-enterprise:1.16.0-ent                             # Select an image from: https://hub.docker.com/r/hashicorp/consul-enterprise/tags
+  # imageEnvoy: "envoyproxy/envoy:v1.25.1"                                  # Pulls the latest supported when unspecified.
+  # imageK8S: hashicorp/consul-k8s-control-plane:1.2.0-rc1                  # If an RC version of Consul is used, this needs to also be the matching RC version. And the Helm chart version will need to be the dev version. 9th circle of version matching Hell. 
+  # imageConsulDataplane: "hashicorp/consul-dataplane:1.1.0"                # Pulls the latest when unspecified.
 
   # gossipEncryption:
   #   secretName: consul-gossip-encryption-key
   #   secretKey: key
 
-  # ^^^ I shouldn't need a gossip key when it's a dataplane cluster
+  # ^^^ I shouldn't need a gossip key when it's a dataplane cluster.
 
   acls:
     manageSystemACLs: true

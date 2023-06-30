@@ -4,9 +4,9 @@ metadata:
   name: example-https
   namespace: default
 spec:
+  destination:
+    name: example-https
   sources:
     - name: unicorn-frontend
       namespace: unicorn
       action: allow
-  destination:
-    name: example-https

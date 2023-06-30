@@ -4,6 +4,8 @@ metadata:
   name: unicorn-backend
   namespace: unicorn
 spec:
+  destination:
+    name: unicorn-backend
   sources:
     - name: unicorn-frontend
       namespace: unicorn
@@ -12,5 +14,3 @@ spec:
       namespace: frontend
       peer: dc1-unicorn
       action: allow
-  destination:
-    name: unicorn-backend

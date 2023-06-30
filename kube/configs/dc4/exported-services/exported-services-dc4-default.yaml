@@ -9,7 +9,8 @@ spec:
       namespace: "unicorn"
       consumers:
       - peer: dc3-default ## The name of the peer that receives the service
-    - name: "unicorn-tp-backend" 
+    - name: "unicorn-tp-backend"
       namespace: "unicorn"
       consumers:
-      - peer: dc3-default 
+      - peer: dc3-default
+      - samenessGroup: ssg-unicorn

@@ -42,7 +42,9 @@ fi
 echo ""
 echo -e "${GRN}k3d:${NC}"
 k3d cluster delete dc3
-
+k3d cluster delete dc3-p1
+k3d cluster delete dc4
+k3d cluster delete dc4-p1
 echo ""
 
 

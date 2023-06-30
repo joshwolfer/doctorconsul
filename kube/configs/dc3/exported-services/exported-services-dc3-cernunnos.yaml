@@ -2,18 +2,19 @@ apiVersion: consul.hashicorp.com/v1alpha1
 kind: ExportedServices
 metadata:
   name: cernunnos           ## The name of the partition containing the service
-  # namespace: unicorn      # I believe ExportedServices are scoped to partition only.
+  # namespace: unicorn      # ExportedServices are scoped to partition only. Don't specify a NS, although it's going to be imperative that we re-scope these to NS+Partition for enterprise UX. 
 spec:
   services:
     - name: "unicorn-backend" ## The name of the service you want to export
       namespace: "unicorn"
       consumers:
-      - partition: default 
+      - partition: default
     - name: "unicorn-tp-backend" ## The name of the service you want to export
       namespace: "unicorn"
       consumers:
-      - partition: default 
-    - name: "mesh-gateway" ## The name of the service you want to export
+      - partition: default
+      - samenessGroup: ssg-unicorn    # Adding the SSG so that it also gets exported for unicorn-ssg-frontend (part of the SSG).
+    - name: "mesh-gateway"            # 1.16: Still have to export the mesh gateway across partitions or the MGW can't discover cross partition services. Yeah. For real... (NET-4767)
       namespace: "default"
       consumers:
-      - partition: default 
+      - partition: default

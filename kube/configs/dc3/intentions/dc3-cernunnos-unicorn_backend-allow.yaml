@@ -4,12 +4,11 @@ metadata:
   name: unicorn-backend
   namespace: unicorn
 spec:
+  destination:
+    name: unicorn-backend
+    namespace: unicorn
   sources:
     - name: unicorn-frontend
       partition: default
       namespace: unicorn
       action: allow
-  destination:
-    name: unicorn-backend
-    # partition: cernunnos   # partition not used (likely until multi partition within single k8s is supported)
-    namespace: unicorn

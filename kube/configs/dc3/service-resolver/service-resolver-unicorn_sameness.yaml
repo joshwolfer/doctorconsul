@@ -1,0 +1,17 @@
+apiVersion: consul.hashicorp.com/v1alpha1
+kind: ServiceResolver
+metadata:
+  name: unicorn-tp-backend
+  namespace: unicorn
+spec:
+  failover:                         # requires at least one of the following: service, serviceSubset, namespace, targets, datacenters
+    '*':
+      samenessGroup: "ssg-unicorn"
+      # targets:
+        # - partition: "cernunnos"
+        # - service: <serviceName>
+        # - serviceSubset: <serviceSubset>
+        # - namespace: <namespaceName>
+        # - partition: <partitionName>
+        # - datacenter: <datacenterName>
+        # - peer: <peerName>
