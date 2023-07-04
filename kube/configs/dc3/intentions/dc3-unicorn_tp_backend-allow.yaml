@@ -16,5 +16,5 @@ spec:
       action: allow
     - name: unicorn-ssg-frontend
       namespace: unicorn
-      samenessGroup: ssg-unicorn        # This is horking the intention for unicorn-ssg-frontend on local unicorn-backend
+      # samenessGroup: ssg-unicorn        # This is horking the intention for unicorn-ssg-frontend on local unicorn-backend
       action: allow

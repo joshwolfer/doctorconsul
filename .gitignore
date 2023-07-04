@@ -45,3 +45,4 @@ secret.tfvars
 terraform.rc
 tf.plan.out
 tokens/*
+nohup.out

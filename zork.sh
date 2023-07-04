@@ -348,7 +348,7 @@ Kubernetes () {
                     # If the input is not valid, print an error message
                     echo "Invalid version number. Enter the desired new version for Fake Service (${RED}x.yy.z${NC}):"
                     fi
-                done                
+                done
                 COLUMNS=1
                 REPLY=
                 ;;
@@ -373,7 +373,7 @@ Kubernetes () {
                 echo ""
                 COLUMNS=1
                 REPLY=
-                ;;           
+                ;;
             "Kube ${GRN}Apply${NC} DC3/default/unicorn/unicorn-frontend")
                 echo ""
                 echo -e "${YELL}kubectl apply --context=$KDC3 -f ./kube/configs/dc3/services/unicorn-frontend.yaml ${NC}"
@@ -635,6 +635,122 @@ ChangeVersions () {
     done
 }
 
+
+k9sAddPlugin () {
+    PLUGIN_DIR="$HOME/k9s"
+    PLUGIN_FILE="plugin.yml"
+
+    # Create the plugin directory if it doesn't exist
+    mkdir -p "${PLUGIN_DIR}"
+
+    # Path to the plugin file
+    PLUGIN_PATH="${PLUGIN_DIR}/${PLUGIN_FILE}"
+
+    # Define the plugin configuration
+PLUGIN_CONFIG='
+plugin:
+  debug:
+    shortCut: Shift-D
+    confirm: false
+    description: Debug
+    scopes:
+    - containers
+    command: kubectl
+    background: false
+    args:
+    - debug
+    - -it
+    - -n
+    - $NAMESPACE
+    - $POD
+    - --target
+    - $NAME
+    - --image
+    - nicolaka/netshoot
+    - --context
+    - $CONTEXT
+  scaleNukeInPods:
+    shortCut: Shift-0
+    confirm: false
+    description: Scale a Deployment to 0
+    scopes:
+    - pods
+    command: bash
+    background: false
+    args:
+    - -c
+    - |
+      kubectl scale --replicas=0 deployment "$(echo ${NAME} | sed '\''s/-[a-zA-Z0-9]*-[^-]*$//'\'')" -n ${NAMESPACE} --context ${CONTEXT}
+  scale0:
+    shortCut: Shift-0
+    confirm: false
+    description: Scale a Deployment to 0
+    scopes:
+    - deployments
+    command: bash
+    background: false
+    args:
+    - -c
+    - |
+      kubectl scale --replicas=0 deployment ${NAME} -n ${NAMESPACE} --context ${CONTEXT}
+  scale1:
+    shortCut: Shift-1
+    confirm: false
+    description: Scale a Deployment to 1
+    scopes:
+    - deployments
+    command: bash
+    background: false
+    args:
+    - -c
+    - |
+      kubectl scale --replicas=1 deployment ${NAME} -n ${NAMESPACE} --context ${CONTEXT}
+  scale2:
+    shortCut: Shift-2
+    confirm: false
+    description: Scale a Deployment to 2
+    scopes:
+    - deployments
+    command: bash
+    background: false
+    args:
+    - -c
+    - |
+      kubectl scale --replicas=2 deployment ${NAME} -n ${NAMESPACE} --context ${CONTEXT}
+  scale3:
+    shortCut: Shift-3
+    confirm: false
+    description: Scale a Deployment to 3
+    scopes:
+    - deployments
+    command: bash
+    background: false
+    args:
+    - -c
+    - |
+      kubectl scale --replicas=3 deployment ${NAME} -n ${NAMESPACE} --context ${CONTEXT}
+'
+
+    # Write the plugin configuration to the file
+    echo "${PLUGIN_CONFIG}" > "${PLUGIN_PATH}"
+
+    # Print the status
+    echo "Plugin created at ${YELL}${PLUGIN_PATH}${NC}"
+    echo "Restart k9s or press '0' in k9s to reload configuration."
+    echo ""
+    echo "Plugin commands:"
+    echo " Pods View:"
+    echo "  ${YELL}Shift + 0${NC}: Scale deployment down to zero"
+    echo " Containers View"
+    echo "  ${YELL}Shift + D${NC}: Attach and shell into a Netshoot Debug container"
+    echo " Deployments View"
+    echo "  ${YELL}Shift + 0${NC}: Scale deployment 0"
+    echo "  ${YELL}Shift + 1${NC}: Scale deployment 1"
+    echo "  ${YELL}Shift + 2${NC}: Scale deployment 2"
+    echo "  ${YELL}Shift + 3${NC}: Scale deployment 3"
+    echo ""
+}
+
 # ==========================================
 #            6 Else Function
 # ==========================================
@@ -652,6 +768,7 @@ ElseFunction () {
         "API call template to Consul Servers"
         "Stream logs from Consul Servers"
         "Change Component Versions"
+        "K9s: Add plugin"
         "Go Back"
     )
     select option in "${options[@]}"; do
@@ -683,6 +800,13 @@ ElseFunction () {
             "Change Component Versions")
                 echo ""
                 ChangeVersions
+                echo ""
+                COLUMNS=1
+                REPLY=
+                ;;
+            "K9s: Add plugin")
+                echo ""
+                k9sAddPlugin
                 echo ""
                 COLUMNS=1
                 REPLY=
