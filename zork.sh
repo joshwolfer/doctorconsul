@@ -652,23 +652,15 @@ plugin:
   debug:
     shortCut: Shift-D
     confirm: false
-    description: Debug
+    description: Debug Container
     scopes:
     - containers
-    command: kubectl
+    command: bash
     background: false
     args:
-    - debug
-    - -it
-    - -n
-    - $NAMESPACE
-    - $POD
-    - --target
-    - $NAME
-    - --image
-    - nicolaka/netshoot
-    - --context
-    - $CONTEXT
+    - -c
+    - |
+      kubectl debug -it --context $CONTEXT -n $NAMESPACE $POD --target $NAME --image nicolaka/netshoot
   scaleNukeInPods:
     shortCut: Shift-0
     confirm: false
@@ -729,6 +721,42 @@ plugin:
     - -c
     - |
       kubectl scale --replicas=3 deployment ${NAME} -n ${NAMESPACE} --context ${CONTEXT}
+  envoyStatsToVSC:
+    shortCut: Shift-1
+    confirm: false
+    description: Envoy stats > VSC
+    scopes:
+    - pods
+    command: bash
+    background: false
+    args:
+    - -c
+    - |
+      kubectl exec --context ${CONTEXT} -n ${NAMESPACE} ${NAME} -- /usr/bin/curl -s localhost:19000/stats | sort | vsc
+  envoyClustersToVSC:
+    shortCut: Shift-2
+    confirm: false
+    description: Envoy clusters > VSC
+    scopes:
+    - pods
+    command: bash
+    background: false
+    args:
+    - -c
+    - |
+      kubectl exec --context ${CONTEXT} -n ${NAMESPACE} ${NAME} -- /usr/bin/curl -s localhost:19000/clusters | sort | vsc
+  envoyConfigDumpToVSC:
+    shortCut: Shift-3
+    confirm: false
+    description: Envoy config_dump > VSC
+    scopes:
+    - pods
+    command: bash
+    background: false
+    args:
+    - -c
+    - |
+      kubectl exec --context ${CONTEXT} -n ${NAMESPACE} ${NAME} -- /usr/bin/curl -s localhost:19000/config_dump | vsc json
 '
 
     # Write the plugin configuration to the file
@@ -739,15 +767,21 @@ plugin:
     echo "Restart k9s or press '0' in k9s to reload configuration."
     echo ""
     echo "Plugin commands:"
-    echo " Pods View:"
-    echo "  ${YELL}Shift + 0${NC}: Scale deployment down to zero"
-    echo " Containers View"
-    echo "  ${YELL}Shift + D${NC}: Attach and shell into a Netshoot Debug container"
-    echo " Deployments View"
-    echo "  ${YELL}Shift + 0${NC}: Scale deployment 0"
-    echo "  ${YELL}Shift + 1${NC}: Scale deployment 1"
-    echo "  ${YELL}Shift + 2${NC}: Scale deployment 2"
-    echo "  ${YELL}Shift + 3${NC}: Scale deployment 3"
+    echo ""
+    echo "  Pods View:"
+    echo "    ${YELL}Shift + 0${NC}: Scale deployment down to zero"
+    echo "    ${YELL}Shift + 1${NC}: Pull Envoy /stats and open in VSC"
+    echo "    ${YELL}Shift + 2${NC}: Pull Envoy /clusters and open in VSC"
+    echo "    ${YELL}Shift + 3${NC}: Pull Envoy /config_dump and open in VSC"
+    echo ""
+    echo "  Containers View"
+    echo "    ${YELL}Shift + D${NC}: Attach and shell into a Netshoot Debug container"
+    echo ""
+    echo "  Deployments View"
+    echo "    ${YELL}Shift + 0${NC}: Scale deployment 0"
+    echo "    ${YELL}Shift + 1${NC}: Scale deployment 1"
+    echo "    ${YELL}Shift + 2${NC}: Scale deployment 2"
+    echo "    ${YELL}Shift + 3${NC}: Scale deployment 3"
     echo ""
 }
 

@@ -1,0 +1,12 @@
+apiVersion: consul.hashicorp.com/v1alpha1
+kind: SamenessGroup
+metadata:
+  name: ssg-unicorn
+  # namespace: unicorn         # Can't have a namespace assigned. It'll break.
+spec:
+  defaultForFailover: false       # Since this is false, a service-resolver needs to be referenced.
+  members:
+    - partition: default          # You have to include the partition that the SamenessGroup is being configured for, or Consul has a fit.
+    - partition: cernunnos
+    - peer: dc4-default
+    - peer: dc4-taranis

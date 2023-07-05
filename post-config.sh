@@ -583,7 +583,7 @@ echo -e ""
 if [[ "$*" == *"-k3d"* ]]
   then
     echo -e "${GRN} Launching k3d configuration script (k3d-config.sh) ${NC}"
-    ./k3d-config.sh
+    ./k3d-config.sh -full
     echo ""
 fi
 

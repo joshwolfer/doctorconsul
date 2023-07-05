@@ -12,3 +12,8 @@ spec:
       partition: default
       namespace: unicorn
       action: allow
+    - name: unicorn-ssg-frontend
+      partition: default
+      namespace: unicorn
+      # samenessGroup: ssg-unicorn
+      action: allow

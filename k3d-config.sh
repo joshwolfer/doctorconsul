@@ -35,8 +35,8 @@ if [[ "$*" == *"help"* ]]
     echo -e "Syntax: ./k3d-config.sh [OPTIONS]"
     echo ""
     echo "Options:"
-    echo "  -nopeer      Bypass cluster peering. Useful when launching k3d without the rest of Doctor Consul (Compose environment)"
-    echo "  -k8s-only    Bypass Consul - Only Install raw K3d clusters. Useful when you want to play with k8s alone"
+    echo "  -full        Integrate with full docker compose environment. Without this, only launch Consul in k3d"
+    echo "  -k8s-only    Only Install raw K3d clusters without Consul. Useful when you want to play with k8s alone"
     echo "  -update      Update K3d to the latest version"
     exit 0
 fi
@@ -139,6 +139,7 @@ if [[ "$REGISTRY_EXISTS" == *"doctorconsul"* ]]; then
     echo ""
     echo -e "${GRN}Checking if the k3d registry (doctorconsul) already exist${NC}"
     echo -e "${YELL}Registry exist (${RED}Skipping...${NC})"
+    echo ""
 else
     k3d registry create doctorconsul.localhost --port 12345    # Creates the registry k3d-doctorconsul.localhost
 fi
@@ -604,7 +605,7 @@ kubectl --context $KDC4 apply -f ./kube/configs/peering/mgw-peering.yaml
 #            Cluster Peering
 # ==============================================================================================================================
 
-k3dPeering () {
+k3dPeeringToVM () {
 
   # ------------------------------------------
   # Peer DC3/default -> DC1/default
@@ -647,7 +648,7 @@ k3dPeering () {
 }
 
 # $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-#            Check for -nopeer
+#            Check for -full
 # $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 echo -e "${GRN}"
@@ -655,13 +656,13 @@ echo -e "=========================================="
 echo -e "            Cluster Peering"
 echo -e "==========================================${NC}"
 
-if [[ "$*" == *"-nopeer"* ]]
+if [[ "$*" == *"-full"* ]]
   then
+    k3dPeeringToVM
+  else
     echo ""
     echo -e "${RED} *** VM-based Cluster Peering Bypassed ${NC}"
     echo ""
-  else
-    k3dPeering
 fi
 
 # ------------------------------------------
@@ -797,7 +798,16 @@ echo -e "       Service Sameness Groups"
 echo -e "------------------------------------------${NC}"
 
 echo -e "${GRN}DC3 (default): Apply Sameness Group: ssg-unicorn ${NC}"
-kubectl apply --context $KDC3 -f ./kube/configs/dc3/sameness-groups/sameness-group-unicorn.yaml
+kubectl apply --context $KDC3 -f ./kube/configs/dc3/sameness-groups/dc3-default-ssg-unicorn.yaml
+
+echo -e "${GRN}DC3 (cernunnos): Apply Sameness Group: ssg-unicorn ${NC}"
+kubectl apply --context $KDC3_P1 -f ./kube/configs/dc3/sameness-groups/dc3-cernunnos-ssg-unicorn.yaml
+
+echo -e "${GRN}DC4 (default): Apply Sameness Group: ssg-unicorn ${NC}"
+kubectl apply --context $KDC4 -f ./kube/configs/dc4/sameness-groups/dc4-default-ssg-unicorn.yaml
+
+echo -e "${GRN}DC4 (taranis): Apply Sameness Group: ssg-unicorn ${NC}"
+kubectl apply --context $KDC4_P1 -f ./kube/configs/dc4/sameness-groups/dc4-taranis-ssg-unicorn.yaml
 
 # ------------------------------------------
 #     Services
@@ -893,7 +903,7 @@ echo -e "------------------------------------------${NC}"
 
 echo -e ""
 echo -e "${GRN}DC3 (default): Create Allow intention DC3/default/unicorn/unicorn-frontend > DC3/default/unicorn/unicorn-backend ${NC}"
-kubectl apply --context $KDC3 -f ./kube/configs/dc3/intentions/dc3-unicorn_backend-allow.yaml
+kubectl apply --context $KDC3 -f ./kube/configs/dc3/intentions/dc3-default-unicorn_backend-allow.yaml
 
 echo -e ""
 echo -e "${GRN}DC3 (cernunnos): Intention allow DC3/default/unicorn/unicorn-frontend to DC3/cernunnos/unicorn/unicorn-backend ${NC}"
@@ -901,7 +911,7 @@ kubectl apply --context $KDC3_P1 -f ./kube/configs/dc3/intentions/dc3-cernunnos-
 
 echo -e ""
 echo -e "${GRN}DC3 (default): Create Allow intention DC3/default/unicorn/unicorn-frontend > DC3/default/unicorn/unicorn-tp-backend ${NC}"
-kubectl apply --context $KDC3 -f ./kube/configs/dc3/intentions/dc3-unicorn_tp_backend-allow.yaml
+kubectl apply --context $KDC3 -f ./kube/configs/dc3/intentions/dc3-default-unicorn_tp_backend-allow.yaml
 
 echo -e ""
 echo -e "${GRN}DC3 (cernunnos): Intention allow DC3/default/unicorn/unicorn-frontend to DC3/cernunnos/unicorn/unicorn-tp-backend ${NC}"
@@ -909,7 +919,7 @@ kubectl apply --context $KDC3_P1 -f ./kube/configs/dc3/intentions/dc3-cernunnos-
 
 echo -e ""
 echo -e "${GRN}DC4 (default): Create Allow intention DC3/default/unicorn/unicorn-frontend > DC4/default/unicorn/unicorn-backend ${NC}"
-kubectl apply --context $KDC4 -f ./kube/configs/dc4/intentions/dc4-unicorn_backend-allow.yaml
+kubectl apply --context $KDC4 -f ./kube/configs/dc4/intentions/dc4-default-unicorn_backend-allow.yaml
 
 echo -e ""
 echo -e "${GRN}DC4 (taranis): Intention allow DC3/default/unicorn/unicorn-frontend to DC4/taranis/unicorn/unicorn-backend ${NC}"
@@ -917,7 +927,7 @@ kubectl apply --context $KDC4_P1 -f ./kube/configs/dc4/intentions/dc4-taranis-un
 
 echo -e ""
 echo -e "${GRN}DC4 (default): Create Allow intention DC3/default/unicorn/unicorn-frontend > DC4/default/unicorn/unicorn-tp-backend ${NC}"
-kubectl apply --context $KDC4 -f ./kube/configs/dc4/intentions/dc4-unicorn_tp_backend-allow.yaml
+kubectl apply --context $KDC4 -f ./kube/configs/dc4/intentions/dc4-default-unicorn_tp_backend-allow.yaml
 
 echo -e ""
 echo -e "${GRN}DC4 (taranis): Intention allow DC3/default/unicorn/unicorn-frontend to DC4/taranis/unicorn/unicorn-tp-backend ${NC}"
