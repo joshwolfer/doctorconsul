@@ -1,4 +1,6 @@
 # Default k9s plugin location is ~/k9s/plugin.yml
+# vsc is a script to randomize a file name and launch Visual Studio Code on WSL2.
+# "code -" might be usable without a script on Mac, but it's broken on Windows and needs this script. 
 
 plugin:
   debug:

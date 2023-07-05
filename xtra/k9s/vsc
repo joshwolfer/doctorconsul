@@ -1,0 +1,20 @@
+#!/bin/bash
+
+# Generate a random string with a length of 6 characters
+random_str=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 6)
+
+if [ "$#" -eq "1" ]; then
+        tmpfile=$HOME/code-${random_str}.$1
+else
+        tmpfile=$HOME/code-${random_str}.txt
+fi
+
+rm -f $tmpfile
+
+[ $# -ge 1 -a -f "$1" ] && input="$1" || input="-"
+
+cat $input >> $tmpfile
+
+code -r $tmpfile
+
+rm $tmpfile
