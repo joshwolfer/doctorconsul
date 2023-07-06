@@ -637,7 +637,7 @@ ChangeVersions () {
 
 
 k9sAddPlugin () {
-    PLUGIN_DIR="$HOME/k9s"
+    PLUGIN_DIR="$HOME/.config/k9s"
     PLUGIN_FILE="plugin.yml"
 
     # Create the plugin directory if it doesn't exist

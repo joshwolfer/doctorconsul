@@ -13,7 +13,7 @@ spec:
       namespace: unicorn
       action: allow
     - name: unicorn-ssg-frontend
-      partition: default
+      # partition: default
       namespace: unicorn
-      # samenessGroup: ssg-unicorn
+      samenessGroup: ssg-unicorn
       action: allow

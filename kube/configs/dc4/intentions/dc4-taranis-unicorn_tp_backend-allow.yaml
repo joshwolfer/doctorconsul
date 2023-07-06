@@ -14,6 +14,6 @@ spec:
       action: allow
     - name: unicorn-ssg-frontend
       namespace: unicorn
-      peer: dc3-default
-      # samenessGroup: ssg-unicorn
+      # peer: dc3-default
+      samenessGroup: ssg-unicorn
       action: allow
