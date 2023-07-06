@@ -1,20 +1,21 @@
 #!/bin/bash
 
-# Generate a random string with a length of 6 characters
-random_str=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 6)
+# vsc is a script to randomize a file name and launch Visual Studio Code on WSL2.
+# "code -" might be usable without a script on Mac, but it's broken on Windows and needs this script.
 
-if [ "$#" -eq "1" ]; then
+# Generate a random string with a length of 6 characters
+random_str=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 6)      # Filenames are randomized, so multiples don't stomp each other in VSC
+
+if [ "$#" -eq "1" ]; then                             # If there is an argument added, use it as the file extension (for syntax coloring in VSC)
         tmpfile=$HOME/code-${random_str}.$1
 else
         tmpfile=$HOME/code-${random_str}.txt
 fi
 
-rm -f $tmpfile
-
 [ $# -ge 1 -a -f "$1" ] && input="$1" || input="-"
 
-cat $input >> $tmpfile
+cat $input >> $tmpfile                                  # Take stdin and dump it to a file
 
-code -r $tmpfile
+code -r $tmpfile                                        # Open the file in VSC
 
-rm $tmpfile
+rm $tmpfile                                             # Remove the file so there aren't 100s of files everywhere.
