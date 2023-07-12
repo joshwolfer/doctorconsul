@@ -646,121 +646,8 @@ k9sAddPlugin () {
     # Path to the plugin file
     PLUGIN_PATH="${PLUGIN_DIR}/${PLUGIN_FILE}"
 
-    # Define the plugin configuration
-PLUGIN_CONFIG='
-plugin:
-  debug:
-    shortCut: Shift-D
-    confirm: false
-    description: Debug Container
-    scopes:
-    - containers
-    command: bash
-    background: false
-    args:
-    - -c
-    - |
-      kubectl debug -it --context $CONTEXT -n $NAMESPACE $POD --target $NAME --image nicolaka/netshoot
-  scaleNukeInPods:
-    shortCut: Shift-0
-    confirm: false
-    description: Scale a Deployment to 0
-    scopes:
-    - pods
-    command: bash
-    background: false
-    args:
-    - -c
-    - |
-      kubectl scale --replicas=0 deployment "$(echo ${NAME} | sed '\''s/-[a-zA-Z0-9]*-[^-]*$//'\'')" -n ${NAMESPACE} --context ${CONTEXT}
-  scale0:
-    shortCut: Shift-0
-    confirm: false
-    description: Scale a Deployment to 0
-    scopes:
-    - deployments
-    command: bash
-    background: false
-    args:
-    - -c
-    - |
-      kubectl scale --replicas=0 deployment ${NAME} -n ${NAMESPACE} --context ${CONTEXT}
-  scale1:
-    shortCut: Shift-1
-    confirm: false
-    description: Scale a Deployment to 1
-    scopes:
-    - deployments
-    command: bash
-    background: false
-    args:
-    - -c
-    - |
-      kubectl scale --replicas=1 deployment ${NAME} -n ${NAMESPACE} --context ${CONTEXT}
-  scale2:
-    shortCut: Shift-2
-    confirm: false
-    description: Scale a Deployment to 2
-    scopes:
-    - deployments
-    command: bash
-    background: false
-    args:
-    - -c
-    - |
-      kubectl scale --replicas=2 deployment ${NAME} -n ${NAMESPACE} --context ${CONTEXT}
-  scale3:
-    shortCut: Shift-3
-    confirm: false
-    description: Scale a Deployment to 3
-    scopes:
-    - deployments
-    command: bash
-    background: false
-    args:
-    - -c
-    - |
-      kubectl scale --replicas=3 deployment ${NAME} -n ${NAMESPACE} --context ${CONTEXT}
-  envoyStatsToVSC:
-    shortCut: Shift-1
-    confirm: false
-    description: Envoy stats > VSC
-    scopes:
-    - pods
-    command: bash
-    background: false
-    args:
-    - -c
-    - |
-      kubectl exec --context ${CONTEXT} -n ${NAMESPACE} ${NAME} -- /usr/bin/curl -s localhost:19000/stats | sort | vsc
-  envoyClustersToVSC:
-    shortCut: Shift-2
-    confirm: false
-    description: Envoy clusters > VSC
-    scopes:
-    - pods
-    command: bash
-    background: false
-    args:
-    - -c
-    - |
-      kubectl exec --context ${CONTEXT} -n ${NAMESPACE} ${NAME} -- /usr/bin/curl -s localhost:19000/clusters | sort | vsc
-  envoyConfigDumpToVSC:
-    shortCut: Shift-3
-    confirm: false
-    description: Envoy config_dump > VSC
-    scopes:
-    - pods
-    command: bash
-    background: false
-    args:
-    - -c
-    - |
-      kubectl exec --context ${CONTEXT} -n ${NAMESPACE} ${NAME} -- /usr/bin/curl -s localhost:19000/config_dump | vsc json
-'
-
-    # Write the plugin configuration to the file
-    echo "${PLUGIN_CONFIG}" > "${PLUGIN_PATH}"
+    # Copy the plugin to configuration to the file
+    cp ./xtra/k9s/plugin.yml "${PLUGIN_PATH}"
 
     # Print the status
     echo "Plugin created at ${YELL}${PLUGIN_PATH}${NC}"
@@ -873,9 +760,9 @@ VIPandFilterChains () {
     # Validate the user input against the regex pattern
     if [[ -n $CLUSTER_ID ]]; then
         if [[ $CLUSTER_ID == destination.* ]]; then
-            export JQ="curl -s localhost:19000/config_dump | jq '.configs[2].dynamic_listeners[] | .active_state.listener.filter_chains[] | select(.filters[0].typed_config.cluster == \"${CLUSTER_ID}\") | {filter_chain_match, filters} | del(.filters[0].typed_config.access_log)'"
+            export JQ="curl -s localhost:19000/config_dump | jq '.configs[2].dynamic_listeners[] | .active_state.listener.filter_chains[]? | select(.filters[0].typed_config.cluster == \"${CLUSTER_ID}\") | {filter_chain_match, filters} | del(.filters[0].typed_config.access_log)'"
         else
-            export JQ="curl -s localhost:19000/config_dump | jq '.configs[2].dynamic_listeners[] | .active_state.listener.filter_chains[] | select(.filters[0].typed_config.route_config.virtual_hosts[0].routes[0].route.cluster == \"${CLUSTER_ID}\") | del(.filters[0].typed_config.access_log)'"
+            export JQ="curl -s localhost:19000/config_dump | jq '.configs[2].dynamic_listeners[] | .active_state.listener.filter_chains[]? | select(.filters[0].typed_config.route_config.virtual_hosts[0].routes[0].route.cluster == \"${CLUSTER_ID}\") | del(.filters[0].typed_config.access_log)'"
         fi
         echo ""
         echo "The correct jq filter is:"

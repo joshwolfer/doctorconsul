@@ -51,6 +51,11 @@ if [[ "$*" == *"-update"* ]]
     exit 0
 fi
 
+if [[ "$*" == *"k8s-only"* ]] || [[ "$*" == *"k3d-only"* ]]
+  then
+    echo -e "${RED} Building K3d clusters ONLY (-k8s-only) ${NC}"
+fi
+
 # ==========================================
 # Is Docker running? Start docker service if not
 # ==========================================
@@ -120,13 +125,25 @@ if [[ "$OS_NAME" == *"Linux"* ]]; then
 
     echo ""
 
-else
-    echo "Linux not detected (${RED}Skipping..${NC}"
-fi
+elif [[ "$OS_NAME" == *"Darwin"* ]]; then
+    # Match Darwin (Mac)
+    echo "Mac Detected"
 
-if [[ "$*" == *"k8s-only"* ]] || [[ "$*" == *"k3d-only"* ]]
-  then
-    echo -e "${RED} Building K3d clusters ONLY (-k8s-only) ${NC}"
+    HOSTS_EXISTS=$(grep "doctorconsul" /etc/hosts)
+
+    if [[ -z "$HOSTS_EXISTS" ]]; then   # If the grep returns nothing...
+      echo -e "${YELL}k3d-doctorconsul.localhost does not exist (${GRN}Adding entry${NC})"
+      echo "127.0.0.1       k3d-doctorconsul.localhost" | sudo tee -a /etc/hosts > /dev/null
+      grep "doctorconsul" /etc/hosts
+
+    else
+      echo -e "${YELL}k3d-doctorconsul.localhost already exists (${RED}Skipping..${NC})"
+    fi
+
+    echo ""
+
+else
+    echo "Neither Linux nor Mac detected (${RED}Skipping..${NC}"
 fi
 
 # Pulling images from docker hub repeatedly, will eventually get you rate limited :(
@@ -949,9 +966,23 @@ echo -e "${GRN}DC3 (default): External Service-default - Example.com  ${NC}"
 kubectl apply --context $KDC3 -f ./kube/configs/dc3/external-services/service-defaults-example.com.yaml
 # kubectl delete --context $KDC3 -f ./kube/configs/dc3/external-services/service-defaults-example.com.yaml
 
+kubectl --context $KDC3 create namespace externalz
+
+echo -e "${GRN}DC3 (default): External Service-defaults - whatismyip  ${NC}"
+kubectl apply --context $KDC3 -f ./kube/configs/dc3/external-services/service-defaults-whatismyip.yaml
+# kubectl delete --context $KDC3 -f ./kube/configs/dc3/external-services/service-defaults-whatismyip.yaml
+
+# --------
+# Intentions
+# --------
+
 echo -e "${GRN}DC3 (default): Service Intention - External Service - Example.com ${NC}"
-kubectl apply --context $KDC3 -f ./kube/configs/dc3/intentions/external-example_unicorn-frontend-allow.yaml
-# kubectl delete --context $KDC3 -f ./kube/configs/dc3/intentions/external-example_unicorn-frontend-allow.yaml
+kubectl apply --context $KDC3 -f ./kube/configs/dc3/intentions/external-example_https-allow.yaml
+# kubectl delete --context $KDC3 -f ./kube/configs/dc3/intentions/external-example_https-allow.yaml
+
+echo -e "${GRN}DC3 (default): Service Intention - External Service - Example.com ${NC}"
+kubectl apply --context $KDC3 -f ./kube/configs/dc3/intentions/external-whatismyip-allow.yaml
+# kubectl delete --context $KDC3 -f ./kube/configs/dc3/intentions/external-whatismyip-allow.yaml
 
 # ------------------------------------------
 #           Terminating Gateway

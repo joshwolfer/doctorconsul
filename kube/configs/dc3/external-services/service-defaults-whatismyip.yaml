@@ -1,12 +1,11 @@
 apiVersion: consul.hashicorp.com/v1alpha1
 kind: ServiceDefaults
 metadata:
-  name: example-https
-  namespace: default
+  name: whatismyip
+  namespace: externalz
 spec:
   protocol: tcp
   destination:
     addresses:
-      - "example.com"
-      - "wolfmansound.com"
+      - "104.16.154.36"
     port: 443
