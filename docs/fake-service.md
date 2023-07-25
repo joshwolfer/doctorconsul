@@ -1,10 +1,11 @@
 # Doctor Consul Applications
 
-There are 3 core "applications" deployed into the Doctor Consul environment, each with an accessible  application UI:
+There are 4 core "applications" deployed into the Doctor Consul environment, each with an accessible  application UI:
 
 * Web Service UI: http://127.0.0.1:9000/ui
 * Unicorn-frontend (unicorn) DC1 UI: http://127.0.0.1:10000/ui
-* Unicorn-frontend (default) DC3 UI: http://127.0.0.1:11000/ui
+* Unicorn-frontend (unicorn) DC3 UI: http://127.0.0.1:11000/ui
+* Unicorn-ssg-frontend (unicorn) DC3 UI: http://127.0.0.1:11001/ui
 
 # Fake Service Application Details
 

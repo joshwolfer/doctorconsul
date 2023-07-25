@@ -159,3 +159,15 @@ plugin:
     - -c
     - |
       consul-k8s proxy read ${NAME} -n ${NAMESPACE} --context ${CONTEXT} -routes; read
+  deleteContext:
+    shortCut: Ctrl-D
+    confirm: true
+    description: Delete kubectl context
+    scopes:
+    - contexts
+    command: kubectl
+    background: true
+    args:
+    - config
+    - delete-context
+    - $COL-NAME

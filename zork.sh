@@ -689,6 +689,8 @@ ElseFunction () {
         "API call template to Consul Servers"
         "Stream logs from Consul Servers"
         "Change Component Versions"
+        "FakeService Kube: Image switch back to PUBLIC registry"
+        "FakeService Kube: Image switch back to K3D registry"
         "K9s: Add plugin"
         "Go Back"
     )
@@ -721,6 +723,22 @@ ElseFunction () {
             "Change Component Versions")
                 echo ""
                 ChangeVersions
+                echo ""
+                COLUMNS=1
+                REPLY=
+                ;;
+            "FakeService Kube: Image switch back to PUBLIC registry")
+                echo ""
+                find ./kube/configs/dc3/services -type f -exec sed -i 's|k3d-doctorconsul\.localhost:12345/nicholasjackson/fake-service:v|nicholasjackson/fake-service:v|g' {} \;
+                find ./kube/configs/dc4/services -type f -exec sed -i 's|k3d-doctorconsul\.localhost:12345/nicholasjackson/fake-service:v|nicholasjackson/fake-service:v|g' {} \;
+                echo ""
+                COLUMNS=1
+                REPLY=
+                ;;
+            "FakeService Kube: Image switch back to K3D registry")
+                echo ""
+                find ./kube/configs/dc3/services -type f -exec sed -i 's|nicholasjackson/fake-service:v|k3d-doctorconsul.localhost:12345/nicholasjackson/fake-service:v|g' {} \;
+                find ./kube/configs/dc4/services -type f -exec sed -i 's|nicholasjackson/fake-service:v|k3d-doctorconsul.localhost:12345/nicholasjackson/fake-service:v|g' {} \;
                 echo ""
                 COLUMNS=1
                 REPLY=
