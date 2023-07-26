@@ -45,6 +45,9 @@ This repo contains a full featured environment for setting up and testing HashiC
 
 * HashiCorp Consul Enterprise license required.
   * Place in `./license`
+* For the  `./k3d-config.sh` script to execute properly, you also need to - 
+  * Have a local version of Consul on the latest version
+  * Create a /tokens directory, CA and other files will be copied into this directory.
 * Generate Consul PKI Root certs and Consul Server RPC certs
   * Self-signed certificates have already been provided in this repo.
   * If they need to be regenerated:
@@ -113,8 +116,8 @@ The `-k3d` argument automatically runs the `k3d-config.sh` script with no argume
 ### k3d configuration script (optional)
 
 * Build K3d Kubernetes cluster using the `k3d-config.sh` script:
-  * `./k3d-config.sh`
-  * `./k3d-config.sh -nopeer`
+  * `./k3d-config.sh -eksonly`
+  * `./k3d-config.sh -eksonly -nopeer`
 
 The `-nopeer` option launches the k3d cluster with no peering. This is useful when it is desired to launch only the k3d cluster without the rest of the Doctor Consul environment.
 
