@@ -83,21 +83,9 @@ if [[ "$*" == *"k8s-only"* ]] || [[ "$*" == *"k3d-only"* ]]
     echo -e "${RED} Building K3d clusters ONLY (-k8s-only) ${NC}"
 fi
 
-if [[ "$*" == *"eksonly"* ]]; then
-    echo ""
-    echo -e "${RED}Skipping k3d cluster install${NC}"
-    echo ""
-else
-
-# ==========================================
-#           Pre-flight Checks
-# ==========================================
-
 # ------------------------------------------
 #           Consul binary check
 # ------------------------------------------
-
-
 
 echo -e "${GRN}Consul binary version: ${NC}"
 echo -e "$(which consul) ${YELL}$(consul version | grep Consul) ${NC}"
@@ -127,114 +115,118 @@ printf "${RED}"'Make sure Consul is on the latest enterprise version!!! '"${NC}\
 mkdir -p ./tokens/
 # Creates the tokens directory (used later, and also in the .gitignore)
 
-
-# ------------------------------------------
-# Is Docker running? Start docker service if not
-# ------------------------------------------
-
-  # service syntax to start docker differs between OSes. This checks if you're on Linux vs Mac.
-
-  OS_NAME=$(uname -a)
-
-  if [[ "$OS_NAME" == *"Linux"* ]]; then
-      echo ""
-      echo -e "${GRN}Checking that Docker is running - If not starting it. ${NC}"
-      pgrep dockerd || sudo service docker start
-      echo ""
-
-      sleep 2
+if [[ "$*" == *"eksonly"* ]];
+  then
+    echo ""
+    echo -e "${RED}Skipping k3d cluster install${NC}"
+    echo ""
   else
-      # Eventually put in mac syntax to start docker, its not the same as linux
-      echo ""
-  fi
 
-# ------------------------------------------
-# Clock / Date / Time Correct?
-# ------------------------------------------
+    # ------------------------------------------
+    # Is Docker running? Start docker service if not
+    # ------------------------------------------
 
-  # Because WSL is pissing me off and the UI metrics grab from Prometheus breaks if the clock is out of sync.
+    # service syntax to start docker differs between OSes. This checks if you're on Linux vs Mac.
 
-  WSL=$(uname -a)
+    OS_NAME=$(uname -a)
 
-  if [[ $WSL == *"WSL"* ]]; then
-    echo -e "${GRN}syncing the WSL clock to hardware...${NC}"
-    sudo hwclock -s
-  fi
+    if [[ "$OS_NAME" == *"Linux"* ]]; then
+        echo ""
+        echo -e "${GRN}Checking that Docker is running - If not starting it. ${NC}"
+        pgrep dockerd || sudo service docker start
+        echo ""
 
-# ------------------------------------------
-#  Local DNS Hosts entry for k3d registry
-# ------------------------------------------
+        sleep 2
+    else
+        # Eventually put in mac syntax to start docker, its not the same as linux
+        echo ""
+    fi
 
-# Need to remove this for eksonly, but it won't hurt anything. Just annoying and an overstepping of security bounds.
+    # ------------------------------------------
+    # Clock / Date / Time Correct?
+    # ------------------------------------------
 
-  set +e    # If we don't do this, the script will exit when there is nothing in the hosts file
+    # Because WSL is pissing me off and the UI metrics grab from Prometheus breaks if the clock is out of sync.
 
-  OS_NAME=$(uname -a)
+    WSL=$(uname -a)
 
-  if [[ "$OS_NAME" == *"Linux"* ]]; then
-      # Match WSL2, since it handles DNS all weird like...
-      echo "Linux Detected"
+    if [[ $WSL == *"WSL"* ]]; then
+      echo -e "${GRN}syncing the WSL clock to hardware...${NC}"
+      sudo hwclock -s
+    fi
 
-      HOSTS_EXISTS=$(grep "doctorconsul" /etc/hosts)
+    # ------------------------------------------
+    #  Local DNS Hosts entry for k3d registry
+    # ------------------------------------------
 
-      if [[ -z "$HOSTS_EXISTS" ]]; then   # If the grep returns nothing...
-        echo -e "${YELL}k3d-doctorconsul.localhost does not exist (${GRN}Adding entry${NC})"
-        echo "127.0.0.1       k3d-doctorconsul.localhost" | sudo tee -a /etc/hosts > /dev/null
-        grep "doctorconsul" /etc/hosts
+    set +e    # If we don't do this, the script will exit when there is nothing in the hosts file
 
+    OS_NAME=$(uname -a)
+
+    if [[ "$OS_NAME" == *"Linux"* ]];
+      then
+        # Match WSL2, since it handles DNS all weird like...
+        echo "Linux Detected"
+
+        HOSTS_EXISTS=$(grep "doctorconsul" /etc/hosts)
+
+        if [[ -z "$HOSTS_EXISTS" ]];
+          then   # If the grep returns nothing...
+            echo -e "${YELL}k3d-doctorconsul.localhost does not exist (${GRN}Adding entry${NC})"
+            echo "127.0.0.1       k3d-doctorconsul.localhost" | sudo tee -a /etc/hosts > /dev/null
+            grep "doctorconsul" /etc/hosts
+          else
+            echo -e "${YELL}k3d-doctorconsul.localhost already exists (${RED}Skipping..${NC})"
+        fi
+
+        echo ""
+      elif [[ "$OS_NAME" == *"Darwin"* ]];
+        then
+          # Match Darwin (Mac)
+          echo "Mac Detected"
+
+          HOSTS_EXISTS=$(grep "doctorconsul" /etc/hosts)
+
+          if [[ -z "$HOSTS_EXISTS" ]];
+            then   # If the grep returns nothing...
+              echo -e "${YELL}k3d-doctorconsul.localhost does not exist (${GRN}Adding entry${NC})"
+              echo "127.0.0.1       k3d-doctorconsul.localhost" | sudo tee -a /etc/hosts > /dev/null
+              grep "doctorconsul" /etc/hosts
+            else
+              echo -e "${YELL}k3d-doctorconsul.localhost already exists (${RED}Skipping..${NC})"
+          fi
+        echo ""
       else
-        echo -e "${YELL}k3d-doctorconsul.localhost already exists (${RED}Skipping..${NC})"
-      fi
+        echo "Neither Linux nor Mac detected (${RED}Skipping..${NC}"
+    fi
 
-      echo ""
+    # ------------------------------------------
+    #     Does k3d registry already exist?
+    # ------------------------------------------
 
-  elif [[ "$OS_NAME" == *"Darwin"* ]]; then
-      # Match Darwin (Mac)
-      echo "Mac Detected"
+    # Pulling images from docker hub repeatedly, will eventually get you rate limited :(
+    # This sets up a local registry so images can be pulled and cached locally.
+    # This is better in the long run anyway, beecause it'll save on time and bandwidth.
 
-      HOSTS_EXISTS=$(grep "doctorconsul" /etc/hosts)
+    REGISTRY_EXISTS=$(k3d registry list | grep doctorconsul)
 
-      if [[ -z "$HOSTS_EXISTS" ]]; then   # If the grep returns nothing...
-        echo -e "${YELL}k3d-doctorconsul.localhost does not exist (${GRN}Adding entry${NC})"
-        echo "127.0.0.1       k3d-doctorconsul.localhost" | sudo tee -a /etc/hosts > /dev/null
-        grep "doctorconsul" /etc/hosts
-
+    if [[ "$REGISTRY_EXISTS" == *"doctorconsul"* ]];
+      then
+        echo ""
+        echo -e "${GRN}Checking if the k3d registry (doctorconsul) already exist${NC}"
+        echo -e "${YELL}Registry exist (${RED}Skipping...${NC})"
+        echo ""
       else
-        echo -e "${YELL}k3d-doctorconsul.localhost already exists (${RED}Skipping..${NC})"
-      fi
+        k3d registry create doctorconsul.localhost --port 12345    # Creates the registry k3d-doctorconsul.localhost
+    fi
 
-      echo ""
+    set -e    # Enabled exit on errors again.
 
-  else
-      echo "Neither Linux nor Mac detected (${RED}Skipping..${NC}"
-  fi
+    # ------------------------------------------
+    #  Pull images and cache into the k3d registry
+    # ------------------------------------------
 
-# ------------------------------------------
-#     Does k3d registry already exist?
-# ------------------------------------------
-
-  # Pulling images from docker hub repeatedly, will eventually get you rate limited :(
-  # This sets up a local registry so images can be pulled and cached locally.
-  # This is better in the long run anyway, beecause it'll save on time and bandwidth.
-
-  REGISTRY_EXISTS=$(k3d registry list | grep doctorconsul)
-
-  if [[ "$REGISTRY_EXISTS" == *"doctorconsul"* ]]; then
-      echo ""
-      echo -e "${GRN}Checking if the k3d registry (doctorconsul) already exist${NC}"
-      echo -e "${YELL}Registry exist (${RED}Skipping...${NC})"
-      echo ""
-  else
-      k3d registry create doctorconsul.localhost --port 12345    # Creates the registry k3d-doctorconsul.localhost
-  fi
-
-  set -e    # Enabled exit on errors again.
-
-# ------------------------------------------
-#  Pull images and cache into the k3d registry
-# ------------------------------------------
-
-  # Leaving these for posterity. Don't actually need to mirror the images, just cache the images locally and then import into k3d.
+    # Leaving these for posterity. Don't actually need to mirror the images, just cache the images locally and then import into k3d.
       # docker pull calico/cni:v3.15.0
       # docker tag calico/cni:v3.15.0 joshwolfer/calico-cni:v3.15.0
       # docker push joshwolfer/calico-cni:v3.15.0
@@ -247,146 +239,147 @@ mkdir -p ./tokens/
       # docker tag calico/node:v3.15.0 joshwolfer/calico-node:v3.15.0
       # docker push joshwolfer/calico-node:v3.15.0
 
-  IMAGE_CALICO_CNI="calico/cni:v3.15.0"
-  IMAGE_CALICO_FLEXVOL="calico/pod2daemon-flexvol:v3.15.0"
-  IMAGE_CALICO_NODE="calico/node:v3.15.0"
-  IMAGE_CALICO_CONTROLLER="calico/kube-controllers:v3.15.0"
-  IMAGE_FAKESERVICE="nicholasjackson/fake-service:v0.25.0"
+    IMAGE_CALICO_CNI="calico/cni:v3.15.0"
+    IMAGE_CALICO_FLEXVOL="calico/pod2daemon-flexvol:v3.15.0"
+    IMAGE_CALICO_NODE="calico/node:v3.15.0"
+    IMAGE_CALICO_CONTROLLER="calico/kube-controllers:v3.15.0"
+    IMAGE_FAKESERVICE="nicholasjackson/fake-service:v0.25.0"
 
-  echo -e "${GRN}Caching docker images locally${NC}"
+    echo -e "${GRN}Caching docker images locally${NC}"
 
-  # Pull the public images, tag them for the k3d registry, and push them into the k3d registry
-  # Probably going to have to add all the Consul images in there as well - only a matter of time before Docker Hub gets mad about those.
-  # Will add them when k8s starts getting Image pull errors again ;)
+    # Pull the public images, tag them for the k3d registry, and push them into the k3d registry
+    # Probably going to have to add all the Consul images in there as well - only a matter of time before Docker Hub gets mad about those.
+    # Will add them when k8s starts getting Image pull errors again ;)
 
-  docker pull $IMAGE_CALICO_CNI
-  docker tag $IMAGE_CALICO_CNI k3d-doctorconsul.localhost:12345/$IMAGE_CALICO_CNI
-  docker push k3d-doctorconsul.localhost:12345/$IMAGE_CALICO_CNI
+    docker pull $IMAGE_CALICO_CNI
+    docker tag $IMAGE_CALICO_CNI k3d-doctorconsul.localhost:12345/$IMAGE_CALICO_CNI
+    docker push k3d-doctorconsul.localhost:12345/$IMAGE_CALICO_CNI
 
-  docker pull $IMAGE_CALICO_FLEXVOL
-  docker tag $IMAGE_CALICO_FLEXVOL k3d-doctorconsul.localhost:12345/$IMAGE_CALICO_FLEXVOL
-  docker push k3d-doctorconsul.localhost:12345/$IMAGE_CALICO_FLEXVOL
+    docker pull $IMAGE_CALICO_FLEXVOL
+    docker tag $IMAGE_CALICO_FLEXVOL k3d-doctorconsul.localhost:12345/$IMAGE_CALICO_FLEXVOL
+    docker push k3d-doctorconsul.localhost:12345/$IMAGE_CALICO_FLEXVOL
 
-  docker pull $IMAGE_CALICO_NODE
-  docker tag $IMAGE_CALICO_NODE k3d-doctorconsul.localhost:12345/$IMAGE_CALICO_NODE
-  docker push k3d-doctorconsul.localhost:12345/$IMAGE_CALICO_NODE
+    docker pull $IMAGE_CALICO_NODE
+    docker tag $IMAGE_CALICO_NODE k3d-doctorconsul.localhost:12345/$IMAGE_CALICO_NODE
+    docker push k3d-doctorconsul.localhost:12345/$IMAGE_CALICO_NODE
 
-  docker pull $IMAGE_CALICO_CONTROLLER
-  docker tag $IMAGE_CALICO_CONTROLLER k3d-doctorconsul.localhost:12345/$IMAGE_CALICO_CONTROLLER
-  docker push k3d-doctorconsul.localhost:12345/$IMAGE_CALICO_CONTROLLER
+    docker pull $IMAGE_CALICO_CONTROLLER
+    docker tag $IMAGE_CALICO_CONTROLLER k3d-doctorconsul.localhost:12345/$IMAGE_CALICO_CONTROLLER
+    docker push k3d-doctorconsul.localhost:12345/$IMAGE_CALICO_CONTROLLER
 
-  docker pull $IMAGE_FAKESERVICE
-  docker tag $IMAGE_FAKESERVICE k3d-doctorconsul.localhost:12345/$IMAGE_FAKESERVICE
-  docker push k3d-doctorconsul.localhost:12345/$IMAGE_FAKESERVICE
-
-
-  # ==========================================
-  #             Setup K3d clusters
-  # ==========================================
-
-  # echo -e "${GRN}"
-  # echo -e "------------------------------------------"
-  # echo -e " Download Calico Config files"
-  # echo -e "------------------------------------------${NC}"
-
-  # Fetch the Calico setup file to use with k3d.
-  # K3D default CNI (flannel) doesn't work with Consul Tproxy / DNS proxy
-
-  # curl -s https://k3d.io/v5.0.1/usage/advanced/calico.yaml -o ./kube/calico.yaml
-  # ^^^ Don't downloading again. the image locations have been changed to the local k3d registry.
-
-  # ------------------------------------------
-  #                    DC3
-  # ------------------------------------------
-
-  echo -e "${GRN}"
-  echo -e "=========================================="
-  echo -e "         Setup K3d cluster (DC3)"
-  echo -e "==========================================${NC}"
-
-  k3d cluster create dc3 --network doctorconsul_wan \
-      --api-port 127.0.0.1:6443 \
-      -p "8502:443@loadbalancer" \
-      -p "11000:8000" \
-      -p "11001:8001" \
-      -p "9091:9090" \
-      --k3s-arg '--flannel-backend=none@server:*' \
-      --registry-use k3d-doctorconsul.localhost:12345 \
-      --k3s-arg="--disable=traefik@server:0"
-
-      # -p "11000:8000"    DC3/unicorn/unicorn-frontend (fake service UI)     - Mapped to local http://127.0.0.1:11000/ui/
-      # -p "11001:8001"    DC3/unicorn/unicorn-ssg-frontend (fake service UI) - Mapped to local http://127.0.0.1:11001/ui/
-      # -p "9091:9090"     Prometheus UI
+    docker pull $IMAGE_FAKESERVICE
+    docker tag $IMAGE_FAKESERVICE k3d-doctorconsul.localhost:12345/$IMAGE_FAKESERVICE
+    docker push k3d-doctorconsul.localhost:12345/$IMAGE_FAKESERVICE
 
 
-      # Disable flannel
-      # install Calico (tproxy compatability)
+    # ==========================================
+    #             Setup K3d clusters
+    # ==========================================
 
-  kubectl apply --context=$KDC3 -f ./kube/calico.yaml
+    # echo -e "${GRN}"
+    # echo -e "------------------------------------------"
+    # echo -e " Download Calico Config files"
+    # echo -e "------------------------------------------${NC}"
 
-  # ------------------------------------------
-  #            DC3-P1 cernunnos
-  # ------------------------------------------
+    # Fetch the Calico setup file to use with k3d.
+    # K3D default CNI (flannel) doesn't work with Consul Tproxy / DNS proxy
 
-  echo -e "${GRN}"
-  echo -e "=========================================="
-  echo -e "         Setup K3d cluster (DC3-P1 cernunnos)"
-  echo -e "==========================================${NC}"
+    # curl -s https://k3d.io/v5.0.1/usage/advanced/calico.yaml -o ./kube/calico.yaml
+    # ^^^ Don't downloading again. the image locations have been changed to the local k3d registry.
 
-  k3d cluster create dc3-p1 --network doctorconsul_wan \
-      --api-port 127.0.0.1:6444 \
-      -p "8443:8443" \
-      --k3s-arg="--disable=traefik@server:0" \
-      --registry-use k3d-doctorconsul.localhost:12345 \
-      --k3s-arg '--flannel-backend=none@server:*'
+    # ------------------------------------------
+    #                    DC3
+    # ------------------------------------------
 
-  kubectl apply --context=$KDC3_P1 -f ./kube/calico.yaml
+    echo -e "${GRN}"
+    echo -e "=========================================="
+    echo -e "         Setup K3d cluster (DC3)"
+    echo -e "==========================================${NC}"
 
-      # -p "8443:8443"      api-gateway ingress
-      # -p "12000:8000"     reserved for fakeservice something
+    k3d cluster create dc3 --network doctorconsul_wan \
+        --api-port 127.0.0.1:6443 \
+        -p "8502:443@loadbalancer" \
+        -p "11000:8000" \
+        -p "11001:8001" \
+        -p "9091:9090" \
+        --k3s-arg '--flannel-backend=none@server:*' \
+        --registry-use k3d-doctorconsul.localhost:12345 \
+        --k3s-arg="--disable=traefik@server:0"
+
+        # -p "11000:8000"    DC3/unicorn/unicorn-frontend (fake service UI)     - Mapped to local http://127.0.0.1:11000/ui/
+        # -p "11001:8001"    DC3/unicorn/unicorn-ssg-frontend (fake service UI) - Mapped to local http://127.0.0.1:11001/ui/
+        # -p "9091:9090"     Prometheus UI
 
 
-  # ------------------------------------------
-  #                    DC4
-  # ------------------------------------------
+        # Disable flannel
+        # install Calico (tproxy compatability)
 
-  echo -e "${GRN}"
-  echo -e "=========================================="
-  echo -e "         Setup K3d cluster (DC4)"
-  echo -e "==========================================${NC}"
+    kubectl apply --context=$KDC3 -f ./kube/calico.yaml
 
-  k3d cluster create dc4 --network doctorconsul_wan \
-      --api-port 127.0.0.1:6445 \
-      -p "8503:443@loadbalancer" \
-      -p "12000:8000" \
-      -p "9092:9090" \
-      --k3s-arg '--flannel-backend=none@server:*' \
-      --registry-use k3d-doctorconsul.localhost:12345 \
-      --k3s-arg="--disable=traefik@server:0"
+    # ------------------------------------------
+    #            DC3-P1 cernunnos
+    # ------------------------------------------
 
-  kubectl apply --context=$KDC4 -f ./kube/calico.yaml
+    echo -e "${GRN}"
+    echo -e "=========================================="
+    echo -e "         Setup K3d cluster (DC3-P1 cernunnos)"
+    echo -e "==========================================${NC}"
 
-  #  12000 > 8000 - whatever app UI
-  #  local 8503 > 443 - Consul UI
+    k3d cluster create dc3-p1 --network doctorconsul_wan \
+        --api-port 127.0.0.1:6444 \
+        -p "8443:8443" \
+        --k3s-arg="--disable=traefik@server:0" \
+        --registry-use k3d-doctorconsul.localhost:12345 \
+        --k3s-arg '--flannel-backend=none@server:*'
 
-  # ------------------------------------------
-  #            DC4-P1 taranis
-  # ------------------------------------------
+    kubectl apply --context=$KDC3_P1 -f ./kube/calico.yaml
 
-  echo -e "${GRN}"
-  echo -e "=========================================="
-  echo -e "    Setup K3d cluster (DC4-P1 taranis)"
-  echo -e "==========================================${NC}"
+        # -p "8443:8443"      api-gateway ingress
+        # -p "12000:8000"     reserved for fakeservice something
 
-  k3d cluster create dc4-p1 --network doctorconsul_wan \
-      --api-port 127.0.0.1:6446 \
-      --k3s-arg="--disable=traefik@server:0" \
-      --registry-use k3d-doctorconsul.localhost:12345 \
-      --k3s-arg '--flannel-backend=none@server:*'
 
-  kubectl apply --context=$KDC4_P1 -f ./kube/calico.yaml
+    # ------------------------------------------
+    #                    DC4
+    # ------------------------------------------
 
+    echo -e "${GRN}"
+    echo -e "=========================================="
+    echo -e "         Setup K3d cluster (DC4)"
+    echo -e "==========================================${NC}"
+
+    k3d cluster create dc4 --network doctorconsul_wan \
+        --api-port 127.0.0.1:6445 \
+        -p "8503:443@loadbalancer" \
+        -p "12000:8000" \
+        -p "9092:9090" \
+        --k3s-arg '--flannel-backend=none@server:*' \
+        --registry-use k3d-doctorconsul.localhost:12345 \
+        --k3s-arg="--disable=traefik@server:0"
+
+    kubectl apply --context=$KDC4 -f ./kube/calico.yaml
+
+    #  12000 > 8000 - whatever app UI
+    #  local 8503 > 443 - Consul UI
+
+    # ------------------------------------------
+    #            DC4-P1 taranis
+    # ------------------------------------------
+
+    echo -e "${GRN}"
+    echo -e "=========================================="
+    echo -e "    Setup K3d cluster (DC4-P1 taranis)"
+    echo -e "==========================================${NC}"
+
+    k3d cluster create dc4-p1 --network doctorconsul_wan \
+        --api-port 127.0.0.1:6446 \
+        --k3s-arg="--disable=traefik@server:0" \
+        --registry-use k3d-doctorconsul.localhost:12345 \
+        --k3s-arg '--flannel-backend=none@server:*'
+
+    kubectl apply --context=$KDC4_P1 -f ./kube/calico.yaml
 fi
+# Ends the eksonly bypass
+
 
 # ==============================================================================================================================
 # ==============================================================================================================================
