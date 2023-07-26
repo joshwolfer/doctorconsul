@@ -89,17 +89,48 @@ if [[ "$*" == *"eksonly"* ]]; then
     echo ""
 else
 
+# ==========================================
+#           Pre-flight Checks
+# ==========================================
+
+# ------------------------------------------
+#           Consul binary check
+# ------------------------------------------
+
+
+
 echo -e "${GRN}Consul binary version: ${NC}"
 echo -e "$(which consul) ${YELL}$(consul version | grep Consul) ${NC}"
 printf "${RED}"'Make sure Consul is on the latest enterprise version!!! '"${NC}\n"
 echo ""
 
+# Check if 'consul' command is available
+if ! command -v consuls &> /dev/null
+then
+    echo -e "${RED}Consul command could not be found. ${NC}"
+    echo -e "Please make sure it is installed and available in your PATH."
+    printf "${RED}"'Make sure Consul is on the latest enterprise version!!! '"${NC}\n"
+    exit 1
+fi
+
+# Print the location of 'consul'
+echo -e "${GRN}Consul is located at: ${YELL}$(which consul)"
+
+# Run 'consul version' and print only the lines that contain 'Consul'
+echo -e "${YELL}$(consul version | grep Consul) ${NC}"
+printf "${RED}"'Make sure Consul is on the latest enterprise version!!! '"${NC}\n"
+
+# ------------------------------------------
+#           Tokens Directory
+# ------------------------------------------
+
 mkdir -p ./tokens/
 # Creates the tokens directory (used later, and also in the .gitignore)
 
-  # ==========================================
-  # Is Docker running? Start docker service if not
-  # ==========================================
+
+# ------------------------------------------
+# Is Docker running? Start docker service if not
+# ------------------------------------------
 
   # service syntax to start docker differs between OSes. This checks if you're on Linux vs Mac.
 
@@ -117,6 +148,10 @@ mkdir -p ./tokens/
       echo ""
   fi
 
+# ------------------------------------------
+# Clock / Date / Time Correct?
+# ------------------------------------------
+
   # Because WSL is pissing me off and the UI metrics grab from Prometheus breaks if the clock is out of sync.
 
   WSL=$(uname -a)
@@ -125,6 +160,12 @@ mkdir -p ./tokens/
     echo -e "${GRN}syncing the WSL clock to hardware...${NC}"
     sudo hwclock -s
   fi
+
+# ------------------------------------------
+#  Local DNS Hosts entry for k3d registry
+# ------------------------------------------
+
+# Need to remove this for eksonly, but it won't hurt anything. Just annoying and an overstepping of security bounds.
 
   set +e    # If we don't do this, the script will exit when there is nothing in the hosts file
 
@@ -168,6 +209,10 @@ mkdir -p ./tokens/
       echo "Neither Linux nor Mac detected (${RED}Skipping..${NC}"
   fi
 
+# ------------------------------------------
+#     Does k3d registry already exist?
+# ------------------------------------------
+
   # Pulling images from docker hub repeatedly, will eventually get you rate limited :(
   # This sets up a local registry so images can be pulled and cached locally.
   # This is better in the long run anyway, beecause it'll save on time and bandwidth.
@@ -184,6 +229,10 @@ mkdir -p ./tokens/
   fi
 
   set -e    # Enabled exit on errors again.
+
+# ------------------------------------------
+#  Pull images and cache into the k3d registry
+# ------------------------------------------
 
   # Leaving these for posterity. Don't actually need to mirror the images, just cache the images locally and then import into k3d.
       # docker pull calico/cni:v3.15.0
