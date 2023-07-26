@@ -94,6 +94,9 @@ echo -e "$(which consul) ${YELL}$(consul version | grep Consul) ${NC}"
 printf "${RED}"'Make sure Consul is on the latest enterprise version!!! '"${NC}\n"
 echo ""
 
+mkdir -p ./tokens/
+# Creates the tokens directory (used later, and also in the .gitignore)
+
   # ==========================================
   # Is Docker running? Start docker service if not
   # ==========================================
