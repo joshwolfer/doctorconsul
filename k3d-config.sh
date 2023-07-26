@@ -55,6 +55,19 @@ if [[ "$*" == *"eksonly"* ]]
     # Set this to the path of the EKSOnly repo so the outputs can be read! This MUST be set correctly!!!
 fi
 
+if [[ "$*" == *"nuke-eksonly"* ]]
+  then
+    echo -e "${GRN}Nuking Namespaces:${NC}"
+    helm delete consul --namespace consul --kube-context $KDC3
+    helm delete consul --namespace consul --kube-context $KDC3_P1
+    helm delete consul --namespace consul --kube-context $KDC4
+    helm delete consul --namespace consul --kube-context $KDC4_P1
+    echo ""
+    echo -e "${RED}It's now safe to TF destroy! ${NC}"
+    echo ""
+    exit 0
+fi
+
 if [[ "$*" == *"-update"* ]]
   then
     echo ""
@@ -72,9 +85,14 @@ fi
 
 if [[ "$*" == *"eksonly"* ]]; then
     echo ""
-    echo "${RED}Skipping k3d cluster install${NC}"
+    echo -e "${RED}Skipping k3d cluster install${NC}"
     echo ""
 else
+
+echo -e "${GRN}Consul binary version: ${NC}"
+echo -e "$(which consul) ${YELL}$(consul version | grep Consul) ${NC}"
+printf "${RED}"'Make sure Consul is on the latest enterprise version!!! '"${NC}\n"
+echo ""
 
   # ==========================================
   # Is Docker running? Start docker service if not
@@ -836,13 +854,13 @@ echo -e "==========================================${NC}"
 
 if [[ "$*" == *"eksonly"* ]];
   then
-    find ./kube/configs/dc3/services -type f -exec sed -i 's|k3d-doctorconsul\.localhost:12345/nicholasjackson/fake-service:v|nicholasjackson/fake-service:v|g' {} \;
-    find ./kube/configs/dc4/services -type f -exec sed -i 's|k3d-doctorconsul\.localhost:12345/nicholasjackson/fake-service:v|nicholasjackson/fake-service:v|g' {} \;
+    find ./kube/configs/dc3/services -type f -exec sed -i 's|image: k3d-doctorconsul\.localhost:12345/nicholasjackson/fake-service:v|image: nicholasjackson/fake-service:v|g' {} \;
+    find ./kube/configs/dc4/services -type f -exec sed -i 's|image: k3d-doctorconsul\.localhost:12345/nicholasjackson/fake-service:v|image: nicholasjackson/fake-service:v|g' {} \;
     # Pull fake service from the interwebz instead of local k3d registry (which doesn't exist when using EKS)
   else
-    find ./kube/configs/dc3/services -type f -exec sed -i 's|nicholasjackson/fake-service:v|k3d-doctorconsul.localhost:12345/nicholasjackson/fake-service:v|g' {} \;
-    find ./kube/configs/dc4/services -type f -exec sed -i 's|nicholasjackson/fake-service:v|k3d-doctorconsul.localhost:12345/nicholasjackson/fake-service:v|g' {} \;
-    # Switch it back, if it's not using the local k3d registry.
+    find ./kube/configs/dc3/services -type f -exec sed -i 's|image: nicholasjackson/fake-service:v|image: k3d-doctorconsul.localhost:12345/nicholasjackson/fake-service:v|g' {} \;
+    find ./kube/configs/dc4/services -type f -exec sed -i 's|image: nicholasjackson/fake-service:v|image: k3d-doctorconsul.localhost:12345/nicholasjackson/fake-service:v|g' {} \;    # Switch it back, if it's not using the local k3d registry.
+    # Puts the files back to a local k3d registry if they were previously changed (same as checked into the repo)
 fi
 
 
@@ -1186,6 +1204,7 @@ if [[ "$*" == *"eksonly"* ]];
     echo " kubectl -n consul --context $KDC4 port-forward svc/consul-expose-servers 8503:8501 > /dev/null 2>&1 &"
     echo ""
     printf "${RED}"'Happy Consul'\''ing!!! '"${NC}\n"
+    echo ""
     echo ""
   else
     echo ""
