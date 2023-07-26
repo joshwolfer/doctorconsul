@@ -44,7 +44,7 @@ fi
 
 EKSONLY_TF_STATE_FILE="/home/mourne/git/EKSonly/terraform.tfstate"
 
-if [[ "$*" == *"eksonly"* ]]
+if [[ "$*" == "-eksonly" ]]
   then
     echo -e "${GRN}Setting Contexts from EKSonly (https://github.com/ramramhariram/EKSonly):${NC}"
     echo ""
@@ -52,21 +52,62 @@ if [[ "$*" == *"eksonly"* ]]
     aws eks update-kubeconfig --region us-east-1 --name nEKS1 --alias k3d-dc3-p1
     aws eks update-kubeconfig --region us-east-1 --name nEKS2 --alias k3d-dc4
     aws eks update-kubeconfig --region us-east-1 --name nEKS3 --alias k3d-dc4-p1
+    echo ""
 
         # Set this to the path of the EKSOnly repo so the outputs can be read! This MUST be set correctly!!!
 fi
 
-if [[ "$*" == *"nuke-eksonly"* ]]
+if [[ "$*" == "-nuke-eksonly" ]]
   then
-    echo -e "${GRN}Nuking Namespaces:${NC}"
+    set +e
+    echo -e "${GRN}Deleting Consul Helm installs in each Cluster:${NC}"
+
+    echo -e "${YELL}DC3:${NC}"
     helm delete consul --namespace consul --kube-context $KDC3
+
+    echo -e "${YELL}DC3_P1:${NC}"
     helm delete consul --namespace consul --kube-context $KDC3_P1
+
+    echo -e "${YELL}DC4:${NC}"
     helm delete consul --namespace consul --kube-context $KDC4
+
+    echo -e "${YELL}DC4_P1:${NC}"
     helm delete consul --namespace consul --kube-context $KDC4_P1
+    echo ""
+
+    echo -e "${GRN}Deleting additional DC3 Loadbalancer services:${NC}"
+    kubectl delete --namespace consul --context $KDC3 -f ./kube/prometheus/dc3-prometheus-service.yaml
+    kubectl delete svc unicorn-frontend -n unicorn --context $KDC3
+    kubectl delete svc unicorn-ssg-frontend -n unicorn --context $KDC3
     echo ""
     echo -e "${RED}It's now safe to TF destroy! ${NC}"
     echo ""
-    exit 0
+
+    exit 0     # Exit here.
+
+    # If you need to nuke all the CRDs to nuke namespaces, this can be used. Don't typically need to do this just to "tf destroy" though.
+    # This is really on for rebuilding Doctor Consul useing the same eksonly clusters.
+    CONTEXTS=("$KDC3" "$KDC3_P1" "$KDC4" "$KDC4_P1")
+
+    for CONTEXT in "${CONTEXTS[@]}"; do
+      kubectl get crd -n consul --context $CONTEXT -o jsonpath='{.items[*].metadata.name}' | tr -s ' ' '\n' | grep "consul.hashicorp.com" | while read -r CRD
+      do
+        kubectl patch crd/$CRD -n consul --context $CONTEXT -p '{"metadata":{"finalizers":[]}}' --type=merge
+        kubectl delete crd/$CRD --context $CONTEXT
+      done
+    done
+
+    for CONTEXT in "${CONTEXTS[@]}"; do
+      kubectl delete namespace consul --context $CONTEXT
+    done
+
+    for CONTEXT in "${CONTEXTS[@]}"; do
+      kubectl delete namespace unicorn --context $CONTEXT
+    done
+
+    for CONTEXT in "${CONTEXTS[@]}"; do
+      kubectl delete namespace externalz --context $CONTEXT
+    done
 fi
 
 if [[ "$*" == *"-update"* ]]
@@ -88,11 +129,7 @@ fi
 #           Consul binary check
 # ------------------------------------------
 
-echo -e "${GRN}Consul binary version: ${NC}"
-echo -e "$(which consul) ${YELL}$(consul version | grep Consul) ${NC}"
-printf "${RED}"'Make sure Consul is on the latest enterprise version!!! '"${NC}\n"
-echo ""
-
+echo -e "${GRN}Consul Binary Check: ${NC}"
 # Check if 'consul' command is available
 if ! command -v consul &> /dev/null
 then
@@ -120,7 +157,7 @@ mkdir -p ./tokens/
 # Checks if we're provisioning using EKSOnly or k3d
 # ==========================================
 
-if [[ "$*" == *"eksonly"* ]];
+if [[ "$*" == "-eksonly" ]];
   then
     # Matching eksonly skips all the k3d stuff
     echo ""
@@ -435,7 +472,7 @@ helm show values hashicorp/consul > ./kube/helm/latest-complete-helm-values.yaml
 echo -e "${GRN}"
 echo -e "=========================================="
 echo -e "   Install Consul into Kubernetes (DC3)"
-echo -e "==========================================${NC}" 
+echo -e "==========================================${NC}"
 
 echo -e "${YELL}Switching Context to DC3... ${NC}"
 kubectl config use-context $KDC3
@@ -456,7 +493,7 @@ kubectl create secret generic consul-license --namespace consul --from-literal=k
 echo -e ""
 echo -e "${GRN}DC3: Helm consul-k8s install${NC}"
 
-if [[ "$*" == *"eksonly"* ]];
+if [[ "$*" == "-eksonly" ]];
   then
     helm install consul hashicorp/consul -f ./kube/helm/dc3-helm-values.yaml --namespace consul \
     --set server.exposeService.exposeGossipAndRPCPorts=true \
@@ -524,9 +561,8 @@ kubectl create secret generic consul-license --namespace consul --from-literal=k
 echo -e ""
 echo -e "${GRN}Discover the DC3 gRPC / API external load balancer IP:${NC}"
 
-if [[ "$*" == *"eksonly"* ]];
+if [[ "$*" == "-eksonly" ]];
   then
-
     export DC3_LB_IP="$(kubectl get svc consul-expose-servers -nconsul --context $KDC3 -o json | jq -r '.status.loadBalancer.ingress[].hostname')"
     # In EKS we have to pull the expose servers LB address for grpc and API.
     echo -e "${YELL}DC3 Consul UI, gRPC, and API External Load Balancer IP is:${NC} $DC3_LB_IP"
@@ -565,7 +601,7 @@ echo -e ""
 echo -e "${GRN}DC3-P1 (Cernunnos): Helm consul-k8s install${NC}"
 
 
-if [[ "$*" == *"eksonly"* ]];
+if [[ "$*" == "-eksonly" ]];
   then
     helm install consul hashicorp/consul -f ./kube/helm/dc3-p1-helm-values.yaml --namespace consul $HELM_CHART_VER \
     --set externalServers.k8sAuthMethodHost=$DC3_P1_K8S_IP \
@@ -613,7 +649,7 @@ kubectl create secret generic consul-license --namespace consul --from-literal=k
 echo -e ""
 echo -e "${GRN}DC4: Helm consul-k8s install${NC}"
 
-if [[ "$*" == *"eksonly"* ]];
+if [[ "$*" == "-eksonly" ]];
   then
     helm install consul hashicorp/consul -f ./kube/helm/dc4-helm-values.yaml --namespace consul \
     --set server.exposeService.exposeGossipAndRPCPorts=true \
@@ -669,7 +705,7 @@ kubectl create secret generic consul-license --namespace consul --from-literal=k
 echo -e ""
 echo -e "${GRN}Discover the DC4 external load balancer IP:${NC}"
 
-if [[ "$*" == *"eksonly"* ]];
+if [[ "$*" == "-eksonly" ]];
   then
 
     export DC4_LB_IP="$(kubectl get svc consul-expose-servers -nconsul --context $KDC4 -o json | jq -r '.status.loadBalancer.ingress[].hostname')"
@@ -699,7 +735,7 @@ fi
 echo -e ""
 echo -e "${GRN}DC4-P1 (Taranis): Helm consul-k8s install${NC}"
 
-if [[ "$*" == *"eksonly"* ]];
+if [[ "$*" == "-eksonly" ]];
   then
     helm install consul hashicorp/consul -f ./kube/helm/dc4-p1-helm-values.yaml --namespace consul $HELM_CHART_VER \
     --set externalServers.k8sAuthMethodHost=$DC4_P1_K8S_IP \
@@ -775,7 +811,7 @@ done
 echo -e "${YELL}DC4 (taranis) connect-inject service is READY! ${NC}"
 
 # Set new Env variables for the Consul API addresses
-if [[ "$*" == *"eksonly"* ]];
+if [[ "$*" == "-eksonly" ]];
   then
     DC3="http://$DC3_LB_IP:8500"
     DC4="http://$DC4_LB_IP:8500"
@@ -785,8 +821,6 @@ if [[ "$*" == *"eksonly"* ]];
   else
     echo ""
 fi
-
-
 
   # ------------------------------------------
   # Peering over Mesh Gateway
@@ -905,7 +939,7 @@ echo -e "==========================================${NC}"
 #  Modify the service yaml to pull images on EKS vs k3d local
 # ------------------------------------------
 
-if [[ "$*" == *"eksonly"* ]];
+if [[ "$*" == "-eksonly" ]];
   then
     find ./kube/configs/dc3/services -type f -exec sed -i 's|image: k3d-doctorconsul\.localhost:12345/nicholasjackson/fake-service:v|image: nicholasjackson/fake-service:v|g' {} \;
     find ./kube/configs/dc4/services -type f -exec sed -i 's|image: k3d-doctorconsul\.localhost:12345/nicholasjackson/fake-service:v|image: nicholasjackson/fake-service:v|g' {} \;
@@ -1226,7 +1260,7 @@ kubectl apply --context $KDC3 -f ./kube/configs/dc3/services/unicorn-ssg_fronten
 #              Outputs
 # ==========================================
 
-if [[ "$*" == *"eksonly"* ]];
+if [[ "$*" == "-eksonly" ]];
   then
     export UNICORN_FRONTEND_UI_ADDR=$(kubectl get svc unicorn-frontend -nunicorn --context $KDC3 -o json | jq -r '"http://\(.status.loadBalancer.ingress[0].hostname):\(.spec.ports[0].port)"')
     export UNICORN_SSG_FRONTEND_UI_ADDR=$(kubectl get svc unicorn-ssg-frontend -nunicorn --context $KDC3 -o json | jq -r '"http://\(.status.loadBalancer.ingress[0].hostname):\(.spec.ports[0].port)"')

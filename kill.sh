@@ -1,8 +1,12 @@
 #!/bin/bash
 
 # Shell colors for echo outputs
+RED='\033[1;31m'
+BLUE='\033[1;34m'
+DGRN='\033[0;32m'
 GRN='\033[1;32m'
-NC='\033[0m' # No Color
+YELL='\033[0;33m'
+NC='\033[0m'
 
 echo ""
 
@@ -30,6 +34,15 @@ if [[ "$*" == *"-all"* ]]
         echo -e "${GRN}No containers to nuke.${NC}"
         echo ""
     fi
+  elif [[ "$*" == *"-eksonly"* ]]
+    then
+      echo -e "${GRN}------------------------------------------"
+      echo -e "          Executing eks only Nuke"
+      echo -e "------------------------------------------${NC}"
+      echo -e ""
+      echo -e "Executing:${YELL} ./k3d-config.sh -nuke-eksonly${NC}"
+      ./k3d-config.sh -nuke-eksonly
+
   else
     echo -e "${GRN}Nuking k3d clusters ONLY ${NC}"
     echo ""
