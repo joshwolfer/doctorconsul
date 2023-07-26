@@ -42,6 +42,8 @@ if [[ "$*" == *"help"* ]]
     exit 0
 fi
 
+EKSONLY_TF_STATE_FILE="/home/mourne/git/EKSonly/terraform.tfstate"
+
 if [[ "$*" == *"eksonly"* ]]
   then
     echo -e "${GRN}Setting Contexts from EKSonly (https://github.com/ramramhariram/EKSonly):${NC}"
@@ -51,8 +53,7 @@ if [[ "$*" == *"eksonly"* ]]
     aws eks update-kubeconfig --region us-east-1 --name nEKS2 --alias k3d-dc4
     aws eks update-kubeconfig --region us-east-1 --name nEKS3 --alias k3d-dc4-p1
 
-    EKSONLY_TF_STATE_FILE="/home/mourne/git/EKSonly/terraform.tfstate"
-    # Set this to the path of the EKSOnly repo so the outputs can be read! This MUST be set correctly!!!
+        # Set this to the path of the EKSOnly repo so the outputs can be read! This MUST be set correctly!!!
 fi
 
 if [[ "$*" == *"nuke-eksonly"* ]]
@@ -93,7 +94,7 @@ printf "${RED}"'Make sure Consul is on the latest enterprise version!!! '"${NC}\
 echo ""
 
 # Check if 'consul' command is available
-if ! command -v consuls &> /dev/null
+if ! command -v consul &> /dev/null
 then
     echo -e "${RED}Consul command could not be found. ${NC}"
     echo -e "Please make sure it is installed and available in your PATH."
