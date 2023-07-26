@@ -115,12 +115,19 @@ printf "${RED}"'Make sure Consul is on the latest enterprise version!!! '"${NC}\
 mkdir -p ./tokens/
 # Creates the tokens directory (used later, and also in the .gitignore)
 
+# ==========================================
+# Checks if we're provisioning using EKSOnly or k3d
+# ==========================================
+
 if [[ "$*" == *"eksonly"* ]];
   then
+    # Matching eksonly skips all the k3d stuff
     echo ""
     echo -e "${RED}Skipping k3d cluster install${NC}"
     echo ""
   else
+
+    # All the k3d stuff happens HERE onward
 
     # ------------------------------------------
     # Is Docker running? Start docker service if not
@@ -1250,10 +1257,29 @@ if [[ "$*" == *"eksonly"* ]];
     echo ""
     printf "${RED}"'Happy Consul'\''ing!!! '"${NC}\n"
     echo ""
+    echo -e "Before running ${YELL}terraform destroy${NC}, first run ${YELL}./k3d-config.sh -nuke-eksonly${NC} to prevent AWS from horking. Trust me."
     echo ""
   else
+    echo -e "${GRN}"
+    echo -e "------------------------------------------"
+    echo -e "            K3d Outputs"
+    echo -e "------------------------------------------${NC}"
     echo ""
+    echo -e "${GRN}Consul UI Addresses: ${NC}"
+    echo -e " ${YELL}DC3${NC}: https://127.0.0.1:8502/ui/"
+    echo -e " ${YELL}DC4${NC}: https://127.0.0.1:8503/ui/"
+    echo ""
+    echo -e "${RED}Don't forget to login to the UI using token${NC}: 'root'"
+    echo ""
+    echo -e "${GRN}Fake Service UI addresses: ${NC}"
+    echo -e " ${YELL}Unicorn-Frontend:${NC} http://127.0.0.1:11000/ui/"
+    echo -e " ${YELL}Unicorn-SSG-Frontend:${NC} http://localhost:11001/ui/"
+    echo ""
+    echo -e "${GRN}Export ENV Variables ${NC}"
+    echo " export DC3=https://127.0.0.1:8502"
+    echo " export DC4=https://127.0.0.1:8503"
 fi
+
 
 
 
