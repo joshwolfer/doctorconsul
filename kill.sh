@@ -40,7 +40,7 @@ if [[ "$*" == *"-all"* ]]
       echo -e "          Executing eks only Nuke"
       echo -e "------------------------------------------${NC}"
       echo -e ""
-      echo -e "Executing:${YELL} ./k3d-config.sh -nuke-eksonly${NC}"
+      echo -e "Executing:${YELL} ./kube-config.sh -nuke-eksonly${NC}"
       ./k3d-config.sh -nuke-eksonly
 
   else

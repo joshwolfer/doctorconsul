@@ -35,7 +35,7 @@ if [[ "$*" == *"help"* ]]
     echo -e "Syntax: ./k3d-config.sh [OPTIONS]"
     echo ""
     echo "Options:"
-    echo "  -full        Integrate with full docker compose environment. Without this, only launch Consul in k3d"
+    echo "  -k3d-full    Integrate with full docker compose environment. Without this, only launch Consul in k3d"
     echo "  -k8s-only    Only Install raw K3d clusters without Consul. Useful when you want to play with k8s alone"
     echo "  -update      Update K3d to the latest version"
     echo "  -eksonly     Sets 4 Kube Contexts to the appropriate names from EKSonly (https://github.com/ramramhariram/EKSonly)"
@@ -881,7 +881,7 @@ k3dPeeringToVM () {
 }
 
 # $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
-#            Check for -full
+#            Check for -k3d-full
 # $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
 
 echo -e "${GRN}"
@@ -889,7 +889,7 @@ echo -e "=========================================="
 echo -e "            Cluster Peering"
 echo -e "==========================================${NC}"
 
-if [[ "$*" == *"-full"* ]]
+if [[ "$*" == *"-k3d-full"* ]]
   then
     k3dPeeringToVM
   else

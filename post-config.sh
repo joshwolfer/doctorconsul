@@ -32,7 +32,7 @@ if [[ "$*" == *"help"* ]]
     echo -e "Syntax: ./post-config.sh [OPTIONS]"
     echo ""
     echo "Options:"
-    echo "  -k3d      Include the default k3d configuration (doesn't accept additional k3d-config.sh arguments)"
+    echo "  -k3d      Include the default k3d configuration (doesn't accept additional kube-config.sh arguments)"
     echo ""
     exit 0
 fi
@@ -582,8 +582,8 @@ echo -e ""
 
 if [[ "$*" == *"-k3d"* ]]
   then
-    echo -e "${GRN} Launching k3d configuration script (k3d-config.sh) ${NC}"
-    ./k3d-config.sh -full
+    echo -e "${GRN} Launching k3d configuration script (kube-config.sh) ${NC}"
+    ./kube-config.sh -k3d-full
     echo ""
 fi
 
