@@ -88,7 +88,7 @@ This repo contains a full featured environment for setting up and testing HashiC
 * Highly recommended to get k9s to make navigating Kubernetes a lot easier.
 * [https://github.com/derailed/k9s/releases](https://github.com/derailed/k9s/releases)
 
-### AWS + Terraform (Optional)
+### AWS EKS + Terraform (Optional: Cloud Kubernetes)
 
 * Doctor Consul Supports using 4 AWS EKS clusters
   * This is an alternative to using k3d locally.
