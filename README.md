@@ -237,3 +237,10 @@ HashiCorp Vault will eventually be implemented in the future as the Certificate 
 ### Transparent Proxy on VM and Kube
 
 * Add some transparent proxies + fake service.
+
+### Requests from the field
+
+* Consul API Gateway
+* Permissive Mode
+* Vault as TLS CA in one of the clusters.
+* README's for each application and it's uses.

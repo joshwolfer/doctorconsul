@@ -41,7 +41,7 @@ if [[ "$*" == *"-all"* ]]
       echo -e "------------------------------------------${NC}"
       echo -e ""
       echo -e "Executing:${YELL} ./kube-config.sh -nuke-eksonly${NC}"
-      ./k3d-config.sh -nuke-eksonly
+      ./kube-config.sh -nuke-eksonly
 
   else
     echo -e "${GRN}Nuking k3d clusters ONLY ${NC}"

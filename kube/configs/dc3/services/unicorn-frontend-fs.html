@@ -1,0 +1,89 @@
+<p><strong>The Unicorn-frontend Application</strong></p>
+
+<p>The&nbsp;DC3 Unicorn-frontend application has the following features:</p>
+
+<ul>
+	<li>8 total HTTP upstream services
+	<ul>
+		<li>4 explicitly configured
+		<ul>
+			<li>TCP/11000: dc3 / default (ap) / unicorn / unicorn-backend</li>
+			<li>TCP/12000: dc3 / cernunnos (ap) / unicorn / unicorn-backend</li>
+			<li>TCP/13000: dc4-default (peer) / unicorn / unicorn-backend</li>
+			<li>TCP/14000: dc4-taranis (peer) / unicorn / unicorn-backend</li>
+		</ul>
+		</li>
+		<li>4 transparently accessed
+		<ul>
+			<li>http://unicorn-tp-backend.virtual.unicorn.ns.dc3.dc.consul</li>
+			<li>http://unicorn-tp-backend.virtual.unicorn.ns.cernunnos.ap.dc3.dc.consul</li>
+			<li>http://unicorn-tp-backend.virtual.unicorn.dc4-default.consul</li>
+			<li>http://unicorn-tp-backend.virtual.unicorn.dc4-taranis.consul</li>
+		</ul>
+		</li>
+	</ul>
+	</li>
+	<li>The dc3 / unicorn / unicorn-tp-backend service belongs to a Sameness Group (service-resolver), which uses the following order:
+	<ul>
+		<li>dc3 default</li>
+		<li>dc3 cernunnos (AP)</li>
+		<li>dc4 default (Peer)</li>
+		<li>dc4 taranis (Peer)</li>
+	</ul>
+	</li>
+	<li>2 external upstreams accessible via Terminating Gateway:
+	<ul>
+		<li>&quot;example-https&quot;
+		<ul>
+			<li>example.com:443</li>
+			<li>wolfmansound.com:443</li>
+		</ul>
+		</li>
+		<li>&quot;whatismyip&quot;
+		<ul>
+			<li>104.16.154.36:443</li>
+		</ul>
+		</li>
+	</ul>
+	</li>
+</ul>
+
+<p><strong>Noteworthy Details</strong></p>
+
+<p>This application has a little bit of everything in it. Many different upstreams of both explicit and transparent types, service failover, and external service via a terminating gateway.&nbsp;</p>
+
+<p>Each transparently accessed upstream service is named with a {transparent} tag. This makes it easy to differentiate from the explicitly access services.</p>
+
+<p><strong>Demo: Failover on dc3 / unicorn / unicorn-tp-backend</strong></p>
+
+<p>Every time you refresh the Fake Service UI, a new request is made to each upstream service. Pay close attention to the service named &quot;unicorn-backend {transparent} (DC3)&quot; service. As we one by one destroy upstream services, you will watch in real-time as Consul switches to healthy unicorn-backend services in other locations.&nbsp;</p>
+
+<p>Doctor Consul provides a k9s plugin to assist with scaling pods. See the zork script.</p>
+
+<ul>
+	<li>In Kube cluster k3d-dc3, scale unicorn-tp-backend to 0 pods.</li>
+	<li>Refresh Fake Service</li>
+</ul>
+
+<p>Notice that there are now 2 instances of unicorn-backend {transparent} DC3 Cernunnos now. This is because the instance in DC3 is no longer healthy and has switched to the Cernunnos partition.</p>
+
+<ul>
+	<li>In Kube cluster k3d-dc3-p1, scale unicorn-tp-backend to 0 pods.</li>
+	<li>Refresh Fake Service</li>
+</ul>
+
+<p>Notice that upstream service has now switched to unicorn-backend {transparent} DC4 and there are two occurrences of it. Also notice that the original cernunnos upstream is now red. This is because it is down and there is no service-resolver or sameness group that instructs Consul to failover to a healthy backup. Only the unicorn-tp-backend in DC3/default has failover enabled.&nbsp;</p>
+
+<ul>
+	<li>In Kube cluster k3d-dc4, scale unicorn-tp-backend to 0 pods.</li>
+	<li>Refresh Fake Service</li>
+</ul>
+
+<p>Notice that once again&nbsp;the upstream destination has changed, now to DC4 Taranis.</p>
+
+<ul>
+	<li>In Kube cluster k3d-dc4-p1, scale unicorn-tp-backend to 0 pods.</li>
+	<li>Refresh Fake Service</li>
+</ul>
+
+<p>Finally, since all instances of unicorn-tp-backend have been killed, we have run out of healthy upstreams and Fake Service has all red failures for the transparent upstreams.&nbsp;</p>

@@ -63,16 +63,20 @@ if [[ "$*" == "-nuke-eksonly" ]]
     echo -e "${GRN}Deleting Consul Helm installs in each Cluster:${NC}"
 
     echo -e "${YELL}DC3:${NC}"
-    helm delete consul --namespace consul --kube-context $KDC3
+    consul-k8s uninstall -auto-approve -context $KDC3
+    # helm delete consul --namespace consul --kube-context $KDC3
 
     echo -e "${YELL}DC3_P1:${NC}"
-    helm delete consul --namespace consul --kube-context $KDC3_P1
+    consul-k8s uninstall -auto-approve -context $KDC3_P1
+    # helm delete consul --namespace consul --kube-context $KDC3_P1
 
     echo -e "${YELL}DC4:${NC}"
-    helm delete consul --namespace consul --kube-context $KDC4
+    consul-k8s uninstall -auto-approve -context $KDC4
+    # helm delete consul --namespace consul --kube-context $KDC4
 
     echo -e "${YELL}DC4_P1:${NC}"
-    helm delete consul --namespace consul --kube-context $KDC4_P1
+    consul-k8s uninstall -auto-approve -context $KDC4_P1
+    # helm delete consul --namespace consul --kube-context $KDC4_P1
     echo ""
 
     echo -e "${GRN}Deleting additional DC3 Loadbalancer services:${NC}"
@@ -1313,6 +1317,7 @@ if [[ "$*" == "-eksonly" ]];
     echo -e "${GRN}Export ENV Variables ${NC}"
     echo " export DC3=https://127.0.0.1:8502"
     echo " export DC4=https://127.0.0.1:8503"
+    echo ""
 fi
 
 
