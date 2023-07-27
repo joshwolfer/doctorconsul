@@ -41,10 +41,8 @@ This repo contains a full featured environment for setting up and testing HashiC
 
 * HashiCorp Consul Enterprise license required.
   * Place in `./license`
-* For the `./kube-config.sh` script to execute properly, you also need to -
-  * Have a local version of Consul on the latest version
-  * Create a /tokens directory, CA and other files will be copied into this directory.
-* Generate Consul PKI Root certs and Consul Server RPC certs
+* The `consul` enterprise binary must installed and in the PATH.
+* (VM-style only): Generate Consul PKI Root certs and Consul Server RPC certs
   * Self-signed certificates have already been provided in this repo.
   * If they need to be regenerated:
     * From within `./certs`
@@ -148,6 +146,8 @@ The kube-config on it's own has no reliance on the VM-style environment, meaning
 ### Kube configuration script (AWS EKS "EKSOnly")
 
 * Instead of building Kubernetes clusters locally using k3d, Doctor Consul can install and configure Consul into 4 pre-existing AWS EKS clusters using the [EKSOnly](https://github.com/ramramhariram/EKSonlyhttps:/) repo.
+* The EKS clusters must be build in `us-east-1`.
+  * If a different region is used, the additional SANS HELM config will need to be updated to reflect the correct region.
 * This script will automatically map the Doctor Consul config to the the EKSOnly clusters using the following mapping:
   * KDC3 > nEKS0
   * KDC3_P1 > nEKS1
