@@ -77,12 +77,15 @@ until curl -s $VAULT_ADDR/v1/sys/health --connect-timeout 1 | jq -r .initialized
   sleep 1.5
 done
 
-vault operator init -key-shares=1 -key-threshold=1 -format=json | jq -r .root_token > ./tokens/vault-root.token
+vault operator init -key-shares=1 -key-threshold=1 -format=json | tee >(jq -r .root_token > ./tokens/vault-root.token) >(jq -r .unseal_keys_b64[0] > ./tokens/vault-unseal.key) >/dev/null
 export VAULT_TOKEN=$(cat ./tokens/vault-root.token)
+export VAULT_UNSEAL=$(cat ./tokens/vault-unseal.key)
 
 echo ""
 echo -e "${GRN}Vault Details: ${NC}"
 echo -e "${YELL}Vault API Address:${NC} $(echo $VAULT_ADDR)"
 echo -e "${YELL}Vault root token:${NC} $(echo $VAULT_TOKEN)"
+echo -e "${YELL}Vault Unseal Key:${NC} $(echo $VAULT_UNSEAL)"
 echo ""
+
 

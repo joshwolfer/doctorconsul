@@ -337,15 +337,10 @@ if [[ "$*" == "-eksonly" ]];
     # ^^^ Don't downloading again. the image locations have been changed to the local k3d registry.
 
     # ------------------------------------------
-    #                    DC3
+    #                    DC4
     # ------------------------------------------
 
-    echo -e "${GRN}"
-    echo -e "=========================================="
-    echo -e "         Setup K3d cluster (DC3)"
-    echo -e "==========================================${NC}"
-
-    k3d cluster create dc3 --network doctorconsul_wan \
+    (k3d cluster create dc3 --network doctorconsul_wan \
         --api-port 127.0.0.1:6443 \
         -p "8502:443@loadbalancer" \
         -p "11000:8000" \
@@ -353,7 +348,8 @@ if [[ "$*" == "-eksonly" ]];
         -p "9091:9090" \
         --k3s-arg '--flannel-backend=none@server:*' \
         --registry-use k3d-doctorconsul.localhost:12345 \
-        --k3s-arg="--disable=traefik@server:0"
+        --k3s-arg="--disable=traefik@server:0" && \
+    kubectl apply --context=$KDC3 -f ./kube/calico.yaml) &
 
         # -p "11000:8000"    DC3/unicorn/unicorn-frontend (fake service UI)     - Mapped to local http://127.0.0.1:11000/ui/
         # -p "11001:8001"    DC3/unicorn/unicorn-ssg-frontend (fake service UI) - Mapped to local http://127.0.0.1:11001/ui/
@@ -363,72 +359,55 @@ if [[ "$*" == "-eksonly" ]];
         # Disable flannel
         # install Calico (tproxy compatability)
 
-    kubectl apply --context=$KDC3 -f ./kube/calico.yaml
-
     # ------------------------------------------
-    #            DC3-P1 cernunnos
+    #              DC3 cernunnos
     # ------------------------------------------
 
-    echo -e "${GRN}"
-    echo -e "=========================================="
-    echo -e "         Setup K3d cluster (DC3-P1 cernunnos)"
-    echo -e "==========================================${NC}"
-
-    k3d cluster create dc3-p1 --network doctorconsul_wan \
+    (k3d cluster create dc3-p1 --network doctorconsul_wan \
         --api-port 127.0.0.1:6444 \
         -p "8443:8443" \
         --k3s-arg="--disable=traefik@server:0" \
         --registry-use k3d-doctorconsul.localhost:12345 \
-        --k3s-arg '--flannel-backend=none@server:*'
-
-    kubectl apply --context=$KDC3_P1 -f ./kube/calico.yaml
+        --k3s-arg '--flannel-backend=none@server:*' && \
+    kubectl apply --context=$KDC3_P1 -f ./kube/calico.yaml) &
 
         # -p "8443:8443"      api-gateway ingress
         # -p "12000:8000"     reserved for fakeservice something
 
-
     # ------------------------------------------
-    #                    DC4
+    #                   DC4
     # ------------------------------------------
 
-    echo -e "${GRN}"
-    echo -e "=========================================="
-    echo -e "         Setup K3d cluster (DC4)"
-    echo -e "==========================================${NC}"
-
-    k3d cluster create dc4 --network doctorconsul_wan \
+    (k3d cluster create dc4 --network doctorconsul_wan \
         --api-port 127.0.0.1:6445 \
         -p "8503:443@loadbalancer" \
+        -p "8200:8200@loadbalancer" \
         -p "12000:8000" \
         -p "9092:9090" \
         --k3s-arg '--flannel-backend=none@server:*' \
         --registry-use k3d-doctorconsul.localhost:12345 \
-        --k3s-arg="--disable=traefik@server:0"
-
-    kubectl apply --context=$KDC4 -f ./kube/calico.yaml
+        --k3s-arg="--disable=traefik@server:0" && \
+    kubectl apply --context=$KDC4 -f ./kube/calico.yaml) &
 
     #  12000 > 8000 - whatever app UI
     #  local 8503 > 443 - Consul UI
+    #  8200 > 8200 - Vault API
 
     # ------------------------------------------
     #            DC4-P1 taranis
     # ------------------------------------------
 
-    echo -e "${GRN}"
-    echo -e "=========================================="
-    echo -e "    Setup K3d cluster (DC4-P1 taranis)"
-    echo -e "==========================================${NC}"
-
-    k3d cluster create dc4-p1 --network doctorconsul_wan \
+    (k3d cluster create dc4-p1 --network doctorconsul_wan \
         --api-port 127.0.0.1:6446 \
         --k3s-arg="--disable=traefik@server:0" \
         --registry-use k3d-doctorconsul.localhost:12345 \
-        --k3s-arg '--flannel-backend=none@server:*'
+        --k3s-arg '--flannel-backend=none@server:*' && \
+    kubectl apply --context=$KDC4_P1 -f ./kube/calico.yaml) &
 
-    kubectl apply --context=$KDC4_P1 -f ./kube/calico.yaml
+    # Wait for all background jobs to finish
+    wait
 fi
 # Ends the eksonly bypass
-
 
 # ==============================================================================================================================
 # ==============================================================================================================================
