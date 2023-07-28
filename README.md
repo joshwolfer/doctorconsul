@@ -57,7 +57,7 @@ This repo contains a full featured environment for setting up and testing HashiC
 
 * Create Auth0 account with appropriate configuration
   * Required only for the OIDC authentication in this Consul environment.
-  * Details on how to do that will come later. For now reference this [Learn Guide](https://https://developer.hashicorp.com/consul/tutorials/datacenter-operations/single-sign-on-auth0?in=consul%2Fdatacenter-operations).
+  * Details on how to do that will come later. For now reference this [Learn Guide](https://developer.hashicorp.com/consul/tutorials/datacenter-operations/single-sign-on-auth0?in=consul%2Fdatacenter-operations).
     * NOTE: The guide is outdated and Auth0 has since changed the locations for a few of the components. Everything is still possible to complete using this guide, but the locations of the config params are in different places on the leftside bar. Specifically:
       * `Applications` > `Applications` > Default
       * `Auth Pipeline` > `Rules`
@@ -92,11 +92,11 @@ This repo contains a full featured environment for setting up and testing HashiC
 
 * Doctor Consul Supports using 4 AWS EKS clusters
   * This is an alternative to using k3d locally.
-  * Requires using Terraform + [https://github.com/ramramhariram/EKSonly](https://github.com/ramramhariram/EKSonlyhttps:/) to provision the EKS clusters
+  * Requires using Terraform + [https://github.com/ramramhariram/EKSonly](https://github.com/ramramhariram/EKSonly) to provision the EKS clusters
   * See specific "EKSOnly" instructions below.
   * Requires:
-    * AWS CLI version 2 [HERE](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.htmlhttps:/)
-    * Terraform OSS [HERE](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-clihttps:/)
+    * AWS CLI version 2 [HERE](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
+    * Terraform OSS [HERE](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli)
 
 ### HashiCorp consul-k8s CLI
 
@@ -145,7 +145,7 @@ The kube-config on it's own has no reliance on the VM-style environment, meaning
 
 ### Kube configuration script (AWS EKS "EKSOnly")
 
-* Instead of building Kubernetes clusters locally using k3d, Doctor Consul can install and configure Consul into 4 pre-existing AWS EKS clusters using the [EKSOnly](https://github.com/ramramhariram/EKSonlyhttps:/) repo.
+* Instead of building Kubernetes clusters locally using k3d, Doctor Consul can install and configure Consul into 4 pre-existing AWS EKS clusters using the [EKSOnly](https://github.com/ramramhariram/EKSonly) repo.
 * The EKS clusters must be build in `us-east-1`.
   * If a different region is used, the additional SANS HELM config will need to be updated to reflect the correct region.
 * This script will automatically map the Doctor Consul config to the the EKSOnly clusters using the following mapping:
@@ -154,11 +154,11 @@ The kube-config on it's own has no reliance on the VM-style environment, meaning
   * KDC4 > nEKS2
   * KDC4_P1 > nEKS3
 * Build the K3d Kubernetes cluster using the `kube-config.sh` script:
-  * `./kube-config.sh -eksonly` : Builds Consul into 4 clusters that have previously been created using [EKSOnly](https://github.com/ramramhariram/EKSonlyhttps:/).
+  * `./kube-config.sh -eksonly` : Builds Consul into 4 clusters that have previously been created using [EKSOnly](https://github.com/ramramhariram/EKSonly).
 
 The kube-config on it's own has no reliance on the VM-style environment, meaning you can simply just run `./kube-config.sh -eksonly` and build a working 4 cluster configuration of Consul in AWS EKS.
 
-Be sure to follow the instructions completely in [EKSOnly](https://github.com/ramramhariram/EKSonlyhttps:/) building a 4 cluster setup.
+Be sure to follow the instructions completely in [EKSOnly](https://github.com/ramramhariram/EKSonly) building a 4 cluster setup.
 
 # Delete Environment
 
