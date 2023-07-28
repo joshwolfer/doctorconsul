@@ -49,19 +49,33 @@ helm install vault hashicorp/vault -f ./kube/vault/dc4-helm-values.yaml --namesp
 rm ./tokens/vault-root.token -f
 # Remove previous vault token
 
-IP=""
-until [[ $IP && $IP != "null" ]]; do
-  IP=$(kubectl get svc vault-ui -o json --namespace vault | jq -r .status.loadBalancer.ingress[0].ip)
-  if [[ -z $IP || $IP == "null" ]]; then
-    echo -e "${RED}Waiting for DC4 vault service to be ready...${NC}"
-    sleep 1
-    IP=""
-  fi
-done
+echo ""
 
-VAULT_ADDR="http://$(kubectl get svc vault-ui -o json --namespace vault | jq -r .status.loadBalancer.ingress[0].ip):8200"
+VAULT_IP=""
+while true; do
+  VAULT_IP=$(kubectl get svc vault-ui -o json --namespace vault | jq -r .status.loadBalancer.ingress[0].ip 2>/dev/null)
+  if [[ $? -ne 0 ]]; then
+    echo -e "${RED}Failed to retrieve service. Retrying...${NC}"
+  elif [[ -n $VAULT_IP && $VAULT_IP != "null" ]]; then
+    break
+  else
+    echo -e "${RED}Waiting for DC4 Vault Kube service to be ready...${NC}"
+  fi
+  sleep 1
+done
+# Had to do this complicated rigamarole because of various conditions that kept failing. This seems to work consistently. Thanks chatgpt...
+
+echo -e "${GRN}DC4 Vault Kube service is ready ${NC}"
+echo ""
+
+export VAULT_ADDR="http://$(kubectl get svc vault-ui -o json --namespace vault | jq -r .status.loadBalancer.ingress[0].ip):8200"
 # Get the HTTP Vault API
 # In AWS this will likely need to be an address, not an IP
+
+until curl -s $VAULT_ADDR/v1/sys/health --connect-timeout 1 | jq -r .initialized | grep false &>/dev/null; do
+  echo -e "${RED}Waiting for Vault API to be ready...${NC}"
+  sleep 1.5
+done
 
 vault operator init -key-shares=1 -key-threshold=1 -format=json | jq -r .root_token > ./tokens/vault-root.token
 export VAULT_TOKEN=$(cat ./tokens/vault-root.token)

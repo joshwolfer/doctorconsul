@@ -1296,7 +1296,7 @@ if [[ "$*" == "-eksonly" ]];
     echo ""
     printf "${RED}"'Happy Consul'\''ing!!! '"${NC}\n"
     echo ""
-    echo -e "Before running ${YELL}terraform destroy${NC}, first run ${YELL}./k3d-config.sh -nuke-eksonly${NC} to prevent AWS from horking. Trust me."
+    echo -e "Before running ${YELL}terraform destroy${NC}, first run ${YELL}./kill.sh -eksonly${NC} to prevent AWS from horking. Trust me."
     echo ""
   else
     echo -e "${GRN}"
