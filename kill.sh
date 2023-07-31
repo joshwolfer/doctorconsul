@@ -34,7 +34,7 @@ if [[ "$*" == *"-all"* ]]
         echo -e "${GRN}No containers to nuke.${NC}"
         echo ""
     fi
-  elif [[ "$*" == *"-eksonly"* ]]
+  elif [[ "$*" == *"eksonly"* ]]
     then
       echo -e "${GRN}------------------------------------------"
       echo -e "          Executing eks only Nuke"
