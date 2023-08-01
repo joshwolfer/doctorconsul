@@ -1,3 +1,6 @@
+global:
+  enabled: true
+
 server:
   standalone:
     enabled: true
@@ -15,6 +18,10 @@ server:
 
   service:
     enabled: true
+
+  injector:
+    enabled: true
+    authPath: auth/kubernetes-dc4
 
   dataStorage:
     enabled: true

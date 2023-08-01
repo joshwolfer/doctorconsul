@@ -20,7 +20,7 @@ helm search repo hashicorp/vault --versions | head -n2
 
 echo -e ""
 echo -e "${GRN}Writing latest Vault Helm values to disk...${NC}"
-helm show values hashicorp/vault > ./kube/vault/latest-complete-helm-values.yaml
+helm show values hashicorp/vault > ./kube/vault/vault-latest-complete-helm-values.yaml
 
 # ====================================================================================
 #                      Install Vault into Kubernetes (DC4)
@@ -37,13 +37,13 @@ kubectl config use-context $KDC4
 echo -e ""
 echo -e "${GRN}DC4: Create Vault namespace${NC}"
 
-kubectl create namespace vault
-# kubectl delete namespace vault
+kubectl --context $KDC4 create namespace vault
+# kubectl --context $KDC4 delete namespace vault
 
 echo -e ""
 echo -e "${GRN}DC4: Helm Vault install${NC}"
 
-helm install vault hashicorp/vault -f ./kube/vault/dc4-helm-values.yaml --namespace vault
+helm install vault hashicorp/vault -f ./kube/vault/dc4-vault-helm-values.yaml --namespace vault --kube-context $KDC4
 # helm delete vault --namespace vault
 
 rm ./tokens/vault-root.token -f
@@ -68,9 +68,14 @@ done
 echo -e "${GRN}DC4 Vault Kube service is ready ${NC}"
 echo ""
 
-export VAULT_ADDR="http://$(kubectl get svc vault-ui -o json --namespace vault | jq -r .status.loadBalancer.ingress[0].ip):8200"
-# Get the HTTP Vault API
-# In AWS this will likely need to be an address, not an IP
+if [[ "$*" == "-eksonly" ]];
+  then
+    export VAULT_ADDR=""  ## Need to get the EKSOnly address here.
+  else
+    export VAULT_ADDR="http://$(kubectl --context $KDC4 get svc vault-ui -o json --namespace vault | jq -r .status.loadBalancer.ingress[0].ip):8200"
+    # Get the HTTP Vault API
+    # In AWS this will likely need to be an address, not an IP
+fi
 
 until curl -s $VAULT_ADDR/v1/sys/health --connect-timeout 1 | jq -r .initialized | grep false &>/dev/null; do
   echo -e "${RED}Waiting for Vault API to be ready...${NC}"
@@ -87,5 +92,30 @@ echo -e "${YELL}Vault API Address:${NC} $(echo $VAULT_ADDR)"
 echo -e "${YELL}Vault root token:${NC} $(echo $VAULT_TOKEN)"
 echo -e "${YELL}Vault Unseal Key:${NC} $(echo $VAULT_UNSEAL)"
 echo ""
+echo -e "${GRN}Shell Env Variables:${NC}"
+echo "export VAULT_ADDR=$VAULT_ADDR"
+echo "export VAULT_TOKEN=$VAULT_TOKEN"
+echo ""
 
+echo -e "${GRN}Unsealing Vault:${NC}"
+vault operator unseal $VAULT_UNSEAL
+echo ""
+vault secrets enable -path=consul kv-v2
+vault secrets enable pki
+
+# export VAULT_AUTH_METHOD_NAME=kubernetes-dc4
+# export VAULT_SERVER_HOST=$VAULT_ADDR
+
+vault auth enable -path=kubernetes-dc4 kubernetes
+
+
+export DC4_K8S_IP="https://$(kubectl get node k3d-dc4-server-0 --context $KDC4 -o json | jq -r '.metadata.annotations."k3s.io/internal-ip"'):6445"
+### This env name is going to clash with the kube-config which uses the same "DC4_K8S_IP", but really refers to dc4-p1
+
+vault write auth/kubernetes/config \
+    token_reviewer_jwt="$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" \
+    kubernetes_host="$DC4_K8S_IP" \
+    kubernetes_ca_cert=@/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+
+# ^^^ I give up. I'm tired of trying to figure out our docs. I'm pausing this project and coming back later. 
 

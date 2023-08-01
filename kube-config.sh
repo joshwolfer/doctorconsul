@@ -1323,6 +1323,17 @@ if [[ "$*" == "-eksonly" ]];
 fi
 
 
+if [[ "$*" == "vault-setup" ]]
+  then
+    InstallConsulDC4
+    InstallConsulDC4_P1
+fi
+
+if [[ "$*" == "vault-kill" ]]
+  then
+    k3d cluster delete dc4
+    k3d cluster delete dc4-p1
+fi
 
 
 # ==========================================
