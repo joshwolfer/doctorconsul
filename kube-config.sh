@@ -112,7 +112,7 @@ if $ARG_EKSONLY; then
   aws eks update-kubeconfig --region us-east-1 --name nEKS2 --alias k3d-dc4
   aws eks update-kubeconfig --region us-east-1 --name nEKS3 --alias k3d-dc4-p1
   echo ""
-  echo "Terraform EKSOnly state file is currently: $EKSONLY_TF_STATE_FILE"
+  echo -e "${YELL}Terraform EKSOnly state file is currently:${NC} $EKSONLY_TF_STATE_FILE"
   echo ""
 fi
 
@@ -1009,31 +1009,40 @@ consul peering establish -name dc3-default -partition taranis -http-addr="$DC4" 
 
 if $ARG_NO_APPS;
   then
-    echo -e "${RED} Consul is installed. Exiting before applications are installed! ${NC}"
-    echo ""
-    echo -e "${GRN}"
-    echo -e "------------------------------------------"
-    echo -e "         EKSOnly Outputs (No Apps)"
-    echo -e "------------------------------------------${NC}"
-    echo ""
-    echo -e "${GRN}Consul UI Addresses: ${NC}"
-    echo -e " ${YELL}DC3${NC}: http://$DC3_LB_IP:8500"
-    echo -e " ${YELL}DC4${NC}: http://$DC4_LB_IP:8500"
-    echo ""
-    echo -e "${RED}Don't forget to login to the UI using token${NC}: 'root'"
-    echo ""
-    echo -e "${GRN}Export ENV Variables ${NC}"
-    echo " export DC3=http://$DC3_LB_IP:8500"
-    echo " export DC4=http://$DC4_LB_IP:8500"
-    echo ""
-    echo -e "${GRN}Port forwards to map UI to traditional Doctor Consul local ports: ${NC}"
-    echo " kubectl -n consul --context $KDC3 port-forward svc/consul-expose-servers 8502:8501 > /dev/null 2>&1 &"
-    echo " kubectl -n consul --context $KDC4 port-forward svc/consul-expose-servers 8503:8501 > /dev/null 2>&1 &"
-    echo ""
-    printf "${RED}"'Happy Consul'\''ing!!! '"${NC}\n"
-    echo ""
-    echo -e "Before running ${YELL}terraform destroy${NC}, first run ${YELL}./kill.sh -eksonly${NC} to prevent AWS from horking. Trust me."
-    echo ""
+echo -e "$(cat << EOF
+${RED} Consul is installed. Exiting before applications are installed! ${NC}
+
+${GRN}
+------------------------------------------
+         EKSOnly Outputs (No Apps)
+------------------------------------------${NC}
+
+${GRN}Consul UI Addresses: ${NC}
+ ${YELL}DC3${NC}: http://$DC3_LB_IP:8500
+ ${YELL}DC4${NC}: http://$DC4_LB_IP:8500
+
+${RED}Don't forget to login to the UI using token${NC}: 'root'
+
+${GRN}Export ENV Variables ${NC}
+ export DC3=http://$DC3_LB_IP:8500
+ export DC4=http://$DC4_LB_IP:8500
+
+ KDC3=k3d-dc3
+ KDC3_P1=k3d-dc3-p1
+ KDC4=k3d-dc4
+ KDC4_P1=k3d-dc4-p1
+
+${GRN}Port forwards to map UI to traditional Doctor Consul local ports: ${NC}
+ kubectl -n consul --context $KDC3 port-forward svc/consul-expose-servers 8502:8501 > /dev/null 2>&1 &
+ kubectl -n consul --context $KDC4 port-forward svc/consul-expose-servers 8503:8501 > /dev/null 2>&1 &
+
+${RED}Happy Consul'ing!!! ${NC}
+
+Before running ${YELL}terraform destroy${NC}, first run ${YELL}./kill.sh -eksonly${NC} to prevent AWS from horking. Trust me.
+
+You can now start manually provisioning the applications in the kube-config.sh starting at line: $(grep -n "Install Unicorn Application" ./kube-config.sh | cut -f1 -d: | awk 'NR==2')
+EOF
+)"
     exit 0
 fi
 
@@ -1376,56 +1385,62 @@ if $ARG_EKSONLY;
     export UNICORN_FRONTEND_UI_ADDR=$(kubectl get svc unicorn-frontend -nunicorn --context $KDC3 -o json | jq -r '"http://\(.status.loadBalancer.ingress[0].hostname):\(.spec.ports[0].port)"')
     export UNICORN_SSG_FRONTEND_UI_ADDR=$(kubectl get svc unicorn-ssg-frontend -nunicorn --context $KDC3 -o json | jq -r '"http://\(.status.loadBalancer.ingress[0].hostname):\(.spec.ports[0].port)"')
 
-    echo -e "${GRN}"
-    echo -e "------------------------------------------"
-    echo -e "            EKSOnly Outputs"
-    echo -e "------------------------------------------${NC}"
-    echo ""
-    echo -e "${GRN}Consul UI Addresses: ${NC}"
-    echo -e " ${YELL}DC3${NC}: http://$DC3_LB_IP:8500"
-    echo -e " ${YELL}DC4${NC}: http://$DC4_LB_IP:8500"
-    echo ""
-    echo -e "${RED}Don't forget to login to the UI using token${NC}: 'root'"
-    echo ""
-    echo -e "${GRN}Fake Service UI addresses: ${NC}"
-    echo -e " ${YELL}Unicorn-Frontend:${NC} $UNICORN_FRONTEND_UI_ADDR/ui/"
-    echo -e " ${YELL}Unicorn-SSG-Frontend:${NC} $UNICORN_SSG_FRONTEND_UI_ADDR/ui/"
-    echo -e "If this is blank - run do this. EKS is being slow and I need to build a check: kubectl get svc unicorn-ssg-frontend -nunicorn --context $KDC3 -o json | jq -r 'http://\(.status.loadBalancer.ingress[0].hostname):\(.spec.ports[0].port)'"
-    echo ""
-    echo -e "${GRN}Export ENV Variables ${NC}"
-    echo " export DC3=http://$DC3_LB_IP:8500"
-    echo " export DC4=http://$DC4_LB_IP:8500"
-    echo ""
-    echo -e "${GRN}Port forwards to map services / UI to traditional Doctor Consul local ports: ${NC}"
-    echo " kubectl -nunicorn --context $KDC3 port-forward svc/unicorn-frontend 11000:8000 > /dev/null 2>&1 &"
-    echo " kubectl -nunicorn --context $KDC3 port-forward svc/unicorn-ssg-frontend 11001:8001  > /dev/null 2>&1 &"
-    echo " kubectl -n consul --context $KDC3 port-forward svc/consul-expose-servers 8502:8501 > /dev/null 2>&1 &"
-    echo " kubectl -n consul --context $KDC4 port-forward svc/consul-expose-servers 8503:8501 > /dev/null 2>&1 &"
-    echo ""
-    printf "${RED}"'Happy Consul'\''ing!!! '"${NC}\n"
-    echo ""
-    echo -e "Before running ${YELL}terraform destroy${NC}, first run ${YELL}./kill.sh -eksonly${NC} to prevent AWS from horking. Trust me."
-    echo ""
+echo -e "$(cat << EOF
+${GRN}
+------------------------------------------
+            EKSOnly Outputs
+------------------------------------------${NC}
+
+${GRN}Consul UI Addresses: ${NC}
+ ${YELL}DC3${NC}: http://$DC3_LB_IP:8500
+ ${YELL}DC4${NC}: http://$DC4_LB_IP:8500
+
+${RED}Don't forget to login to the UI using token${NC}: 'root'
+
+${GRN}Fake Service UI addresses: ${NC}
+ ${YELL}Unicorn-Frontend:${NC} $UNICORN_FRONTEND_UI_ADDR/ui/
+ ${YELL}Unicorn-SSG-Frontend:${NC} $UNICORN_SSG_FRONTEND_UI_ADDR/ui/
+If this is blank - run do this. EKS is being slow and I need to build a check: kubectl get svc unicorn-ssg-frontend -nunicorn --context $KDC3 -o json | jq -r 'http://\(.status.loadBalancer.ingress[0].hostname):\(.spec.ports[0].port)'
+
+${GRN}Export ENV Variables ${NC}
+ export DC3=http://$DC3_LB_IP:8500
+ export DC4=http://$DC4_LB_IP:8500
+
+${GRN}Port forwards to map services / UI to traditional Doctor Consul local ports: ${NC}
+ kubectl -nunicorn --context $KDC3 port-forward svc/unicorn-frontend 11000:8000 > /dev/null 2>&1 &
+ kubectl -nunicorn --context $KDC3 port-forward svc/unicorn-ssg-frontend 11001:8001  > /dev/null 2>&1 &
+ kubectl -n consul --context $KDC3 port-forward svc/consul-expose-servers 8502:8501 > /dev/null 2>&1 &
+ kubectl -n consul --context $KDC4 port-forward svc/consul-expose-servers 8503:8501 > /dev/null 2>&1 &
+
+$(printf "${RED}"'Happy Consul'\''ing!!! '"${NC}\n")
+
+Before running ${YELL}terraform destroy${NC}, first run ${YELL}./kill.sh -eksonly${NC} to prevent AWS from horking. Trust me.
+EOF
+)"
+
   else
-    echo -e "${GRN}"
-    echo -e "------------------------------------------"
-    echo -e "            K3d Outputs"
-    echo -e "------------------------------------------${NC}"
-    echo ""
-    echo -e "${GRN}Consul UI Addresses: ${NC}"
-    echo -e " ${YELL}DC3${NC}: https://127.0.0.1:8502/ui/"
-    echo -e " ${YELL}DC4${NC}: https://127.0.0.1:8503/ui/"
-    echo ""
-    echo -e "${RED}Don't forget to login to the UI using token${NC}: 'root'"
-    echo ""
-    echo -e "${GRN}Fake Service UI addresses: ${NC}"
-    echo -e " ${YELL}Unicorn-Frontend:${NC} http://127.0.0.1:11000/ui/"
-    echo -e " ${YELL}Unicorn-SSG-Frontend:${NC} http://localhost:11001/ui/"
-    echo ""
-    echo -e "${GRN}Export ENV Variables ${NC}"
-    echo " export DC3=https://127.0.0.1:8502"
-    echo " export DC4=https://127.0.0.1:8503"
-    echo ""
+
+echo -e "$(cat << EOF
+${GRN}------------------------------------------
+            K3d Outputs
+------------------------------------------${NC}
+
+${GRN}Consul UI Addresses: ${NC}
+ ${YELL}DC3${NC}: https://127.0.0.1:8502/ui/
+ ${YELL}DC4${NC}: https://127.0.0.1:8503/ui/
+
+${RED}Don't forget to login to the UI using token${NC}: 'root'
+
+${GRN}Fake Service UI addresses: ${NC}
+ ${YELL}Unicorn-Frontend:${NC} http://127.0.0.1:11000/ui/
+ ${YELL}Unicorn-SSG-Frontend:${NC} http://localhost:11001/ui/
+
+${GRN}Export ENV Variables ${NC}
+ export DC3=https://127.0.0.1:8502
+ export DC4=https://127.0.0.1:8503
+EOF
+)"
+
 fi
 
 ### Experimental args to help with the initial figuring out of Vault
