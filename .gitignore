@@ -33,6 +33,7 @@
 .terraform.lock.hcl
 .terraformrc
 __pycache__
+logs/*
 audit
 init
 init.json

@@ -99,9 +99,6 @@ ui:
 prometheus:
   enabled: true
 
-apiGateway:
-  enabled: false
-
 connectInject:
   enabled: true
   default: false                 # Default
