@@ -30,10 +30,8 @@ KDC4_P1="k3d-dc4-p1"
 HELM_CHART_VER=""
 # HELM_CHART_VER="--version 1.2.0-rc1"                # pinned consul-k8s chart version
 
-EKSONLY_TF_STATE_FILE="/home/mourne/git/EKSonly/terraform.tfstate"
-# Set this to the path of the EKSOnly repo so the outputs can be read! This MUST be set correctly!!!
-
-help () {
+if [[ "$*" == *"help"* ]]
+  then
     echo -e "Syntax: ./k3d-config.sh [OPTIONS]"
     echo ""
     echo "Options:"
@@ -43,77 +41,23 @@ help () {
     echo "  -eksonly         Sets 4 Kube Contexts to the appropriate names from EKSonly (https://github.com/ramramhariram/EKSonly)"
     echo "  -nuke-eksonly    Destroy the EKSOnly resources so it's safe to tf destroy"
     echo "  -no-apps         Install Consul into clusters with additional NO services"
-    echo "  -debug           Run Helm installation with --debug"
     echo ""
     exit 0
-}
-
-# ------------------------------------------
-#    Parse Arguments into variables
-# ------------------------------------------
-
-export ARG_K3D_FULL=false
-export ARG_K8S_ONLY=false
-export ARG_UPDATE=false
-export ARG_EKSONLY=false
-export ARG_NUKE_EKSONLY=false
-export ARG_NO_APPS=false
-export ARG_DEBUG=false
-export ARG_HELP=false
-
-if [ $# -eq 0 ]; then
-  echo ""
-else
-  for arg in "$@"; do
-    case $arg in
-      -k3d-full)
-        ARG_K3D_FULL=true
-        ;;
-      -k8s-only)
-        ARG_K8S_ONLY=true
-        ;;
-      -update)
-        ARG_UPDATE=true
-        ;;
-      -eksonly)
-        ARG_EKSONLY=true
-        ;;
-      -nuke-eksonly)
-        ARG_NUKE_EKSONLY=true
-        ;;
-      -no-apps)
-        ARG_NO_APPS=true
-        ;;
-      -debug)
-        ARG_DEBUG=true
-        ;;
-      -help)
-        ARG_HELP=true
-        ;;
-      *)
-        echo -e "${RED}Invalid Argument... ${NC}"
-        echo ""
-        help
-        exit 1
-        ;;
-    esac
-  done
 fi
 
-if $ARG_HELP; then
-  help
-fi
+EKSONLY_TF_STATE_FILE="/home/mourne/git/EKSonly/terraform.tfstate"
 
-if $ARG_EKSONLY; then
-  echo -e "${GRN}Setting Contexts from EKSonly (https://github.com/ramramhariram/EKSonly):${NC}"
-  echo ""
-  aws eks update-kubeconfig --region us-east-1 --name nEKS0 --alias k3d-dc3
-  aws eks update-kubeconfig --region us-east-1 --name nEKS1 --alias k3d-dc3-p1
-  aws eks update-kubeconfig --region us-east-1 --name nEKS2 --alias k3d-dc4
-  aws eks update-kubeconfig --region us-east-1 --name nEKS3 --alias k3d-dc4-p1
-  echo ""
-  echo "Terraform EKSOnly state file is currently: $EKSONLY_TF_STATE_FILE"
-  echo ""
+if [[ "$*" == "-eksonly" ]]
+  then
+    echo -e "${GRN}Setting Contexts from EKSonly (https://github.com/ramramhariram/EKSonly):${NC}"
+    echo ""
+    aws eks update-kubeconfig --region us-east-1 --name nEKS0 --alias k3d-dc3
+    aws eks update-kubeconfig --region us-east-1 --name nEKS1 --alias k3d-dc3-p1
+    aws eks update-kubeconfig --region us-east-1 --name nEKS2 --alias k3d-dc4
+    aws eks update-kubeconfig --region us-east-1 --name nEKS3 --alias k3d-dc4-p1
+    echo ""
+
+        # Set this to the path of the EKSOnly repo so the outputs can be read! This MUST be set correctly!!!
 fi
 
 CleanupTempStuff () {
@@ -136,82 +80,85 @@ CleanupTempStuff () {
   echo -e "${RED}Nuking kubectl local port forwards...${NC}"
   pkill kubectl
   echo ""
+
 }
 
-if $ARG_NUKE_EKSONLY; then
-  set +e
-  echo -e "${GRN}Deleting Consul Helm installs in each Cluster:${NC}"
+if [[ "$*" == "-nuke-eksonly" ]]
+  then
+    set +e
+    echo -e "${GRN}Deleting Consul Helm installs in each Cluster:${NC}"
 
-  echo -e "${YELL}DC3:${NC}"
-  consul-k8s uninstall -auto-approve -context $KDC3
-  # helm delete consul --namespace consul --kube-context $KDC3
+    echo -e "${YELL}DC3:${NC}"
+    consul-k8s uninstall -auto-approve -context $KDC3
+    # helm delete consul --namespace consul --kube-context $KDC3
 
-  echo -e "${YELL}DC3_P1:${NC}"
-  consul-k8s uninstall -auto-approve -context $KDC3_P1
-  # helm delete consul --namespace consul --kube-context $KDC3_P1
+    echo -e "${YELL}DC3_P1:${NC}"
+    consul-k8s uninstall -auto-approve -context $KDC3_P1
+    # helm delete consul --namespace consul --kube-context $KDC3_P1
 
-  echo -e "${YELL}DC4:${NC}"
-  consul-k8s uninstall -auto-approve -context $KDC4
-  # helm delete consul --namespace consul --kube-context $KDC4
+    echo -e "${YELL}DC4:${NC}"
+    consul-k8s uninstall -auto-approve -context $KDC4
+    # helm delete consul --namespace consul --kube-context $KDC4
 
-  echo -e "${YELL}DC4_P1:${NC}"
-  consul-k8s uninstall -auto-approve -context $KDC4_P1
-  # helm delete consul --namespace consul --kube-context $KDC4_P1
-  echo ""
+    echo -e "${YELL}DC4_P1:${NC}"
+    consul-k8s uninstall -auto-approve -context $KDC4_P1
+    # helm delete consul --namespace consul --kube-context $KDC4_P1
+    echo ""
 
-  echo -e "${GRN}Deleting additional DC3 Loadbalancer services:${NC}"
-  kubectl delete --namespace consul --context $KDC3 -f ./kube/prometheus/dc3-prometheus-service.yaml
-  kubectl delete svc unicorn-frontend -n unicorn --context $KDC3
-  kubectl delete svc unicorn-ssg-frontend -n unicorn --context $KDC3
+    echo -e "${GRN}Deleting additional DC3 Loadbalancer services:${NC}"
+    kubectl delete --namespace consul --context $KDC3 -f ./kube/prometheus/dc3-prometheus-service.yaml
+    kubectl delete svc unicorn-frontend -n unicorn --context $KDC3
+    kubectl delete svc unicorn-ssg-frontend -n unicorn --context $KDC3
 
-  # If you need to nuke all the CRDs to nuke namespaces, this can be used. Don't typically need to do this just to "tf destroy" though.
-  # This is really on for rebuilding Doctor Consul useing the same eksonly clusters.
-  CONTEXTS=("$KDC3" "$KDC3_P1" "$KDC4" "$KDC4_P1")
+    # If you need to nuke all the CRDs to nuke namespaces, this can be used. Don't typically need to do this just to "tf destroy" though.
+    # This is really on for rebuilding Doctor Consul useing the same eksonly clusters.
+    CONTEXTS=("$KDC3" "$KDC3_P1" "$KDC4" "$KDC4_P1")
 
-  for CONTEXT in "${CONTEXTS[@]}"; do
-    kubectl get crd -n consul --context $CONTEXT -o jsonpath='{.items[*].metadata.name}' | tr -s ' ' '\n' | grep "consul.hashicorp.com" | while read -r CRD
-    do
-      kubectl patch crd/$CRD -n consul --context $CONTEXT -p '{"metadata":{"finalizers":[]}}' --type=merge
-      kubectl delete crd/$CRD --context $CONTEXT
+    for CONTEXT in "${CONTEXTS[@]}"; do
+      kubectl get crd -n consul --context $CONTEXT -o jsonpath='{.items[*].metadata.name}' | tr -s ' ' '\n' | grep "consul.hashicorp.com" | while read -r CRD
+      do
+        kubectl patch crd/$CRD -n consul --context $CONTEXT -p '{"metadata":{"finalizers":[]}}' --type=merge
+        kubectl delete crd/$CRD --context $CONTEXT
+      done
     done
-  done
 
-  for CONTEXT in "${CONTEXTS[@]}"; do
-    kubectl delete namespace consul --context $CONTEXT
-  done
+    for CONTEXT in "${CONTEXTS[@]}"; do
+      kubectl delete namespace consul --context $CONTEXT
+    done
 
-  for CONTEXT in "${CONTEXTS[@]}"; do
-    kubectl delete namespace unicorn --context $CONTEXT
-  done
+    for CONTEXT in "${CONTEXTS[@]}"; do
+      kubectl delete namespace unicorn --context $CONTEXT
+    done
 
-  for CONTEXT in "${CONTEXTS[@]}"; do
-    kubectl delete namespace externalz --context $CONTEXT
-  done
+    for CONTEXT in "${CONTEXTS[@]}"; do
+      kubectl delete namespace externalz --context $CONTEXT
+    done
 
-  CleanupTempStuff
+    CleanupTempStuff
 
-  echo ""
-  echo -e "${RED}It's now safe to TF destroy! ${NC}"
-  echo ""
+    echo ""
+    echo -e "${RED}It's now safe to TF destroy! ${NC}"
+    echo ""
 
-  exit 0     # Exit here.
+    exit 0     # Exit here.
 fi
 
-if $ARG_UPDATE; then
-  echo ""
-  echo -e "${GRN}Updating K3d... ${NC}"
-  echo -e "${YELL}Pulling from https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh ${NC}"
-  wget -q -O - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
-  echo ""
-  exit 0
+if [[ "$*" == *"-update"* ]]
+  then
+    echo ""
+    echo -e "${GRN}Updating K3d... ${NC}"
+    echo -e "${YELL}Pulling from https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh ${NC}"
+    wget -q -O - https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
+    echo ""
+    exit 0
 fi
 
-if $ARG_K8S_ONLY; then
-  echo -e "${RED} Building K3d clusters ONLY (-k8s-only) ${NC}"
+if [[ "$*" == *"k8s-only"* ]] || [[ "$*" == *"k3d-only"* ]]
+  then
+    echo -e "${RED} Building K3d clusters ONLY (-k8s-only) ${NC}"
 fi
 
 if [[ $PWD == *"doctorconsul"* ]]; then rm -f ./logs/*.log; fi
-# Delete out the previous logs
 
 # ------------------------------------------
 #           Consul binary check
@@ -245,7 +192,7 @@ mkdir -p ./tokens/
 # Checks if we're provisioning using EKSOnly or k3d
 # ==========================================
 
-if $ARG_EKSONLY;
+if [[ "$*" == "-eksonly" ]];
   then
     # Matching eksonly skips all the k3d stuff
     echo ""
@@ -507,7 +454,7 @@ echo -e "=========================================="
 echo -e "    Setup Consul in Kubernetes Clusters"
 echo -e "==========================================${NC}"
 
-if $ARG_K8S_ONLY;
+if [[ "$*" == *"k8s-only"* ]] || [[ "$*" == *"k3d-only"* ]]
   then
     echo ""
     echo -e "${RED} K3d clusters provisioned - Aborting Consul Configs (-k8s-only) ${NC}"
@@ -545,7 +492,7 @@ InstallConsulDC3 () {
   #                      Install Consul into Kubernetes (DC3)
   # ====================================================================================
 
-  if $ARG_DEBUG;
+  if [[ "$*" == *"debug"* ]]
     then
       DEBUG="--debug"
   fi
@@ -559,7 +506,7 @@ InstallConsulDC3 () {
 
   echo -e "${GRN}DC3: Helm consul-k8s install Started...${NC}\n"
 
-  if $ARG_EKSONLY;
+  if [[ "$*" == "-eksonly" ]];
     then
       helm install consul hashicorp/consul -f ./kube/helm/dc3-helm-values.yaml --namespace consul --kube-context $KDC3 $DEBUG \
       --set server.exposeService.exposeGossipAndRPCPorts=true \
@@ -599,7 +546,7 @@ InstallConsulDC3_P1 () {
   #                Install Consul-k8s (DC3 Cernunnos Partition)
   # ====================================================================================
 
-  if $ARG_DEBUG;
+  if [[ "$*" == *"debug"* ]]
     then
       DEBUG="--debug"
   fi
@@ -615,7 +562,7 @@ InstallConsulDC3_P1 () {
 
   echo -e "${GRN}DC3-P1 (Cernunnos): Create secret Consul License:${NC} $(kubectl --context $KDC3_P1 create secret generic consul-license --namespace consul --from-literal=key="$(cat ./license)") \n"
 
-  if $ARG_EKSONLY;
+  if [[ "$*" == "-eksonly" ]];
     then
       export DC3_LB_IP="$(kubectl get svc consul-expose-servers -nconsul --context $KDC3 -o json | jq -r '.status.loadBalancer.ingress[].hostname')"
       # In EKS we have to pull the expose servers LB address for grpc and API.
@@ -660,7 +607,7 @@ InstallConsulDC3_P1 () {
   echo -e ""
   echo -e "${GRN}DC3-P1 (Cernunnos): Helm consul-k8s install Started...${NC} \n"
 
-  if $ARG_EKSONLY;
+  if [[ "$*" == "-eksonly" ]];
     then
       helm install consul hashicorp/consul -f ./kube/helm/dc3-p1-helm-values.yaml --namespace consul --kube-context $KDC3_P1 $HELM_CHART_VER $DEBUG \
       --set externalServers.k8sAuthMethodHost=$DC3_P1_K8S_IP \
@@ -685,7 +632,7 @@ InstallConsulDC4 () {
   #                              Install Consul-k8s (DC4)
   # ====================================================================================
 
-  if $ARG_DEBUG;
+  if [[ "$*" == *"debug"* ]]
     then
       DEBUG="--debug"
   fi
@@ -699,7 +646,7 @@ InstallConsulDC4 () {
 
   echo -e "${GRN}DC4: Helm consul-k8s install Started...${NC} \n"
 
-  if $ARG_EKSONLY;
+  if [[ "$*" == "-eksonly" ]];
     then
       helm install consul hashicorp/consul -f ./kube/helm/dc4-helm-values.yaml --namespace consul --kube-context $KDC4 $DEBUG \
       --set server.exposeService.exposeGossipAndRPCPorts=true \
@@ -724,7 +671,7 @@ InstallConsulDC4_P1 () {
   #                     Install Consul-k8s (DC4 Taranis Partition)
   # ====================================================================================
 
-  if $ARG_DEBUG;
+  if [[ "$*" == *"debug"* ]]
     then
       DEBUG="--debug"
   fi
@@ -741,7 +688,7 @@ InstallConsulDC4_P1 () {
 
   echo -e "${GRN}Discover the DC4 external load balancer IP:${NC} \n"
 
-  if $ARG_EKSONLY;
+  if [[ "$*" == "-eksonly" ]];
     then
 
       export DC4_LB_IP="$(kubectl get svc consul-expose-servers -nconsul --context $KDC4 -o json | jq -r '.status.loadBalancer.ingress[].hostname')"
@@ -777,7 +724,7 @@ InstallConsulDC4_P1 () {
   echo ""
   echo -e "${GRN}DC4-P1 (Taranis): Helm consul-k8s install Started...${NC} \n"
 
-  if $ARG_EKSONLY;
+  if [[ "$*" == "-eksonly" ]];
     then
       helm install consul hashicorp/consul -f ./kube/helm/dc4-p1-helm-values.yaml --namespace consul --kube-context $KDC4_P1 $HELM_CHART_VER $DEBUG \
       --set externalServers.k8sAuthMethodHost=$DC4_P1_K8S_IP \
@@ -885,7 +832,7 @@ echo -e "${YELL}DC4 (taranis) connect-inject service is READY! ${NC}"
 
   # TLDR; Because the helm installation functions are launched as background shells to build in parallel (performance reasons)
   # Environment variables cannot be passed back to this parent script. So the sub shells write these addresses to temp disk and
-  # we re-assign the variables here. MAGIC.
+  # we re-assign the variables here. MAGIC. 
 
     DC3_LB_IP=$(cat ./tokens/dc3_lb_ip.txt)
     DC3_P1_K8S_IP=$(cat ./tokens/dc3_p1_k8s_ip.txt)
@@ -967,7 +914,7 @@ echo -e "=========================================="
 echo -e "            Cluster Peering"
 echo -e "==========================================${NC}"
 
-if $ARG_K3D_FULL;
+if [[ "$*" == *"-k3d-full"* ]]
   then
     k3dPeeringToVM
   else
@@ -1007,34 +954,12 @@ consul peering establish -name dc3-default -partition taranis -http-addr="$DC4" 
 #        Applications / Deployments
 # ==========================================
 
-if $ARG_NO_APPS;
+if [[ "$*" == *"no-apps"* ]]
   then
     echo -e "${RED} Consul is installed. Exiting before applications are installed! ${NC}"
-    echo ""
-    echo -e "${GRN}"
-    echo -e "------------------------------------------"
-    echo -e "         EKSOnly Outputs (No Apps)"
-    echo -e "------------------------------------------${NC}"
-    echo ""
-    echo -e "${GRN}Consul UI Addresses: ${NC}"
-    echo -e " ${YELL}DC3${NC}: http://$DC3_LB_IP:8500"
-    echo -e " ${YELL}DC4${NC}: http://$DC4_LB_IP:8500"
-    echo ""
-    echo -e "${RED}Don't forget to login to the UI using token${NC}: 'root'"
-    echo ""
-    echo -e "${GRN}Export ENV Variables ${NC}"
-    echo " export DC3=http://$DC3_LB_IP:8500"
-    echo " export DC4=http://$DC4_LB_IP:8500"
-    echo ""
-    echo -e "${GRN}Port forwards to map UI to traditional Doctor Consul local ports: ${NC}"
-    echo " kubectl -n consul --context $KDC3 port-forward svc/consul-expose-servers 8502:8501 > /dev/null 2>&1 &"
-    echo " kubectl -n consul --context $KDC4 port-forward svc/consul-expose-servers 8503:8501 > /dev/null 2>&1 &"
-    echo ""
-    printf "${RED}"'Happy Consul'\''ing!!! '"${NC}\n"
-    echo ""
-    echo -e "Before running ${YELL}terraform destroy${NC}, first run ${YELL}./kill.sh -eksonly${NC} to prevent AWS from horking. Trust me."
-    echo ""
     exit 0
+  else
+    echo ""
 fi
 
 echo -e "${GRN}"
@@ -1050,7 +975,7 @@ echo -e "==========================================${NC}"
 # This makes it so the docker image addresses are changed to public dockerhub if installing into EKSonly (AWS).
 # And switches them back to k3d local if no argument is provided.
 
-if $ARG_EKSONLY;
+if [[ "$*" == "-eksonly" ]];
   then
     find ./kube/configs/dc3/services -type f -exec sed -i 's|image: k3d-doctorconsul\.localhost:12345/nicholasjackson/fake-service:v|image: nicholasjackson/fake-service:v|g' {} \;
     find ./kube/configs/dc4/services -type f -exec sed -i 's|image: k3d-doctorconsul\.localhost:12345/nicholasjackson/fake-service:v|image: nicholasjackson/fake-service:v|g' {} \;
@@ -1371,7 +1296,7 @@ kubectl apply --context $KDC3 -f ./kube/configs/dc3/services/unicorn-ssg_fronten
 #              Outputs
 # ==========================================
 
-if $ARG_EKSONLY;
+if [[ "$*" == "-eksonly" ]];
   then
     export UNICORN_FRONTEND_UI_ADDR=$(kubectl get svc unicorn-frontend -nunicorn --context $KDC3 -o json | jq -r '"http://\(.status.loadBalancer.ingress[0].hostname):\(.spec.ports[0].port)"')
     export UNICORN_SSG_FRONTEND_UI_ADDR=$(kubectl get svc unicorn-ssg-frontend -nunicorn --context $KDC3 -o json | jq -r '"http://\(.status.loadBalancer.ingress[0].hostname):\(.spec.ports[0].port)"')
@@ -1482,4 +1407,3 @@ fi
 
 # kubectl apply --context $KDC3 -f ./tokens/peering-token-dc3-default-dc4-default.yaml
 # kubectl apply --context $KDC3 -f ./kube/configs/peering/peering-dialer_dc3-default_dc4-default.yaml
-
