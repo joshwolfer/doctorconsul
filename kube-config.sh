@@ -8,42 +8,45 @@ export CONSUL_HTTP_SSL_VERIFY=false
 # HOME=$(pwd)
 # For some stupid reason k3d won't allow "./" in the path for config files so we have to do this non-sense for the Calico config to load...
 
-RED='\033[1;31m'
-BLUE='\033[1;34m'
-DGRN='\033[0;32m'
-GRN='\033[1;32m'
-YELL='\033[0;33m'
-NC='\033[0m'
+export RED='\033[1;31m'
+export BLUE='\033[1;34m'
+export DGRN='\033[0;32m'
+export GRN='\033[1;32m'
+export YELL='\033[0;33m'
+export NC='\033[0m'
 
-DC1="http://127.0.0.1:8500"
-DC2="http://127.0.0.1:8501"
-DC3="https://127.0.0.1:8502"
-DC4="https://127.0.0.1:8503"
-DC5=""
-DC6=""
+export DC1="http://127.0.0.1:8500"
+export DC2="http://127.0.0.1:8501"
+export DC3="https://127.0.0.1:8502"
+export DC4="https://127.0.0.1:8503"
+export DC5=""
+export DC6=""
 
-KDC3="k3d-dc3"
-KDC3_P1="k3d-dc3-p1"
-KDC4="k3d-dc4"
-KDC4_P1="k3d-dc4-p1"
+export KDC3="k3d-dc3"
+export KDC3_P1="k3d-dc3-p1"
+export KDC4="k3d-dc4"
+export KDC4_P1="k3d-dc4-p1"
 
-HELM_CHART_VER=""
+export FAKESERVICE_VER="v0.25.0"
+
+export HELM_CHART_VER=""
 # HELM_CHART_VER="--version 1.2.0-rc1"                # pinned consul-k8s chart version
 
-EKSONLY_TF_STATE_FILE="/home/mourne/git/EKSonly/terraform.tfstate"
+export EKSONLY_TF_STATE_FILE="/home/mourne/git/EKSonly/terraform.tfstate"
 # Set this to the path of the EKSOnly repo so the outputs can be read! This MUST be set correctly!!!
 
 help () {
-    echo -e "Syntax: ./k3d-config.sh [OPTIONS]"
+    echo -e "Syntax: ./kube-config.sh [OPTIONS]"
     echo ""
     echo "Options:"
-    echo "  -k3d-full        Integrate with full docker compose environment. Without this, only launch Consul in k3d"
-    echo "  -k8s-only        Only Install raw K3d clusters without Consul. Useful when you want to play with k8s alone"
-    echo "  -update          Update K3d to the latest version"
-    echo "  -eksonly         Sets 4 Kube Contexts to the appropriate names from EKSonly (https://github.com/ramramhariram/EKSonly)"
-    echo "  -nuke-eksonly    Destroy the EKSOnly resources so it's safe to tf destroy"
-    echo "  -no-apps         Install Consul into clusters with additional NO services"
-    echo "  -debug           Run Helm installation with --debug"
+    echo "  -k3d-full           Integrate with full docker compose environment. Without this, only launch Consul in k3d"
+    echo "  -k8s-only           Only Install raw K3d clusters without Consul. Useful when you want to play with k8s alone"
+    echo "  -update             Update K3d to the latest version"
+    echo "  -eksonly            Sets 4 Kube Contexts to the appropriate names from EKSonly (https://github.com/ramramhariram/EKSonly)"
+    echo "  -eksonly-context    Refreshes the EKSOnly Kube Contexts"
+    echo "  -nuke-eksonly       Destroy the EKSOnly resources so it's safe to tf destroy"
+    echo "  -no-apps            Install Consul into clusters with additional NO services"
+    echo "  -debug              Run Helm installation with --debug"
     echo ""
     exit 0
 }
@@ -56,6 +59,7 @@ export ARG_K3D_FULL=false
 export ARG_K8S_ONLY=false
 export ARG_UPDATE=false
 export ARG_EKSONLY=false
+export ARG_EKSONLY_CONTEXT=false
 export ARG_NUKE_EKSONLY=false
 export ARG_NO_APPS=false
 export ARG_DEBUG=false
@@ -77,6 +81,9 @@ else
         ;;
       -eksonly)
         ARG_EKSONLY=true
+        ;;
+      -eksonly-context)
+        ARG_EKSONLY_CONTEXT=true
         ;;
       -nuke-eksonly)
         ARG_NUKE_EKSONLY=true
@@ -104,7 +111,7 @@ if $ARG_HELP; then
   help
 fi
 
-if $ARG_EKSONLY; then
+if [ "$ARG_EKSONLY" = "true" ] || [ "$ARG_EKSONLY_CONTEXT" = "true" ]; then
   echo -e "${GRN}Setting Contexts from EKSonly (https://github.com/ramramhariram/EKSonly):${NC}"
   echo ""
   aws eks update-kubeconfig --region us-east-1 --name nEKS0 --alias k3d-dc3
@@ -114,6 +121,12 @@ if $ARG_EKSONLY; then
   echo ""
   echo -e "${YELL}Terraform EKSOnly state file is currently:${NC} $EKSONLY_TF_STATE_FILE"
   echo ""
+fi
+
+if $ARG_EKSONLY_CONTEXT; then
+  echo -e "${GRN}Exiting (-eksonly-context)${NC}"
+  echo ""
+  exit 0
 fi
 
 CleanupTempStuff () {
@@ -162,7 +175,7 @@ if $ARG_NUKE_EKSONLY; then
   echo -e "${GRN}Deleting additional DC3 Loadbalancer services:${NC}"
   kubectl delete --namespace consul --context $KDC3 -f ./kube/prometheus/dc3-prometheus-service.yaml
   kubectl delete svc unicorn-frontend -n unicorn --context $KDC3
-  kubectl delete svc unicorn-ssg-frontend -n unicorn --context $KDC3
+  kubectl delete svc consul-api-gateway -n consul --context $KDC3
 
   # If you need to nuke all the CRDs to nuke namespaces, this can be used. Don't typically need to do this just to "tf destroy" though.
   # This is really on for rebuilding Doctor Consul useing the same eksonly clusters.
@@ -253,244 +266,8 @@ if $ARG_EKSONLY;
     echo ""
   else
 
-    # All the k3d stuff happens HERE onward
+    ./k3d-config.sh
 
-    # ------------------------------------------
-    # Is Docker running? Start docker service if not
-    # ------------------------------------------
-
-    # service syntax to start docker differs between OSes. This checks if you're on Linux vs Mac.
-
-    OS_NAME=$(uname -a)
-
-    if [[ "$OS_NAME" == *"Linux"* ]]; then
-        echo ""
-        echo -e "${GRN}Checking that Docker is running - If not starting it. ${NC}"
-        pgrep dockerd || sudo service docker start
-        echo ""
-
-        sleep 2
-    else
-        # Eventually put in mac syntax to start docker, its not the same as linux
-        echo ""
-    fi
-
-    # ------------------------------------------
-    # Clock / Date / Time Correct?
-    # ------------------------------------------
-
-    # Because WSL is pissing me off and the UI metrics grab from Prometheus breaks if the clock is out of sync.
-
-    WSL=$(uname -a)
-
-    if [[ $WSL == *"WSL"* ]]; then
-      echo -e "${GRN}syncing the WSL clock to hardware...${NC}"
-      sudo hwclock -s
-    fi
-
-    # ------------------------------------------
-    #  Local DNS Hosts entry for k3d registry
-    # ------------------------------------------
-
-    set +e    # If we don't do this, the script will exit when there is nothing in the hosts file
-
-    OS_NAME=$(uname -a)
-
-    if [[ "$OS_NAME" == *"Linux"* ]];
-      then
-        # Match WSL2, since it handles DNS all weird like...
-        echo "Linux Detected"
-
-        HOSTS_EXISTS=$(grep "doctorconsul" /etc/hosts)
-
-        if [[ -z "$HOSTS_EXISTS" ]];
-          then   # If the grep returns nothing...
-            echo -e "${YELL}k3d-doctorconsul.localhost does not exist (${GRN}Adding entry${NC})"
-            echo "127.0.0.1       k3d-doctorconsul.localhost" | sudo tee -a /etc/hosts > /dev/null
-            grep "doctorconsul" /etc/hosts
-          else
-            echo -e "${YELL}k3d-doctorconsul.localhost already exists (${RED}Skipping..${NC})"
-        fi
-
-        echo ""
-      elif [[ "$OS_NAME" == *"Darwin"* ]];
-        then
-          # Match Darwin (Mac)
-          echo "Mac Detected"
-
-          HOSTS_EXISTS=$(grep "doctorconsul" /etc/hosts)
-
-          if [[ -z "$HOSTS_EXISTS" ]];
-            then   # If the grep returns nothing...
-              echo -e "${YELL}k3d-doctorconsul.localhost does not exist (${GRN}Adding entry${NC})"
-              echo "127.0.0.1       k3d-doctorconsul.localhost" | sudo tee -a /etc/hosts > /dev/null
-              grep "doctorconsul" /etc/hosts
-            else
-              echo -e "${YELL}k3d-doctorconsul.localhost already exists (${RED}Skipping..${NC})"
-          fi
-        echo ""
-      else
-        echo "Neither Linux nor Mac detected (${RED}Skipping..${NC}"
-    fi
-
-    # ------------------------------------------
-    #     Does k3d registry already exist?
-    # ------------------------------------------
-
-    # Pulling images from docker hub repeatedly, will eventually get you rate limited :(
-    # This sets up a local registry so images can be pulled and cached locally.
-    # This is better in the long run anyway, beecause it'll save on time and bandwidth.
-
-    REGISTRY_EXISTS=$(k3d registry list | grep doctorconsul)
-
-    if [[ "$REGISTRY_EXISTS" == *"doctorconsul"* ]];
-      then
-        echo ""
-        echo -e "${GRN}Checking if the k3d registry (doctorconsul) already exist${NC}"
-        echo -e "${YELL}Registry exist (${RED}Skipping...${NC})"
-        echo ""
-      else
-        k3d registry create doctorconsul.localhost --port 12345    # Creates the registry k3d-doctorconsul.localhost
-    fi
-
-    set -e    # Enabled exit on errors again.
-
-    # ------------------------------------------
-    #  Pull images and cache into the k3d registry
-    # ------------------------------------------
-
-    # Leaving these for posterity. Don't actually need to mirror the images, just cache the images locally and then import into k3d.
-      # docker pull calico/cni:v3.15.0
-      # docker tag calico/cni:v3.15.0 joshwolfer/calico-cni:v3.15.0
-      # docker push joshwolfer/calico-cni:v3.15.0
-
-      # docker pull calico/pod2daemon-flexvol:v3.15.0
-      # docker tag calico/pod2daemon-flexvol:v3.15.0 joshwolfer/calico-pod2daemon-flexvol:v3.15.0
-      # docker push joshwolfer/calico-pod2daemon-flexvol:v3.15.0
-
-      # docker pull calico/node:v3.15.0
-      # docker tag calico/node:v3.15.0 joshwolfer/calico-node:v3.15.0
-      # docker push joshwolfer/calico-node:v3.15.0
-
-    IMAGE_CALICO_CNI="calico/cni:v3.15.0"
-    IMAGE_CALICO_FLEXVOL="calico/pod2daemon-flexvol:v3.15.0"
-    IMAGE_CALICO_NODE="calico/node:v3.15.0"
-    IMAGE_CALICO_CONTROLLER="calico/kube-controllers:v3.15.0"
-    IMAGE_FAKESERVICE="nicholasjackson/fake-service:v0.25.0"
-
-    echo -e "${GRN}Caching docker images locally${NC}"
-
-    # Pull the public images, tag them for the k3d registry, and push them into the k3d registry
-    # Probably going to have to add all the Consul images in there as well - only a matter of time before Docker Hub gets mad about those.
-    # Will add them when k8s starts getting Image pull errors again ;)
-
-    docker pull $IMAGE_CALICO_CNI
-    docker tag $IMAGE_CALICO_CNI k3d-doctorconsul.localhost:12345/$IMAGE_CALICO_CNI
-    docker push k3d-doctorconsul.localhost:12345/$IMAGE_CALICO_CNI
-
-    docker pull $IMAGE_CALICO_FLEXVOL
-    docker tag $IMAGE_CALICO_FLEXVOL k3d-doctorconsul.localhost:12345/$IMAGE_CALICO_FLEXVOL
-    docker push k3d-doctorconsul.localhost:12345/$IMAGE_CALICO_FLEXVOL
-
-    docker pull $IMAGE_CALICO_NODE
-    docker tag $IMAGE_CALICO_NODE k3d-doctorconsul.localhost:12345/$IMAGE_CALICO_NODE
-    docker push k3d-doctorconsul.localhost:12345/$IMAGE_CALICO_NODE
-
-    docker pull $IMAGE_CALICO_CONTROLLER
-    docker tag $IMAGE_CALICO_CONTROLLER k3d-doctorconsul.localhost:12345/$IMAGE_CALICO_CONTROLLER
-    docker push k3d-doctorconsul.localhost:12345/$IMAGE_CALICO_CONTROLLER
-
-    docker pull $IMAGE_FAKESERVICE
-    docker tag $IMAGE_FAKESERVICE k3d-doctorconsul.localhost:12345/$IMAGE_FAKESERVICE
-    docker push k3d-doctorconsul.localhost:12345/$IMAGE_FAKESERVICE
-
-
-    # ==========================================
-    #             Setup K3d clusters
-    # ==========================================
-
-    # echo -e "${GRN}"
-    # echo -e "------------------------------------------"
-    # echo -e " Download Calico Config files"
-    # echo -e "------------------------------------------${NC}"
-
-    # Fetch the Calico setup file to use with k3d.
-    # K3D default CNI (flannel) doesn't work with Consul Tproxy / DNS proxy
-
-    # curl -s https://k3d.io/v5.0.1/usage/advanced/calico.yaml -o ./kube/calico.yaml
-    # ^^^ Don't downloading again. the image locations have been changed to the local k3d registry.
-
-    # ------------------------------------------
-    #                    DC4
-    # ------------------------------------------
-
-    (k3d cluster create dc3 --network doctorconsul_wan \
-        --api-port 127.0.0.1:6443 \
-        -p "8502:443@loadbalancer" \
-        -p "11000:8000" \
-        -p "11001:8001" \
-        -p "9091:9090" \
-        -p "1666:1666" \
-        --k3s-arg '--flannel-backend=none@server:*' \
-        --registry-use k3d-doctorconsul.localhost:12345 \
-        --k3s-arg="--disable=traefik@server:0" && \
-    kubectl apply --context=$KDC3 -f ./kube/calico.yaml) &
-
-        # -p "11000:8000"    DC3/unicorn/unicorn-frontend (fake service UI)     - Mapped to local http://127.0.0.1:11000/ui/
-        # -p "11001:8001"    DC3/unicorn/unicorn-ssg-frontend (fake service UI) - Mapped to local http://127.0.0.1:11001/ui/
-        # -p "9091:9090"     Prometheus UI
-        # -p "1666:1666"     Consul APIG
-
-        # Disable flannel
-        # install Calico (tproxy compatability)
-
-    # ------------------------------------------
-    #              DC3 cernunnos
-    # ------------------------------------------
-
-    (k3d cluster create dc3-p1 --network doctorconsul_wan \
-        --api-port 127.0.0.1:6444 \
-        -p "8443:8443" \
-        --k3s-arg="--disable=traefik@server:0" \
-        --registry-use k3d-doctorconsul.localhost:12345 \
-        --k3s-arg '--flannel-backend=none@server:*' && \
-    kubectl apply --context=$KDC3_P1 -f ./kube/calico.yaml) &
-
-        # -p "8443:8443"      api-gateway ingress
-        # -p "12000:8000"     reserved for fakeservice something
-
-    # ------------------------------------------
-    #                   DC4
-    # ------------------------------------------
-
-    (k3d cluster create dc4 --network doctorconsul_wan \
-        --api-port 127.0.0.1:6445 \
-        -p "8503:443@loadbalancer" \
-        -p "8200:8200@loadbalancer" \
-        -p "12000:8000" \
-        -p "9092:9090" \
-        --k3s-arg '--flannel-backend=none@server:*' \
-        --registry-use k3d-doctorconsul.localhost:12345 \
-        --k3s-arg="--disable=traefik@server:0" && \
-    kubectl apply --context=$KDC4 -f ./kube/calico.yaml) &
-
-    #  12000 > 8000 - whatever app UI
-    #  local 8503 > 443 - Consul UI
-    #  8200 > 8200 - Vault API
-
-    # ------------------------------------------
-    #            DC4-P1 taranis
-    # ------------------------------------------
-
-    (k3d cluster create dc4-p1 --network doctorconsul_wan \
-        --api-port 127.0.0.1:6446 \
-        --k3s-arg="--disable=traefik@server:0" \
-        --registry-use k3d-doctorconsul.localhost:12345 \
-        --k3s-arg '--flannel-backend=none@server:*' && \
-    kubectl apply --context=$KDC4_P1 -f ./kube/calico.yaml) &
-
-    # Wait for all background jobs to finish
-    wait
 fi
 # Ends the eksonly bypass
 
@@ -502,324 +279,9 @@ fi
 # ==============================================================================================================================
 # ==============================================================================================================================
 
-echo -e "${GRN}"
-echo -e "=========================================="
-echo -e "    Setup Consul in Kubernetes Clusters"
-echo -e "==========================================${NC}"
+./helm-install.sh
+# Execute helm install script.
 
-if $ARG_K8S_ONLY;
-  then
-    echo ""
-    echo -e "${RED} K3d clusters provisioned - Aborting Consul Configs (-k8s-only) ${NC}"
-    echo ""
-    exit 0
-fi
-
-echo -e ""
-echo -e "${GRN}Adding HashiCorp Helm Chart:${NC}"
-helm repo add hashicorp https://helm.releases.hashicorp.com
-
-echo -e ""
-echo -e "${GRN}Updating Helm Repos:${NC}"
-helm repo update
-
-echo -e ""
-echo -e "${YELL}Currently installed Consul Helm Version:${NC}"
-helm search repo hashicorp/consul --versions --devel | head -n4
-
-# Should probably pin a specific helm chart version, but I love living on the wild side!!!
-
-echo -e ""
-echo -e "${GRN}Writing latest Consul Helm values to disk...${NC}"
-helm show values hashicorp/consul > ./kube/helm/latest-complete-helm-values.yaml
-
-# ==========================================
-# ==========================================
-#  Define Functions to run each HELM install in parallel (when possible)
-# ==========================================
-# ==========================================
-
-InstallConsulDC3 () {
-
-  # ====================================================================================
-  #                      Install Consul into Kubernetes (DC3)
-  # ====================================================================================
-
-  if $ARG_DEBUG;
-    then
-      DEBUG="--debug"
-  fi
-
-  echo -e ""
-  echo -e "${GRN}DC3: Create Consul namespace:${NC} $(kubectl --context $KDC3 create namespace consul) \n"
-  echo -e "${GRN}DC3: Create secrets for gossip, ACL token, Consul License:${NC} \
-  \n$(kubectl --context $KDC3 create secret generic consul-gossip-encryption-key --namespace consul --from-literal=key="$(consul keygen)") \
-  \n$(kubectl --context $KDC3 create secret generic consul-bootstrap-acl-token --namespace consul --from-literal=key="root") \
-  \n$(kubectl --context $KDC3 create secret generic consul-license --namespace consul --from-literal=key="$(cat ./license)") \n"
-
-  echo -e "${GRN}DC3: Helm consul-k8s install Started...${NC}\n"
-
-  if $ARG_EKSONLY;
-    then
-      helm install consul hashicorp/consul -f ./kube/helm/dc3-helm-values.yaml --namespace consul --kube-context $KDC3 $DEBUG \
-      --set server.exposeService.exposeGossipAndRPCPorts=true \
-      --set tls.serverAdditionalDNSSANs=\['*.us-east-1.elb.amazonaws.com'\] $HELM_CHART_VER > ./logs/dc3-helm-install.log 2>&1
-
-
-      # On EKS we need to expose the grpc port for the consul dataplane child clusters to connect to.
-      # The UI and expose services can't BOTH use a LoadBalancer service or the expose service won't pickup the UI and the child cluster can't connect.
-      # Stupid complicated, not worth explaining why.
-    else
-      helm install consul hashicorp/consul -f ./kube/helm/dc3-helm-values.yaml --namespace consul --kube-context $KDC3 $DEBUG \
-      --set ui.enabled=true \
-      --set ui.service.type=LoadBalancer \
-      --set ui.service.port.http=80 $HELM_CHART_VER > ./logs/dc3-helm-install.log 2>&1
-
-
-      # On k3d, I already expose grpc 8502 as 443, which works... but was a really bad practice, because the API HTTPS address won't work now.
-      # But I'm only using HTTP to access the UI / API in k3d. This isn't a great practice and I should fix this at some point.
-      # I think I was just hacking things together in the beginning and didn't realize the significance of needing both 443 (real API) and 8502 grpc open. UGH.
-      # I'll fix it at some point, but for now the workaround is to just add the expose servers for EKSonly.
-      # I need to fix the local k3d port forwards before it'll work in k3d also.
-  fi
-
-  # helm upgrade consul hashicorp/consul -f ./kube/helm/dc3-helm-values.yaml --namespace consul --kube-context $KDC3 --debug
-  # helm list --namespace consul        # To see which chart version was actually installed. Can be an issue when using RC versions with version mismatch.
-
-  echo -e "${GRN}DC3: Extract CA cert / key, bootstrap token, and partition token for child Consul Dataplane clusters ${NC} \n"
-  kubectl --context $KDC3 get secret consul-ca-cert consul-bootstrap-acl-token -n consul -o yaml > ./tokens/dc3-credentials.yaml
-  kubectl --context $KDC3 get secret consul-ca-key -n consul -o yaml > ./tokens/dc3-ca-key.yaml
-  kubectl --context $KDC3 get secret consul-partitions-acl-token -n consul -o yaml > ./tokens/dc3-partition-token.yaml
-
-}
-
-InstallConsulDC3_P1 () {
-
-  # ====================================================================================
-  #                Install Consul-k8s (DC3 Cernunnos Partition)
-  # ====================================================================================
-
-  if $ARG_DEBUG;
-    then
-      DEBUG="--debug"
-  fi
-
-  echo -e "${GRN}DC3-P1: Create Consul namespace:${NC} $(kubectl --context $KDC3_P1 create namespace consul) \n"
-
-  echo -e ""
-  echo -e "${GRN}DC3-P1 (Cernunnos): Install Kube secrets (CA cert / key, bootstrap token, partition token) extracted from DC3:${NC} \
-  \n$(kubectl --context $KDC3_P1 apply -f ./tokens/dc3-credentials.yaml) \
-  \n$(kubectl --context $KDC3_P1 apply -f ./tokens/dc3-ca-key.yaml) \
-  \n$(kubectl --context $KDC3_P1 apply -f ./tokens/dc3-partition-token.yaml)"
-  # ^^^ Consul namespace is already embedded in the secret yaml.
-
-  echo -e "${GRN}DC3-P1 (Cernunnos): Create secret Consul License:${NC} $(kubectl --context $KDC3_P1 create secret generic consul-license --namespace consul --from-literal=key="$(cat ./license)") \n"
-
-  if $ARG_EKSONLY;
-    then
-      export DC3_LB_IP="$(kubectl get svc consul-expose-servers -nconsul --context $KDC3 -o json | jq -r '.status.loadBalancer.ingress[].hostname')"
-      # In EKS we have to pull the expose servers LB address for grpc and API.
-      echo "$DC3_LB_IP" > ./tokens/dc3_lb_ip.txt
-      # ^^^ This is so we can pass the address to the parent script, since this is called as a BG process, the export doesn't work.
-      echo -e "${YELL}DC3 Consul UI, gRPC, and API External Load Balancer IP is:${NC} $DC3_LB_IP"
-
-      echo -e "${YELL}EKSOnly state file is currently set to:${NC} $EKSONLY_TF_STATE_FILE"
-      export DC3_P1_K8S_IP="$(terraform output -state=$EKSONLY_TF_STATE_FILE -json | jq -r '.endpoint.value[1]'):443"
-      echo "$DC3_P1_K8S_IP" > ./tokens/dc3_p1_k8s_ip.txt
-      # ^^^ This is so we can pass the address to the parent script, since this is called as a BG process, the export doesn't work.
-      echo -e "${YELL}DC3-P1 K8s API address is:${NC} $DC3_P1_K8S_IP"
-
-      # The EKSonly location MUST be specified or tf won't pull the correct variables.
-
-      # Examples from k3d:
-      # DC3 External Load Balancer IP is: 172.18.0.3
-      # DC3-P1 K8s API address is: https://172.18.0.5:6443
-
-    else
-      # k3d Config:
-
-      export DC3_LB_IP="$(kubectl get svc consul-ui -nconsul --context $KDC3 -o json | jq -r '.status.loadBalancer.ingress[0].ip')"
-      echo "$DC3_LB_IP" > ./tokens/dc3_lb_ip.txt
-      echo -e "${YELL}DC3 External Load Balancer IP is:${NC} $DC3_LB_IP"
-
-      echo -e ""
-      echo -e "${GRN}Discover the DC3 Cernunnos cluster Kube API${NC}"
-
-      export DC3_P1_K8S_IP="https://$(kubectl get node k3d-dc3-p1-server-0 --context $KDC3_P1 -o json | jq -r '.metadata.annotations."k3s.io/internal-ip"'):6443"
-      echo "$DC3_P1_K8S_IP" > ./tokens/dc3_p1_k8s_ip.txt
-      echo -e "${YELL}DC3-P1 K8s API address is:${NC} $DC3_P1_K8S_IP"
-
-        # kubectl get services --selector="app=consul,component=server" --namespace consul --output jsonpath="{range .items[*]}{@.status.loadBalancer.ingress[*].ip}{end}"
-        #  ^^^ Potentially better way to get list of all LB IPs, but I don't care for Doctor Consul right now.
-
-        # kubectl config view --output "jsonpath={.clusters[?(@.name=='$KDC3_P1')].cluster.server}"
-        # ^^^ Don't actually need this because the k3d kube API is exposed on via the LB on 6443 already.
-
-  fi
-
-  echo -e ""
-  echo -e "${GRN}DC3-P1 (Cernunnos): Helm consul-k8s install Started...${NC} \n"
-
-  if $ARG_EKSONLY;
-    then
-      helm install consul hashicorp/consul -f ./kube/helm/dc3-p1-helm-values.yaml --namespace consul --kube-context $KDC3_P1 $HELM_CHART_VER $DEBUG \
-      --set externalServers.k8sAuthMethodHost=$DC3_P1_K8S_IP \
-      --set externalServers.hosts[0]=$DC3_LB_IP \
-      --set externalServers.httpsPort=8501 > ./logs/dc3_p1-helm-install.log 2>&1
-      # Specifying both LB addresses, because if you don't, the install will fail for no connection on gRPC or API.
-      # Not sure how to work around this: https://hashicorp.slack.com/archives/CPEPBFDEJ/p1690218332117449
-    else
-      helm install consul hashicorp/consul -f ./kube/helm/dc3-p1-helm-values.yaml --namespace consul --kube-context $KDC3_P1 $HELM_CHART_VER $DEBUG \
-      --set externalServers.k8sAuthMethodHost=$DC3_P1_K8S_IP \
-      --set externalServers.hosts[0]=$DC3_LB_IP > ./logs/dc3_p1-helm-install.log 2>&1
-      # ^^^ --dry-run to test variable interpolation... if it actually worked.
-
-      # export DC3_LB_IP="$(kubectl get svc consul-ui -nconsul --context $KDC3 -o json | jq -r '.status.loadBalancer.ingress[0].ip')"
-      # export DC3_P1_K8S_IP="https://$(kubectl get node k3d-dc3-p1-server-0 --context $KDC3_P1 -o json | jq -r '.metadata.annotations."k3s.io/internal-ip"'):6443"
-      # helm upgrade consul hashicorp/consul -f ./kube/helm/dc3-p1-helm-values.yaml --namespace consul --kube-context $KDC3_P1 --set externalServers.k8sAuthMethodHost=$DC3_P1_K8S_IP --set externalServers.hosts[0]=$DC3_LB_IP --debug
-  fi
-}
-
-InstallConsulDC4 () {
-  # ====================================================================================
-  #                              Install Consul-k8s (DC4)
-  # ====================================================================================
-
-  if $ARG_DEBUG;
-    then
-      DEBUG="--debug"
-  fi
-
-  echo -e "${GRN}DC4: Create Consul namespace:${NC} $(kubectl --context $KDC4 create namespace consul) \n"
-
-  echo -e "${GRN}DC4: Create secrets for gossip, ACL token, Consul License:${NC} \
-  \n$(kubectl --context $KDC4 create secret generic consul-gossip-encryption-key --namespace consul --from-literal=key="$(consul keygen)") \
-  \n$(kubectl --context $KDC4 create secret generic consul-bootstrap-acl-token --namespace consul --from-literal=key="root") \
-  \n$(kubectl --context $KDC4 create secret generic consul-license --namespace consul --from-literal=key="$(cat ./license)") \n"
-
-  echo -e "${GRN}DC4: Helm consul-k8s install Started...${NC} \n"
-
-  if $ARG_EKSONLY;
-    then
-      helm install consul hashicorp/consul -f ./kube/helm/dc4-helm-values.yaml --namespace consul --kube-context $KDC4 $DEBUG \
-      --set server.exposeService.exposeGossipAndRPCPorts=true \
-      --set tls.serverAdditionalDNSSANs=\['*.us-east-1.elb.amazonaws.com'\] $HELM_CHART_VER > ./logs/dc4-helm-install.log 2>&1
-
-    else
-      helm install consul hashicorp/consul -f ./kube/helm/dc4-helm-values.yaml --namespace consul --kube-context $KDC4 $DEBUG \
-      --set ui.enabled=true \
-      --set ui.service.type=LoadBalancer \
-      --set ui.service.port.http=80 $HELM_CHART_VER > ./logs/dc4-helm-install.log 2>&1
-  fi
-
-  echo -e "${GRN}DC4: Extract CA cert / key, bootstrap token, and partition token for child Consul Dataplane clusters ${NC} \n"
-
-  kubectl --context $KDC4 get secret consul-ca-cert consul-bootstrap-acl-token -n consul -o yaml > ./tokens/dc4-credentials.yaml
-  kubectl --context $KDC4 get secret consul-ca-key -n consul -o yaml > ./tokens/dc4-ca-key.yaml
-  kubectl --context $KDC4 get secret consul-partitions-acl-token -n consul -o yaml > ./tokens/dc4-partition-token.yaml
-}
-
-InstallConsulDC4_P1 () {
-  # ====================================================================================
-  #                     Install Consul-k8s (DC4 Taranis Partition)
-  # ====================================================================================
-
-  if $ARG_DEBUG;
-    then
-      DEBUG="--debug"
-  fi
-
-  echo -e "${GRN}DC4-P1 (Taranis): Create Consul namespace:${NC} $(kubectl --context $KDC4_P1 create namespace consul) \n"
-
-  echo -e "${GRN}DC4-P1 (Taranis): Install Kube secrets (CA cert / key, bootstrap token, partition token) extracted from DC4:${NC} \
-  \n$(kubectl --context $KDC4_P1 apply -f ./tokens/dc4-credentials.yaml) \
-  \n$(kubectl --context $KDC4_P1 apply -f ./tokens/dc4-ca-key.yaml) \
-  \n$(kubectl --context $KDC4_P1 apply -f ./tokens/dc4-partition-token.yaml) \n"
-  # ^^^ Consul namespace is already embedded in the secret yaml.
-
-  echo -e "${GRN}DC4-P1 (Taranis): Create secret Consul License:${NC} $(kubectl --context $KDC4_P1 create secret generic consul-license --namespace consul --from-literal=key="$(cat ./license)") \n"
-
-  echo -e "${GRN}Discover the DC4 external load balancer IP:${NC} \n"
-
-  if $ARG_EKSONLY;
-    then
-
-      export DC4_LB_IP="$(kubectl get svc consul-expose-servers -nconsul --context $KDC4 -o json | jq -r '.status.loadBalancer.ingress[].hostname')"
-      # In EKS we have to pull the expose servers LB address for grpc and API.
-      echo "$DC4_LB_IP" > ./tokens/dc4_lb_ip.txt
-      # ^^^ This is so we can pass the address to the parent script, since this is called as a BG process, the export doesn't work.
-      echo -e "${YELL}DC4 Consul UI, gRPC, and API External Load Balancer IP is:${NC} $DC4_LB_IP"
-
-      echo -e "${YELL}EKSOnly state file is currently set to:${NC} $EKSONLY_TF_STATE_FILE"
-      export DC4_P1_K8S_IP="$(terraform output -state=$EKSONLY_TF_STATE_FILE -json | jq -r '.endpoint.value[3]'):443"
-      echo "$DC4_P1_K8S_IP" > ./tokens/dc4_p1_k8s_ip.txt
-      # ^^^ This is so we can pass the address to the parent script, since this is called as a BG process, the export doesn't work.
-      echo -e "${YELL}DC4-P1 K8s API address is:${NC} $DC4_P1_K8S_IP"
-
-      # The EKSonly location MUST be specified or tf won't pull the correct variables.
-
-    else
-      # k3d Config:
-
-      export DC4_LB_IP="$(kubectl get svc consul-ui -nconsul --context $KDC4 -o json | jq -r '.status.loadBalancer.ingress[0].ip')"
-      echo "$DC4_LB_IP" > ./tokens/dc4_lb_ip.txt
-      echo -e "${YELL}DC4 External Load Balancer IP is:${NC} $DC4_LB_IP"
-
-      echo -e ""
-      echo -e "${GRN}Discover the DC4 Taranis cluster Kube API${NC}"
-
-      export DC4_K8S_IP="https://$(kubectl get node k3d-dc4-p1-server-0 --context $KDC4_P1 -o json | jq -r '.metadata.annotations."k3s.io/internal-ip"'):6443"
-      echo "$DC4_P1_K8S_IP" > ./tokens/dc4_p1_k8s_ip.txt
-      echo -e "${YELL}DC4 K8s API address is:${NC} $DC4_K8S_IP"
-
-  fi
-
-  echo ""
-  echo -e "${GRN}DC4-P1 (Taranis): Helm consul-k8s install Started...${NC} \n"
-
-  if $ARG_EKSONLY;
-    then
-      helm install consul hashicorp/consul -f ./kube/helm/dc4-p1-helm-values.yaml --namespace consul --kube-context $KDC4_P1 $HELM_CHART_VER $DEBUG \
-      --set externalServers.k8sAuthMethodHost=$DC4_P1_K8S_IP \
-      --set externalServers.hosts[0]=$DC4_LB_IP \
-      --set externalServers.httpsPort=8501 > ./logs/dc4_p1-helm-install.log 2>&1
-      # Specifying both LB addresses, because if you don't, the install will fail for no connection on gRPC or API.
-      # Not sure how to work around this: https://hashicorp.slack.com/archives/CPEPBFDEJ/p1690218332117449
-    else
-      helm install consul hashicorp/consul -f ./kube/helm/dc4-p1-helm-values.yaml --namespace consul --kube-context $KDC4_P1 $HELM_CHART_VER $DEBUG \
-      --set externalServers.k8sAuthMethodHost=$DC4_K8S_IP \
-      --set externalServers.hosts[0]=$DC4_LB_IP > ./logs/dc4_p1-helm-install.log 2>&1
-  fi
-}
-
-# ==========================================
-# ==========================================
-#        HELM install in parallel
-# ==========================================
-# ==========================================
-
-pids=()  # array to hold background job pids
-
-InstallConsulDC3 "$@" &
-pids+=($!)
-
-InstallConsulDC4 "$@" &
-pids+=($!)
-
-for pid in ${pids[*]}; do    # This waits for the DC3 and DC4 helm installs. Need to wait for these, because DC3_P1 and DC4_P1 are dependent on DC3/DC4 consul api addresses.
-    wait $pid
-done
-
-# Now that DC3 and DC4 were built in parallel, install Consul to the child partitions
-InstallConsulDC3_P1 "$@" &
-pids+=($!)
-
-InstallConsulDC4_P1 "$@" &
-pids+=($!)
-
-for pid in ${pids[*]}; do
-    wait $pid
-done
 
 # ==========================================
 #              Prometheus configs
@@ -834,7 +296,7 @@ echo -e "==========================================${NC}"
 
 echo -e ""
 echo -e "${GRN}Setup Prometheus service in DC3 ${NC}"
-kubectl apply --namespace consul -f ./kube/prometheus/dc3-prometheus-service.yaml
+kubectl apply --namespace consul -f ./kube/prometheus/dc3-prometheus-service.yaml --context $KDC3
 
 # ==========================================
 #              Consul configs
@@ -1061,12 +523,12 @@ echo -e "==========================================${NC}"
 
 if $ARG_EKSONLY;
   then
-    find ./kube/configs/dc3/services -type f -exec sed -i 's|image: k3d-doctorconsul\.localhost:12345/nicholasjackson/fake-service:v|image: nicholasjackson/fake-service:v|g' {} \;
-    find ./kube/configs/dc4/services -type f -exec sed -i 's|image: k3d-doctorconsul\.localhost:12345/nicholasjackson/fake-service:v|image: nicholasjackson/fake-service:v|g' {} \;
-    # Pull fake service from the interwebz instead of local k3d registry (which doesn't exist when using EKS)
+    find ./kube/configs/dc3/services/*.yaml -type f -exec sed -i "s/^\( *\)image: .*/\1image: nicholasjackson\/fake-service:$FAKESERVICE_VER/" {} \;
+    find ./kube/configs/dc4/services/*.yaml -type f -exec sed -i "s/^\( *\)image: .*/\1image: nicholasjackson\/fake-service:$FAKESERVICE_VER/" {} \;
+# Pull fake service from the interwebz instead of local k3d registry (which doesn't exist when using EKS)
   else
-    find ./kube/configs/dc3/services -type f -exec sed -i 's|image: nicholasjackson/fake-service:v|image: k3d-doctorconsul.localhost:12345/nicholasjackson/fake-service:v|g' {} \;
-    find ./kube/configs/dc4/services -type f -exec sed -i 's|image: nicholasjackson/fake-service:v|image: k3d-doctorconsul.localhost:12345/nicholasjackson/fake-service:v|g' {} \;    # Switch it back, if it's not using the local k3d registry.
+    find ./kube/configs/dc3/services/*.yaml -type f -exec sed -i "s/^\( *\)image: .*/\1image: k3d-doctorconsul.localhost:12345\/nicholasjackson\/fake-service:$FAKESERVICE_VER/" {} \;
+    find ./kube/configs/dc4/services/*.yaml -type f -exec sed -i "s/^\( *\)image: .*/\1image: k3d-doctorconsul.localhost:12345\/nicholasjackson\/fake-service:$FAKESERVICE_VER/" {} \;
     # Puts the files back to a local k3d registry if they were previously changed (same as checked into the repo)
 fi
 
@@ -1354,7 +816,6 @@ echo -e "${GRN}DC3 (default): Terminating-Gateway config   ${NC}"
 kubectl apply --context $KDC3 -f ./kube/configs/dc3/tgw/terminating-gateway.yaml
 # kubectl delete --context $KDC3 -f ./kube/configs/dc3/tgw/terminating-gateway.yaml
 
-
 # ------------------------------------------
 # Service Sameness Group Application (unicorn-ssg-frontend)
 # ------------------------------------------
@@ -1383,7 +844,20 @@ kubectl apply --context $KDC3 -f ./kube/configs/dc3/services/unicorn-ssg_fronten
 if $ARG_EKSONLY;
   then
     export UNICORN_FRONTEND_UI_ADDR=$(kubectl get svc unicorn-frontend -nunicorn --context $KDC3 -o json | jq -r '"http://\(.status.loadBalancer.ingress[0].hostname):\(.spec.ports[0].port)"')
-    export UNICORN_SSG_FRONTEND_UI_ADDR=$(kubectl get svc unicorn-ssg-frontend -nunicorn --context $KDC3 -o json | jq -r '"http://\(.status.loadBalancer.ingress[0].hostname):\(.spec.ports[0].port)"')
+    # export UNICORN_SSG_FRONTEND_UI_ADDR=$(kubectl get svc unicorn-ssg-frontend -nunicorn --context $KDC3 -o json | jq -r '"http://\(.status.loadBalancer.ingress[0].hostname):\(.spec.ports[0].port)"')
+
+    while true; do    # Trying this instead of the above, since we keep hitting race conditions in the EKSOnly outputs.
+      SSG_HOSTNAME=$(kubectl get svc unicorn-ssg-frontend -n unicorn --context $KDC3 -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+      SSG_PORT=$(kubectl get svc unicorn-ssg-frontend -n unicorn --context $KDC3 -o jsonpath='{.spec.ports[0].port}')
+
+      if [ ! -z "$SSG_HOSTNAME" ]; then
+        UNICORN_SSG_FRONTEND_UI_ADDR=http://$SSG_HOSTNAME:$SSG_PORT
+        break
+      fi
+
+      echo "Waiting for the SSG load balancer to get an ingress hostname..."
+      sleep 5
+    done
 
 echo -e "$(cat << EOF
 ${GRN}
@@ -1456,6 +930,11 @@ if [[ "$*" == "vault-kill" ]]
     k3d cluster delete dc4-p1
 fi
 
+# ------------------------------------------
+#     Consul API Gateway config script
+# ------------------------------------------
+
+./apigw-config.sh
 
 # ==========================================
 #              Useful Commands

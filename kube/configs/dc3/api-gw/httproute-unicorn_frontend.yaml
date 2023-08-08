@@ -1,0 +1,40 @@
+apiVersion: gateway.networking.k8s.io/v1beta1
+# HTTPRoute routes HTTP requests to backend services.
+kind: HTTPRoute
+metadata:
+  name: unicorn-ingress
+  namespace: unicorn
+spec:
+  hostnames:
+    - unicorn-frontend        # Hopefully this works to match the Host header.
+  parentRefs:                 # Defines the gateway listener.
+  - name: consul-api-gateway
+  # Rules define behaviors for network traffic that goes through the route.
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /
+    backendRefs:                # Defines the backend service.
+    - kind: Service             # Consul service name or kube service name? They're probably the same anyway...
+      name: unicorn-frontend
+      port: 8000                # According to a "working example" this should be the Kube Service port, not targetPort
+
+---
+#   # Not sure if we actually need the ReferenceGrant or not... doesn't look like it.
+#   # it was automagically created with only the above. but it was NOT deleted when the above was removed. Hrm. orphan issue?
+#   # Not auto generated now.. WT...
+
+apiVersion: gateway.networking.k8s.io/v1alpha2
+kind: ReferenceGrant
+metadata:
+  name: grants
+  namespace: unicorn      # Looks like this needs to be the NS that has the backend services.
+spec:
+  from:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    namespace: consul     # Is this the API gateway namespace?
+  to:
+  - group: ""             # I assume this means any services within the specified namespace...
+    kind: Service

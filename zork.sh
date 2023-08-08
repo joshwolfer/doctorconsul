@@ -20,6 +20,7 @@ GRN=$(tput setaf 10)
 YELL=$(tput setaf 3)
 NC=$(tput sgr0)
 
+export FAKESERVICE_VER="v0.25.0"
 
 COLUMNS=12
 
@@ -729,16 +730,16 @@ ElseFunction () {
                 ;;
             "FakeService Kube: Image switch back to PUBLIC registry")
                 echo ""
-                find ./kube/configs/dc3/services -type f -exec sed -i 's|k3d-doctorconsul\.localhost:12345/nicholasjackson/fake-service:v|nicholasjackson/fake-service:v|g' {} \;
-                find ./kube/configs/dc4/services -type f -exec sed -i 's|k3d-doctorconsul\.localhost:12345/nicholasjackson/fake-service:v|nicholasjackson/fake-service:v|g' {} \;
+                find ./kube/configs/dc3/services/*.yaml -type f -exec sed -i "s/^\( *\)image: .*/\1image: nicholasjackson\/fake-service:$FAKESERVICE_VER/" {} \;
+                find ./kube/configs/dc4/services/*.yaml -type f -exec sed -i "s/^\( *\)image: .*/\1image: nicholasjackson\/fake-service:$FAKESERVICE_VER/" {} \;
                 echo ""
                 COLUMNS=1
                 REPLY=
                 ;;
             "FakeService Kube: Image switch back to K3D registry")
                 echo ""
-                find ./kube/configs/dc3/services -type f -exec sed -i 's|nicholasjackson/fake-service:v|k3d-doctorconsul.localhost:12345/nicholasjackson/fake-service:v|g' {} \;
-                find ./kube/configs/dc4/services -type f -exec sed -i 's|nicholasjackson/fake-service:v|k3d-doctorconsul.localhost:12345/nicholasjackson/fake-service:v|g' {} \;
+                find ./kube/configs/dc3/services/*.yaml -type f -exec sed -i "s/^\( *\)image: .*/\1image: k3d-doctorconsul.localhost:12345\/nicholasjackson\/fake-service:$FAKESERVICE_VER/" {} \;
+                find ./kube/configs/dc4/services/*.yaml -type f -exec sed -i "s/^\( *\)image: .*/\1image: k3d-doctorconsul.localhost:12345\/nicholasjackson\/fake-service:$FAKESERVICE_VER/" {} \;
                 echo ""
                 COLUMNS=1
                 REPLY=

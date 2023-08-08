@@ -7,6 +7,12 @@ global:
   # imageK8S: hashicorp/consul-k8s-control-plane:1.2.0-rc1                  # If an RC version of Consul is used, this needs to also be the matching RC version. And the Helm chart version will need to be the dev version. 9th circle of version matching Hell. 
   # imageConsulDataplane: "hashicorp/consul-dataplane:1.1.0"                # Pulls the latest when unspecified.
 
+  # secretsBackend:   # At some point I need to figure out the vault secrets backend.
+  #   vault:
+  #     # Enabling the Vault secrets backend will replace Kubernetes secrets with referenced Vault secrets.
+  #     enabled: true
+  #     ...
+
   gossipEncryption:
     secretName: consul-gossip-encryption-key
     secretKey: key
@@ -104,11 +110,14 @@ connectInject:
   default: false                 # Default
   transparentProxy:
     defaultEnabled: true         # Default
+  apiGateway:            # Api Gateway params are defined here now.
+    manageExternalCRDs: true
+    managedGatewayClass:
+      serviceType: LoadBalancer             # Launch the apigw as a loadBalancer service
   cni:
     enabled: true
     # cniBinDir: /var/lib/rancher/k3s/data/current/bin/         # K3s puts CNIs in a weird place with the flannel CNI. K3d breaks tproxy / dns proxy without this. This didn't work. back to calico...
     # cniNetDir: /var/lib/rancher/k3s/agent/etc/cni/net.d       # K3s puts CNIs in a weird place with the flannel CNI. K3d breaks tproxy / dns proxy without this. This didn't work. back to calico...
-    # enabled: false
   consulNamespaces:
     consulDestinationNamespace: "default"   # Ignored when mirroringK8S is true
     mirroringK8S: true
@@ -116,6 +125,7 @@ connectInject:
   metrics:
     defaultEnabled: true
     defaultEnableMerging: false
+
 
 syncCatalog:
   enabled: true
