@@ -100,6 +100,16 @@ echo ""
 echo -e "${GRN}Unsealing Vault:${NC}"
 vault operator unseal $VAULT_UNSEAL
 echo ""
+
+# ====================================================================================
+#                      Configure Vault for Stuff (DC4)
+# ====================================================================================
+
+echo -e "${GRN}"
+echo -e "=========================================="
+echo -e "   DC4: Vault for Consul Secrets Backend "
+echo -e "==========================================${NC}"
+
 vault secrets enable -path=consul kv-v2
 vault secrets enable pki
 
@@ -117,5 +127,5 @@ vault write auth/kubernetes/config \
     kubernetes_host="$DC4_K8S_IP" \
     kubernetes_ca_cert=@/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
 
-# ^^^ I give up. I'm tired of trying to figure out our docs. I'm pausing this project and coming back later. 
+# ^^^ I give up. I'm tired of trying to figure out our docs. I'm pausing this project and coming back later.
 
