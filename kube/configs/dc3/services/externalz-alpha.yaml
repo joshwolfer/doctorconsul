@@ -1,16 +1,16 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: unicorn-ssg-frontend
-  namespace: unicorn
+  name: externalz-alpha
+  namespace: externalz
 
 ---
 
 apiVersion: consul.hashicorp.com/v1alpha1
 kind: ServiceDefaults
 metadata:
-  name: unicorn-ssg-frontend
-  namespace: unicorn
+  name: externalz-alpha
+  namespace: externalz
 spec:
   protocol: http
 
@@ -19,16 +19,16 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: unicorn-ssg-frontend
-  namespace: unicorn
+  name: externalz-alpha
+  namespace: externalz
 spec:
   type: LoadBalancer        # This may not work with k3s, since this was taken from an AKS config
   selector:
-    app: unicorn-ssg-frontend
+    app: externalz-alpha
   ports:
     - name: http
       protocol: TCP
-      port: 8001            # Should be the port the Kube LB will listen on to forward to TCP/10000
+      port: 8002            # Should be the port the Kube LB will listen on to forward to TCP/10000
       targetPort: 10000     # This should line up with the FakeService LISTEN_ADDR: 0.0.0.0:10000
 
 ---
@@ -36,48 +36,41 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: unicorn-ssg-frontend
-  namespace: unicorn
+  name: externalz-alpha
+  namespace: externalz
   labels:
-    app: unicorn-ssg-frontend
+    app: externalz-alpha
     version: v1
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: unicorn-ssg-frontend
+      app: externalz-alpha
   template:
     metadata:
       labels:
-        app: unicorn-ssg-frontend
+        app: externalz-alpha
       annotations:
         consul.hashicorp.com/connect-inject: 'true'
         consul.hashicorp.com/transparent-proxy: 'true'
         consul.hashicorp.com/service-tags: 'dc3'
         consul.hashicorp.com/transparent-proxy-exclude-inbound-ports: "10000"   # Without this exclusion the FakeService UI is shitcanned.
     spec:
-      serviceAccountName: unicorn-ssg-frontend
+      serviceAccountName: externalz-alpha
       containers:
-        - name: unicorn-ssg-frontend
+        - name: externalz-alpha
           image: k3d-doctorconsul.localhost:12345/nicholasjackson/fake-service:v0.25.0
           ports:
             - containerPort: 10000
-          # readinessProbe:
-          #   httpGet:
-          #     scheme: HTTP
-          #     path: /
-          #     port: 10000
-            # initialDelaySeconds: 10
-            # periodSeconds: 5
           env:
             - name: 'LISTEN_ADDR'
               value: '0.0.0.0:10000'
             - name: 'UPSTREAM_URIS'
-              value: 'http://unicorn-tp-backend.virtual.unicorn.ns.dc3.dc.consul'
+              value: 'http://example.com, https://example.com, http://www.wolfmansound.com, https://www.wolfmansound.com'
             - name: 'NAME'
-              value: 'unicorn-SSG-frontend (DC3)'
+              value: 'externalz-alpha (DC3)'
             - name: 'MESSAGE'
-              value: 'This application uses a service sameness group that pulls unicorn-backend from: default/dc3, ap: cernunnos, peer: dc4-default, peer: dc4-taranis'
+              value: '<p><strong>The externalz-alpha Application</strong></p>'
             - name: 'SERVER_TYPE'
               value: 'http'
             - name: 'TIMING_50_PERCENTILE'
@@ -88,7 +81,3 @@ spec:
               value: '90ms'
             - name: 'TIMING_VARIANCE'
               value: '10'
-            # - name: 'HTTP_CLIENT_APPEND_REQUEST'
-            #   value: 'true'
-            # - name: 'TRACING_ZIPKIN'
-            #   value: 'http://simplest-collector.default:9411'

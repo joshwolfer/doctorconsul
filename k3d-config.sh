@@ -183,6 +183,7 @@ docker push k3d-doctorconsul.localhost:12345/$IMAGE_FAKESERVICE
     -p "9091:9090" \
     -p "1666:1666" \
     -p "1667:1667" \
+    -p "8002:8002" \
     --k3s-arg '--flannel-backend=none@server:*' \
     --registry-use k3d-doctorconsul.localhost:12345 \
     --k3s-arg="--disable=traefik@server:0" && \
@@ -193,6 +194,7 @@ kubectl apply --context=$KDC3 -f ./kube/calico.yaml) &
     # -p "9091:9090"     Prometheus UI
     # -p "1666:1666"     Consul APIG HTTP Listener
     # -p "1666:1666"     Consul APIG TCP Listener
+    # -p "8002:8002"     DC3/externalz/Externalz-alpha UI - Mapped to local http://127.0.0.1:8001/ui/
 
     # Disable flannel
     # install Calico (tproxy compatability)

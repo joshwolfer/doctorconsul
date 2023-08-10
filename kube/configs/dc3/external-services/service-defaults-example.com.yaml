@@ -4,9 +4,9 @@ metadata:
   name: example-https
   namespace: default
 spec:
-  protocol: tcp
+  protocol: tcp                 # Only match if the traffic is TLS (SNI match) or an IP. Host headers do NOT match.
   destination:
     addresses:
       - "example.com"
-      - "wolfmansound.com"
+      - "www.wolfmansound.com"
     port: 443

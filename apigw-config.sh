@@ -36,6 +36,8 @@ if $ARG_EKSONLY;
     DC3_CONSUL_APIG_ADDR=$(kubectl get svc consul-api-gateway -nconsul --context $KDC3 -o json | jq -r '.status.loadBalancer.ingress[0].ip')
 fi
 
+# Create watches for these ^^^. Even in k3d it's race conditioning. 
+
 echo -e " ${YELL}Consul APIG HTTP Listener:${NC} $DC3_CONSUL_APIG_ADDR:1666"
 echo -e " ${YELL}Consul APIG TCP Listener:${NC} $DC3_CONSUL_APIG_ADDR:1667"
 

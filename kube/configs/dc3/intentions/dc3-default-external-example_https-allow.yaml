@@ -1,12 +1,12 @@
 apiVersion: consul.hashicorp.com/v1alpha1
 kind: ServiceIntentions
 metadata:
-  name: whatismyip
-  namespace: externalz
+  name: example-https
+  namespace: default
 spec:
   destination:
-    name: whatismyip
+    name: example-https
   sources:
-    - name: unicorn-frontend
-      namespace: unicorn
+    - name: externalz-alpha
+      namespace: externalz
       action: allow

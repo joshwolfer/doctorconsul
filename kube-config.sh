@@ -465,6 +465,20 @@ consul peering establish -name dc3-default -partition taranis -http-addr="$DC4" 
 # Delete: consul peering delete -name dc3-default -partition taranis
 
 
+# -------------------------------------------
+#      Peering with CRDs - works-ish
+# -------------------------------------------
+
+# consul partition create -name "peering-test" -http-addr="$DC3"
+# consul partition create -name "peering-test" -http-addr="$DC4"
+
+# kubectl apply --context $KDC4 -f ./kube/configs/peering/peering-acceptor_dc3-default_dc4-default.yaml
+# kubectl --context $KDC4 get secret peering-token-dc3-default-dc4-default -nconsul --output yaml > ./tokens/peering-token-dc3-default-dc4-default.yaml
+
+# kubectl apply --context $KDC3 -f ./tokens/peering-token-dc3-default-dc4-default.yaml
+# kubectl apply --context $KDC3 -f ./kube/configs/peering/peering-dialer_dc3-default_dc4-default.yaml
+
+
 # ==========================================
 #        Applications / Deployments
 # ==========================================
@@ -508,11 +522,6 @@ EOF
     exit 0
 fi
 
-echo -e "${GRN}"
-echo -e "=========================================="
-echo -e "        Install Unicorn Application"
-echo -e "==========================================${NC}"
-
 # ------------------------------------------
 #  Modify the service yaml to pull images on EKS vs k3d local
 # ------------------------------------------
@@ -531,36 +540,6 @@ if $ARG_EKSONLY;
     find ./kube/configs/dc4/services/*.yaml -type f -exec sed -i "s/^\( *\)image: .*/\1image: k3d-doctorconsul.localhost:12345\/nicholasjackson\/fake-service:$FAKESERVICE_VER/" {} \;
     # Puts the files back to a local k3d registry if they were previously changed (same as checked into the repo)
 fi
-
-
-# ------------------------------------------
-#  Create Namespaces for Unicorn
-# ------------------------------------------
-
-echo -e "${GRN}"
-echo -e "------------------------------------------"
-echo -e "        Create Unicorn Namespaces"
-echo -e "------------------------------------------${NC}"
-
-echo -e ""
-echo -e "${GRN}DC3 (default): Create unicorn namespace${NC}"
-
-kubectl create namespace unicorn --context $KDC3
-
-echo -e ""
-echo -e "${GRN}DC3 (cernunnos): Create unicorn namespace${NC}"
-
-kubectl create namespace unicorn --context $KDC3_P1
-
-echo -e ""
-echo -e "${GRN}DC4 (default): Create unicorn namespace${NC}"
-
-kubectl create namespace unicorn --context $KDC4
-
-echo -e ""
-echo -e "${GRN}DC4 (taranis): Create unicorn namespace${NC}"
-
-kubectl create namespace unicorn --context $KDC4_P1
 
 # Ideal order of operations, per Derek:
 
@@ -591,33 +570,37 @@ echo -e "${GRN}DC3 (cernunnos): proxy-defaults${NC} - MGW mode:${YELL}Local${NC}
 kubectl apply --context $KDC4_P1 -f ./kube/configs/dc3/defaults/proxy-defaults.yaml
 
 # ------------------------------------------
-#           Exported-services
+#                    Mesh Defaults
 # ------------------------------------------
-
-# If exports aren't before services are launch, it shits in Consul Dataplane mode.
 
 echo -e "${GRN}"
 echo -e "------------------------------------------"
-echo -e "           Exported Services"
+echo -e "            Mesh Defaults"
 echo -e "------------------------------------------${NC}"
 
 echo -e ""
-echo -e "${GRN}DC3 (default): Export services from the ${YELL}default ${GRN}partition ${NC}"
-kubectl apply --context $KDC3 -f ./kube/configs/dc3/exported-services/exported-services-dc3-default.yaml
+echo -e "${GRN}DC3 (default): mesh config: ${YELL}Mesh Destinations Only: False ${NC}"      # leave only one of these on
+# echo -e "${GRN}DC3 (default): mesh config: ${YELL}Mesh Destinations Only: True ${NC}"
+# kubectl apply --context $KDC3 -f ./kube/configs/dc3/defaults/mesh.yaml
 
-echo -e ""
-echo -e "${GRN}DC3 (cernunnos): Export services from the ${YELL}cernunnos ${GRN}partition ${NC}"
-kubectl apply --context $KDC3_P1 -f ./kube/configs/dc3/exported-services/exported-services-dc3-cernunnos.yaml
+# This is turned on later with the external services config. Just FYI. Since it's scoped to the entire partition, we can't mix and match.
 
-echo -e ""
-echo -e "${GRN}DC4 (default): Export services from the ${YELL}default ${GRN}partition ${NC}"
-kubectl apply --context $KDC4 -f ./kube/configs/dc4/exported-services/exported-services-dc4-default.yaml
+# ------------------------------------------
+#          Unicorn Application
+# ------------------------------------------
 
-echo -e ""
-echo -e "${GRN}DC4 (taranis): Export services from the ${YELL}taranis ${GRN}partition ${NC}"
-kubectl apply --context $KDC4_P1 -f ./kube/configs/dc4/exported-services/exported-services-dc4-taranis.yaml
+./scripts/unicorn-app.sh
+# Launch script to build out all the Unicorn application components
 
-echo -e ""
+
+# ------------
+#  Exported Services
+# ------------
+
+# WARNING: Exported services are defined in the unicorn-app.sh script to provision them in the correct order.
+# There can only be ONE exported-services config per partition.
+# If more need t be added, put the into the ./scripts/unicorn-app.sh script, or you're going to stomp the existing exported-services config.
+# This is being fixed in Consul V2. But until then, it's only 1 config per partition!!!.
 
 # ------------------------------------------
 #          Service Sameness Groups
@@ -641,162 +624,11 @@ echo -e "${GRN}DC4 (taranis): Apply Sameness Group: ssg-unicorn ${NC}"
 kubectl apply --context $KDC4_P1 -f ./kube/configs/dc4/sameness-groups/dc4-taranis-ssg-unicorn.yaml
 
 # ------------------------------------------
-#     Services
+#  External Services - externalz-alpha Application
 # ------------------------------------------
 
-echo -e "${GRN}"
-echo -e "------------------------------------------"
-echo -e "    Launch Kube Consul Service Configs"
-echo -e "------------------------------------------${NC}"
-
-# ----------------
-# Unicorn-frontends
-# ----------------
-
-echo -e ""
-echo -e "${GRN}DC3 (default): Apply Unicorn-frontend serviceAccount, serviceDefaults, service, deployment ${NC}"
-kubectl apply --context $KDC3 -f ./kube/configs/dc3/services/unicorn-frontend.yaml
-# kubectl delete --context $KDC3 -f ./kube/configs/dc3/services/unicorn-frontend.yaml
-
-# ----------------
-# Unicorn-backends
-# ----------------
-
-echo -e ""
-echo -e "${GRN}DC3 (default): Apply Unicorn-backend serviceAccount, serviceDefaults, service, deployment ${NC}"
-kubectl apply --context $KDC3 -f ./kube/configs/dc3/services/unicorn-backend.yaml
-# kubectl delete --context $KDC3 -f ./kube/configs/dc3/services/unicorn-backend.yaml
-
-
-echo -e ""
-echo -e "${GRN}DC3 (cernunnos): Apply Unicorn-backend serviceAccount, serviceDefaults, service, deployment ${NC}"
-kubectl apply --context $KDC3_P1 -f ./kube/configs/dc3/services/unicorn-cernunnos-backend.yaml
-# kubectl delete --context $KDC3_P1 -f ./kube/configs/dc3/services/unicorn-cernunnos-backend.yaml
-
-echo -e ""
-echo -e "${GRN}DC4 (default): Apply Unicorn-backend serviceAccount, serviceDefaults, service, deployment ${NC}"
-kubectl apply --context $KDC4 -f ./kube/configs/dc4/services/unicorn-backend.yaml
-# kubectl delete --context $KDC4 -f ./kube/configs/dc4/services/unicorn-backend.yaml
-
-
-echo -e ""
-echo -e "${GRN}DC4 (taranis): Apply Unicorn-backend serviceAccount, serviceDefaults, service, deployment ${NC}"
-kubectl apply --context $KDC4_P1 -f ./kube/configs/dc4/services/unicorn-taranis-backend.yaml
-# kubectl delete --context $KDC4_P1 -f ./kube/configs/dc4/services/unicorn-taranis-backend.yaml
-
-
-# ----------------
-# Transparent Unicorn-backends
-# ----------------
-
-echo -e ""
-echo -e "${GRN}DC3 (default): Apply Unicorn-backend serviceAccount, serviceDefaults, service, deployment ${NC}"
-kubectl apply --context $KDC3 -f ./kube/configs/dc3/services/unicorn-tp_backend.yaml
-# kubectl delete --context $KDC3 -f ./kube/configs/dc3/services/unicorn-tp_backend.yaml
-
-echo -e ""
-echo -e "${GRN}DC3 (cernunnos): Apply Unicorn-backend serviceAccount, serviceDefaults, service, deployment ${NC}"
-kubectl apply --context $KDC3_P1 -f ./kube/configs/dc3/services/unicorn-cernunnos-tp_backend.yaml
-# kubectl delete --context $KDC3_P1 -f ./kube/configs/dc3/services/unicorn-cernunnos-tp_backend.yaml
-
-echo -e ""
-echo -e "${GRN}DC4 (default): Apply Unicorn-backend serviceAccount, serviceDefaults, service, deployment ${NC}"
-kubectl apply --context $KDC4 -f ./kube/configs/dc4/services/unicorn-tp_backend.yaml
-# kubectl delete --context $KDC4 -f ./kube/configs/dc4/services/unicorn-tp_backend.yaml
-
-echo -e ""
-echo -e "${GRN}DC4 (taranis): Apply Unicorn-backend serviceAccount, serviceDefaults, service, deployment ${NC}"
-kubectl apply --context $KDC4_P1 -f ./kube/configs/dc4/services/unicorn-taranis-tp_backend.yaml
-# kubectl delete --context $KDC4_P1 -f ./kube/configs/dc4/services/unicorn-taranis-tp_backend.yaml
-
-# ------------------------------------------
-#                    Mesh Defaults
-# ------------------------------------------
-
-echo -e "${GRN}"
-echo -e "------------------------------------------"
-echo -e "            Mesh Defaults"
-echo -e "------------------------------------------${NC}"
-
-echo -e ""
-echo -e "${GRN}DC3 (default): mesh config: ${YELL}Mesh Destinations Only: False ${NC}"      # leave only one of these on
-# echo -e "${GRN}DC3 (default): mesh config: ${YELL}Mesh Destinations Only: True ${NC}"
-# kubectl apply --context $KDC3 -f ./kube/configs/dc3/defaults/mesh.yaml
-
-# ------------------------------------------
-#                 Intentions
-# ------------------------------------------
-
-echo -e "${GRN}"
-echo -e "------------------------------------------"
-echo -e "              Intentions"
-echo -e "------------------------------------------${NC}"
-
-echo -e ""
-echo -e "${GRN}DC3 (default): Intention for DC3/default/unicorn/unicorn-backend ${NC}"
-kubectl apply --context $KDC3 -f ./kube/configs/dc3/intentions/dc3-default-unicorn_backend-allow.yaml
-
-echo -e ""
-echo -e "${GRN}DC3 (cernunnos): Intention for DC3/cernunnos/unicorn/unicorn-backend ${NC}"
-kubectl apply --context $KDC3_P1 -f ./kube/configs/dc3/intentions/dc3-cernunnos-unicorn_backend-allow.yaml
-
-echo -e ""
-echo -e "${GRN}DC3 (default): Intention for DC3/default/unicorn/unicorn-tp-backend ${NC}"
-kubectl apply --context $KDC3 -f ./kube/configs/dc3/intentions/dc3-default-unicorn_tp_backend-allow.yaml
-
-echo -e ""
-echo -e "${GRN}DC3 (cernunnos): Intention for DC3/cernunnos/unicorn/unicorn-tp-backend ${NC}"
-kubectl apply --context $KDC3_P1 -f ./kube/configs/dc3/intentions/dc3-cernunnos-unicorn_tp_backend-allow.yaml
-
-echo -e ""
-echo -e "${GRN}DC4 (default): Intention for DC4/default/unicorn/unicorn-backend ${NC}"
-kubectl apply --context $KDC4 -f ./kube/configs/dc4/intentions/dc4-default-unicorn_backend-allow.yaml
-
-echo -e ""
-echo -e "${GRN}DC4 (taranis): Intention for DC4/taranis/unicorn/unicorn-backend ${NC}"
-kubectl apply --context $KDC4_P1 -f ./kube/configs/dc4/intentions/dc4-taranis-unicorn_backend-allow.yaml
-
-echo -e ""
-echo -e "${GRN}DC4 (default): Intention for DC4/default/unicorn/unicorn-tp-backend ${NC}"
-kubectl apply --context $KDC4 -f ./kube/configs/dc4/intentions/dc4-default-unicorn_tp_backend-allow.yaml
-
-echo -e ""
-echo -e "${GRN}DC4 (taranis): Intention for DC4/taranis/unicorn/unicorn-tp-backend ${NC}"
-kubectl apply --context $KDC4_P1 -f ./kube/configs/dc4/intentions/dc4-taranis-unicorn_tp_backend-allow.yaml
-
-
-echo -e ""
-
-# ------------------------------------------
-#           External Services
-# ------------------------------------------
-
-echo -e "${GRN}"
-echo -e "------------------------------------------"
-echo -e "           External Services"
-echo -e "------------------------------------------${NC}"
-
-echo -e "${GRN}DC3 (default): External Service-default - Example.com  ${NC}"
-kubectl apply --context $KDC3 -f ./kube/configs/dc3/external-services/service-defaults-example.com.yaml
-# kubectl delete --context $KDC3 -f ./kube/configs/dc3/external-services/service-defaults-example.com.yaml
-
-kubectl --context $KDC3 create namespace externalz
-
-echo -e "${GRN}DC3 (default): External Service-defaults - whatismyip  ${NC}"
-kubectl apply --context $KDC3 -f ./kube/configs/dc3/external-services/service-defaults-whatismyip.yaml
-# kubectl delete --context $KDC3 -f ./kube/configs/dc3/external-services/service-defaults-whatismyip.yaml
-
-# --------
-# Intentions
-# --------
-
-echo -e "${GRN}DC3 (default): Service Intention - External Service - Example.com ${NC}"
-kubectl apply --context $KDC3 -f ./kube/configs/dc3/intentions/external-example_https-allow.yaml
-# kubectl delete --context $KDC3 -f ./kube/configs/dc3/intentions/external-example_https-allow.yaml
-
-echo -e "${GRN}DC3 (default): Service Intention - External Service - Example.com ${NC}"
-kubectl apply --context $KDC3 -f ./kube/configs/dc3/intentions/external-whatismyip-allow.yaml
-# kubectl delete --context $KDC3 -f ./kube/configs/dc3/intentions/external-whatismyip-allow.yaml
+./scripts/externalz-alpha.sh
+# Launch the externalz-alpha script to provision the externalz application that consumes external services
 
 # ------------------------------------------
 #           Terminating Gateway
@@ -816,30 +648,9 @@ echo -e "${GRN}DC3 (default): Terminating-Gateway config   ${NC}"
 kubectl apply --context $KDC3 -f ./kube/configs/dc3/tgw/terminating-gateway.yaml
 # kubectl delete --context $KDC3 -f ./kube/configs/dc3/tgw/terminating-gateway.yaml
 
-# ------------------------------------------
-# Service Sameness Group Application (unicorn-ssg-frontend)
-# ------------------------------------------
-
-echo -e "${GRN}"
-echo -e "------------------------------------------"
-echo -e " Service Sameness Group Application (unicorn-ssg-frontend)"
-echo -e "------------------------------------------${NC}"
-
-echo -e "${GRN}DC3 (default): Apply service-resolver: unicorn-backend/unicorn ${NC}"    # Matches the upstream unicorn-backend and applies the SSG.
-kubectl apply --context $KDC3 -f ./kube/configs/dc3/service-resolver/service-resolver-unicorn_sameness.yaml
-
-echo -e "${GRN}DC3 (default): Apply Unicorn-ssg-frontend serviceAccount, serviceDefaults, service, deployment ${NC}"
-kubectl apply --context $KDC3 -f ./kube/configs/dc3/services/unicorn-ssg_frontend.yaml
-
-# We can't create a new intentions file for SGs where an intention for the upstream service already exists. Have to just modify the original intention file.
-
-# Exported Services
-#   unicorn-tp-backend is added to the exported-services configs using "SamenessGroup: ssg-unicorn".
-#   Exported on dc3-cernunnos, dc4-default, and dc4-taranis
-
-# ==========================================
-#              Outputs
-# ==========================================
+# ==============================================================================================================================
+#                                                      Outputs
+# ==============================================================================================================================
 
 if $ARG_EKSONLY;
   then
@@ -859,6 +670,18 @@ if $ARG_EKSONLY;
       sleep 5
     done
 
+    while true; do
+      DC3_EXTERNALZ_ALPHA_HOSTNAME=$(kubectl get svc externalz-alpha -nexternalz --context $KDC3 -o json | jq -r '.status.loadBalancer.ingress[0].hostname')
+
+      if [ ! -z "$DC3_EXTERNALZ_ALPHA_HOSTNAME" ]; then
+        DC3_EXTERNALZ_ALPHA_ADDR=http://$DC3_EXTERNALZ_ALPHA_HOSTNAME:8001
+        break
+      fi
+
+      echo "Waiting for the externalz-alpha load balancer to get an ingress hostname..."
+      sleep 5
+    done
+
 echo -e "$(cat << EOF
 ${GRN}
 ------------------------------------------
@@ -874,7 +697,9 @@ ${RED}Don't forget to login to the UI using token${NC}: 'root'
 ${GRN}Fake Service UI addresses: ${NC}
  ${YELL}Unicorn-Frontend:${NC} $UNICORN_FRONTEND_UI_ADDR/ui/
  ${YELL}Unicorn-SSG-Frontend:${NC} $UNICORN_SSG_FRONTEND_UI_ADDR/ui/
-If this is blank - run do this. EKS is being slow and I need to build a check: kubectl get svc unicorn-ssg-frontend -nunicorn --context $KDC3 -o json | jq -r 'http://\(.status.loadBalancer.ingress[0].hostname):\(.spec.ports[0].port)'
+
+${GRN}Externalz-alpha UI address: ${NC}
+ ${YELL}Externalz-alpha:${NC} $DC3_EXTERNALZ_ALPHA_ADDR/ui/
 
 ${GRN}Export ENV Variables ${NC}
  export DC3=http://$DC3_LB_IP:8500
@@ -892,6 +717,8 @@ Before running ${YELL}terraform destroy${NC}, first run ${YELL}./kill.sh -eksonl
 EOF
 )"
 
+# If Unicorn-SSG-Frontend is blank - run do this. EKS is being slow and I need to build a check: kubectl get svc unicorn-ssg-frontend -nunicorn --context $KDC3 -o json | jq -r 'http://\(.status.loadBalancer.ingress[0].hostname):\(.spec.ports[0].port)'
+
   else
 
 echo -e "$(cat << EOF
@@ -908,6 +735,7 @@ ${RED}Don't forget to login to the UI using token${NC}: 'root'
 ${GRN}Fake Service UI addresses: ${NC}
  ${YELL}Unicorn-Frontend:${NC} http://127.0.0.1:11000/ui/
  ${YELL}Unicorn-SSG-Frontend:${NC} http://localhost:11001/ui/
+ ${YELL}Externalz-alpha:${NC} http://127.0.0.1:8002/ui/
 
 ${GRN}Export ENV Variables ${NC}
  export DC3=https://127.0.0.1:8502
@@ -917,63 +745,13 @@ EOF
 
 fi
 
-### Experimental args to help with the initial figuring out of Vault
-if [[ "$*" == "vault-setup" ]]
-  then
-    InstallConsulDC4
-    InstallConsulDC4_P1
-fi
 
-if [[ "$*" == "vault-kill" ]]
-  then
-    k3d cluster delete dc4
-    k3d cluster delete dc4-p1
-fi
+# ==============================================================================================================================
+#                                                     Consul API Gateway
+# ==============================================================================================================================
 
 # ------------------------------------------
 #     Consul API Gateway config script
 # ------------------------------------------
 
 ./apigw-config.sh
-
-# ==========================================
-#              Useful Commands
-# ==========================================
-
-# k3d cluster list
-# k3d cluster delete dc3
-
-# kubectl get secret peering-token --namespace consul --output yaml
-
-
-# https://github.com/ppresto/terraform-azure-consul-ent-aks
-# https://github.com/ppresto/terraform-azure-consul-ent-aks/blob/main/PeeringDemo-EagleInvestments.md
-
-# consul-k8s proxy list -n unicorn | grep unicorn-frontend | cut -f1 | xargs -I {} consul-k8s proxy read {} -n unicorn
-
-# kubectl exec -nunicorn -it unicorn-frontend-97848474-lltd7  -- /usr/bin/curl localhost:19000/listeners
-# kubectl exec -nunicorn -it unicorn-frontend-97848474-lltd7  -- /usr/bin/curl localhost:19000/clusters | vsc
-# kubectl exec -nunicorn -it unicorn-backend-548d9999f6-khnxt  -- /usr/bin/curl localhost:19000/clusters | vsc
-
-# consul-k8s proxy list -n unicorn | grep unicorn-frontend | cut -f1 | tr -d " " | xargs -I {} kubectl exec -nunicorn -it {} -- /usr/bin/curl -s localhost:19000/clusters
-# consul-k8s proxy list -n unicorn | grep unicorn-frontend | cut -f1 | tr -d " " | xargs -I {} kubectl exec -nunicorn -it {} -- /usr/bin/curl -s localhost:19000/config_dump
-# consul-k8s proxy list -n unicorn | grep unicorn-backend | cut -f1 | tr -d " " | xargs -I {} kubectl exec -nunicorn -it {} -- /usr/bin/curl -s localhost:19000/clusters
-# consul-k8s proxy list -n unicorn | grep unicorn-backend | cut -f1 | tr -d " " | xargs -I {} kubectl exec -nunicorn -it {} -- /usr/bin/curl -s localhost:19000/config_dump
-
-# consul peering generate-token -name dc3-default -http-addr="$DC1"
-
-
-
-# -------------------------------------------
-#      Peering with CRDs - works-ish
-# -------------------------------------------
-
-# consul partition create -name "peering-test" -http-addr="$DC3"
-# consul partition create -name "peering-test" -http-addr="$DC4"
-
-# kubectl apply --context $KDC4 -f ./kube/configs/peering/peering-acceptor_dc3-default_dc4-default.yaml
-# kubectl --context $KDC4 get secret peering-token-dc3-default-dc4-default -nconsul --output yaml > ./tokens/peering-token-dc3-default-dc4-default.yaml
-
-# kubectl apply --context $KDC3 -f ./tokens/peering-token-dc3-default-dc4-default.yaml
-# kubectl apply --context $KDC3 -f ./kube/configs/peering/peering-dialer_dc3-default_dc4-default.yaml
-
