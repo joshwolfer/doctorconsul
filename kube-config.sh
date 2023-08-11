@@ -627,8 +627,9 @@ kubectl apply --context $KDC4_P1 -f ./kube/configs/dc4/sameness-groups/dc4-taran
 #  External Services - externalz-alpha Application
 # ------------------------------------------
 
-./scripts/externalz-alpha.sh
-# Launch the externalz-alpha script to provision the externalz application that consumes external services
+echo -e "${YELL}Running the Externalz application script:${NC} ./scripts/externalz-app.sh"
+./scripts/externalz-app.sh
+# Launch the externalz applications script to provision the externalz application that consumes external services
 
 # ------------------------------------------
 #           Terminating Gateway
@@ -671,14 +672,14 @@ if $ARG_EKSONLY;
     done
 
     while true; do
-      DC3_EXTERNALZ_ALPHA_HOSTNAME=$(kubectl get svc externalz-alpha -nexternalz --context $KDC3 -o json | jq -r '.status.loadBalancer.ingress[0].hostname')
+      DC3_EXTERNALZ_TCP_HOSTNAME=$(kubectl get svc externalz-tcp -nexternalz --context $KDC3 -o json | jq -r '.status.loadBalancer.ingress[0].hostname')
 
-      if [ ! -z "$DC3_EXTERNALZ_ALPHA_HOSTNAME" ]; then
-        DC3_EXTERNALZ_ALPHA_ADDR=http://$DC3_EXTERNALZ_ALPHA_HOSTNAME:8001
+      if [ ! -z "$DC3_EXTERNALZ_TCP_HOSTNAME" ]; then
+        DC3_EXTERNALZ_TCP_ADDR=http://$DC3_EXTERNALZ_TCP_HOSTNAME:8001
         break
       fi
 
-      echo "Waiting for the externalz-alpha load balancer to get an ingress hostname..."
+      echo "Waiting for the externalz-tcp load balancer to get an ingress hostname..."
       sleep 5
     done
 
@@ -698,8 +699,8 @@ ${GRN}Fake Service UI addresses: ${NC}
  ${YELL}Unicorn-Frontend:${NC} $UNICORN_FRONTEND_UI_ADDR/ui/
  ${YELL}Unicorn-SSG-Frontend:${NC} $UNICORN_SSG_FRONTEND_UI_ADDR/ui/
 
-${GRN}Externalz-alpha UI address: ${NC}
- ${YELL}Externalz-alpha:${NC} $DC3_EXTERNALZ_ALPHA_ADDR/ui/
+${GRN}Externalz-tcp UI address: ${NC}
+ ${YELL}Externalz-tcp:${NC} $DC3_EXTERNALZ_TCP_ADDR/ui/
 
 ${GRN}Export ENV Variables ${NC}
  export DC3=http://$DC3_LB_IP:8500

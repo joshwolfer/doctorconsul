@@ -1,12 +1,12 @@
 apiVersion: consul.hashicorp.com/v1alpha1
 kind: ServiceIntentions
 metadata:
-  name: example-https
+  name: example-tcp
   namespace: default
 spec:
   destination:
-    name: example-https
+    name: example-tcp
   sources:
-    - name: externalz-alpha
+    - name: externalz-tcp
       namespace: externalz
       action: allow

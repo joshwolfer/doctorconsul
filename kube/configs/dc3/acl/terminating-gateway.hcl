@@ -1,3 +1,3 @@
-service "example-https" {
+service "example-tcp" {
   policy = "write"
 }

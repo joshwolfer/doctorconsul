@@ -7,6 +7,6 @@ spec:
   destination:
     name: whatismyip
   sources:
-    - name: externalz-alpha
+    - name: externalz-tcp
       namespace: externalz
       action: allow

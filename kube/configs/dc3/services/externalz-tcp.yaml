@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: externalz-alpha
+  name: externalz-tcp
   namespace: externalz
 
 ---
@@ -9,7 +9,7 @@ metadata:
 apiVersion: consul.hashicorp.com/v1alpha1
 kind: ServiceDefaults
 metadata:
-  name: externalz-alpha
+  name: externalz-tcp
   namespace: externalz
 spec:
   protocol: http
@@ -19,12 +19,12 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: externalz-alpha
+  name: externalz-tcp
   namespace: externalz
 spec:
   type: LoadBalancer        # This may not work with k3s, since this was taken from an AKS config
   selector:
-    app: externalz-alpha
+    app: externalz-tcp
   ports:
     - name: http
       protocol: TCP
@@ -36,29 +36,29 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: externalz-alpha
+  name: externalz-tcp
   namespace: externalz
   labels:
-    app: externalz-alpha
+    app: externalz-tcp
     version: v1
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: externalz-alpha
+      app: externalz-tcp
   template:
     metadata:
       labels:
-        app: externalz-alpha
+        app: externalz-tcp
       annotations:
         consul.hashicorp.com/connect-inject: 'true'
         consul.hashicorp.com/transparent-proxy: 'true'
         consul.hashicorp.com/service-tags: 'dc3'
         consul.hashicorp.com/transparent-proxy-exclude-inbound-ports: "10000"   # Without this exclusion the FakeService UI is shitcanned.
     spec:
-      serviceAccountName: externalz-alpha
+      serviceAccountName: externalz-tcp
       containers:
-        - name: externalz-alpha
+        - name: externalz-tcp
           image: k3d-doctorconsul.localhost:12345/nicholasjackson/fake-service:v0.25.0
           ports:
             - containerPort: 10000
@@ -68,9 +68,9 @@ spec:
             - name: 'UPSTREAM_URIS'
               value: 'http://example.com, https://example.com, http://www.wolfmansound.com, https://www.wolfmansound.com'
             - name: 'NAME'
-              value: 'externalz-alpha (DC3)'
+              value: 'externalz-tcp (DC3)'
             - name: 'MESSAGE'
-              value: '<p><strong>The externalz-alpha Application</strong></p>'
+              value: '<p><strong>The externalz-tcp Application</strong></p>'
             - name: 'SERVER_TYPE'
               value: 'http'
             - name: 'TIMING_50_PERCENTILE'

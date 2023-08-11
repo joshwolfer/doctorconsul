@@ -1,7 +1,7 @@
 apiVersion: consul.hashicorp.com/v1alpha1
 kind: ServiceDefaults
 metadata:
-  name: example-https
+  name: example-tcp
   namespace: default
 spec:
   protocol: tcp                 # Only match if the traffic is TLS (SNI match) or an IP. Host headers do NOT match.

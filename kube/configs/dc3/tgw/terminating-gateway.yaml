@@ -5,4 +5,4 @@ metadata:
   namespace: default
 spec:
   services:
-    - name: example-https
+    - name: example-tcp
