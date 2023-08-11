@@ -1,0 +1,12 @@
+apiVersion: consul.hashicorp.com/v1alpha1
+kind: ServiceDefaults
+metadata:
+  name: example-http
+  namespace: default
+spec:
+  protocol: http                 # Only match if the Host or :authority headers. Nothing to do with DNS resolution.
+  destination:
+    addresses:
+      - "example.com"
+      - "www.wolfmansound.com"
+    port: 80

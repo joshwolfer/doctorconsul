@@ -1,0 +1,12 @@
+apiVersion: consul.hashicorp.com/v1alpha1
+kind: ServiceIntentions
+metadata:
+  name: example-http
+  namespace: default
+spec:
+  destination:
+    name: example-http
+  sources:
+    - name: externalz-http
+      namespace: externalz
+      action: allow

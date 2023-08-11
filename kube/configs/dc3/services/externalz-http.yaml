@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: externalz-tcp
+  name: externalz-http
   namespace: externalz
 
 ---
@@ -9,26 +9,26 @@ metadata:
 apiVersion: consul.hashicorp.com/v1alpha1
 kind: ServiceDefaults
 metadata:
-  name: externalz-tcp
+  name: externalz-http
   namespace: externalz
 spec:
-  protocol: tcp
+  protocol: tcp             # This is tcp because the Fake service UI itself is being handled as TCP. But the external services are access through the mesh as HTTP, as defined in the service-defaults for the external services.
 
 ---
 
 apiVersion: v1
 kind: Service
 metadata:
-  name: externalz-tcp
+  name: externalz-http
   namespace: externalz
 spec:
   type: LoadBalancer        # This may not work with k3s, since this was taken from an AKS config
   selector:
-    app: externalz-tcp
+    app: externalz-http
   ports:
-    - name: tcp
+    - name: http
       protocol: TCP
-      port: 8002            # Should be the port the Kube LB will listen on to forward to TCP/10000
+      port: 8003            # Should be the port the Kube LB will listen on to forward to TCP/10000
       targetPort: 10000     # This should line up with the FakeService LISTEN_ADDR: 0.0.0.0:10000
 
 ---
@@ -36,29 +36,29 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: externalz-tcp
+  name: externalz-http
   namespace: externalz
   labels:
-    app: externalz-tcp
+    app: externalz-http
     version: v1
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: externalz-tcp
+      app: externalz-http
   template:
     metadata:
       labels:
-        app: externalz-tcp
+        app: externalz-http
       annotations:
         consul.hashicorp.com/connect-inject: 'true'
         consul.hashicorp.com/transparent-proxy: 'true'
         consul.hashicorp.com/service-tags: 'dc3'
         consul.hashicorp.com/transparent-proxy-exclude-inbound-ports: "10000"   # Without this exclusion the FakeService UI is shitcanned.
     spec:
-      serviceAccountName: externalz-tcp
+      serviceAccountName: externalz-http
       containers:
-        - name: externalz-tcp
+        - name: externalz-http
           image: k3d-doctorconsul.localhost:12345/nicholasjackson/fake-service:v0.25.0
           ports:
             - containerPort: 10000
@@ -68,9 +68,9 @@ spec:
             - name: 'UPSTREAM_URIS'
               value: 'http://example.com, https://example.com, http://www.wolfmansound.com, https://www.wolfmansound.com'
             - name: 'NAME'
-              value: 'externalz-tcp (DC3)'
+              value: 'externalz-http (DC3)'
             - name: 'MESSAGE'
-              value: '<p><strong>The externalz-tcp Application</strong></p>'
+              value: '<p><strong>The externalz-http Application</strong></p>'
             - name: 'SERVER_TYPE'
               value: 'http'
             - name: 'TIMING_50_PERCENTILE'

@@ -635,19 +635,8 @@ echo -e "${YELL}Running the Externalz application script:${NC} ./scripts/externa
 #           Terminating Gateway
 # ------------------------------------------
 
-echo -e "${GRN}"
-echo -e "------------------------------------------"
-echo -e "           Terminating Gateway"
-echo -e "------------------------------------------${NC}"
-
-# Add the terminating-gateway ACL policy to the TGW Role, so it can actually service:write the services it fronts. DUMB.
-consul acl policy create -name "Terminating-Gateway-Service-Write" -rules @./kube/configs/dc3/acl/terminating-gateway.hcl -http-addr="$DC3"
-export DC3_TGW_ROLEID=$(consul acl role list -http-addr="$DC3" -format=json | jq -r '.[] | select(.Name == "consul-terminating-gateway-acl-role") | .ID')
-consul acl role update -id $DC3_TGW_ROLEID -policy-name "Terminating-Gateway-Service-Write" -http-addr="$DC3"
-
-echo -e "${GRN}DC3 (default): Terminating-Gateway config   ${NC}"
-kubectl apply --context $KDC3 -f ./kube/configs/dc3/tgw/terminating-gateway.yaml
-# kubectl delete --context $KDC3 -f ./kube/configs/dc3/tgw/terminating-gateway.yaml
+./scripts/terminating-gateway-dc3-default.sh
+# Launch TGW
 
 # ==============================================================================================================================
 #                                                      Outputs
@@ -711,6 +700,7 @@ ${GRN}Port forwards to map services / UI to traditional Doctor Consul local port
  kubectl -nunicorn --context $KDC3 port-forward svc/unicorn-ssg-frontend 11001:8001  > /dev/null 2>&1 &
  kubectl -n consul --context $KDC3 port-forward svc/consul-expose-servers 8502:8501 > /dev/null 2>&1 &
  kubectl -n consul --context $KDC4 port-forward svc/consul-expose-servers 8503:8501 > /dev/null 2>&1 &
+ kubectl -nexternalz --context $KDC3 port-forward svc/externalz-tcp 8002:8002 > /dev/null 2>&1 &
 
 $(printf "${RED}"'Happy Consul'\''ing!!! '"${NC}\n")
 
@@ -736,7 +726,7 @@ ${RED}Don't forget to login to the UI using token${NC}: 'root'
 ${GRN}Fake Service UI addresses: ${NC}
  ${YELL}Unicorn-Frontend:${NC} http://127.0.0.1:11000/ui/
  ${YELL}Unicorn-SSG-Frontend:${NC} http://localhost:11001/ui/
- ${YELL}Externalz-alpha:${NC} http://127.0.0.1:8002/ui/
+ ${YELL}Externalz-tcp:${NC} http://127.0.0.1:8002/ui/
 
 ${GRN}Export ENV Variables ${NC}
  export DC3=https://127.0.0.1:8502

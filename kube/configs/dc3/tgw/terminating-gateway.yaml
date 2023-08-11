@@ -6,3 +6,4 @@ metadata:
 spec:
   services:
     - name: example-tcp
+    - name: example-http
