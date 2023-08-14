@@ -1,6 +1,12 @@
 # Default k9s plugin location is ~/k9s/plugin.yml
 # vsc is a script to randomize a file name and launch Visual Studio Code on WSL2.
-# "code -" might be usable without a script on Mac, but it's broken on Windows and needs this script.
+
+# For Mac...
+# install vscode shell command to use "code -" from the CLI. 
+# https://stackoverflow.com/questions/29971053/how-to-open-visual-studio-code-from-the-command-line-on-osx
+#
+# In this file globally replace "vsc" with "code -" and save to ${HOME}/Library/Application Support/k9s/plugin.yml
+
 
 plugin:
   debug:
