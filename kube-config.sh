@@ -266,7 +266,7 @@ if $ARG_EKSONLY;
     echo ""
   else
 
-    ./k3d-config.sh
+    ./scripts/k3d-config.sh
 
 fi
 # Ends the eksonly bypass
@@ -279,7 +279,7 @@ fi
 # ==============================================================================================================================
 # ==============================================================================================================================
 
-./helm-install.sh
+./scripts/helm-install.sh
 # Execute helm install script.
 
 
@@ -349,14 +349,14 @@ echo -e "${YELL}DC4 (taranis) connect-inject service is READY! ${NC}"
   # Environment variables cannot be passed back to this parent script. So the sub shells write these addresses to temp disk and
   # we re-assign the variables here. MAGIC.
 
-    DC3_LB_IP=$(cat ./tokens/dc3_lb_ip.txt)
-    DC3_P1_K8S_IP=$(cat ./tokens/dc3_p1_k8s_ip.txt)
+    export DC3_LB_IP=$(cat ./tokens/dc3_lb_ip.txt)
+    export DC3_P1_K8S_IP=$(cat ./tokens/dc3_p1_k8s_ip.txt)
 
-    DC4_LB_IP=$(cat ./tokens/dc4_lb_ip.txt)
-    DC4_P1_K8S_IP=$(cat ./tokens/dc4_p1_k8s_ip.txt)
+    export DC4_LB_IP=$(cat ./tokens/dc4_lb_ip.txt)
+    export DC4_P1_K8S_IP=$(cat ./tokens/dc4_p1_k8s_ip.txt)
 
-    DC3="http://$DC3_LB_IP:8500"
-    DC4="http://$DC4_LB_IP:8500"
+    export DC3="http://$DC3_LB_IP:8500"
+    export DC4="http://$DC4_LB_IP:8500"
     echo -e "${GRN}Export ENV Variables ${NC}"
     echo "export DC3=http://$DC3_LB_IP:8500"
     echo "export DC4=http://$DC4_LB_IP:8500"
@@ -639,105 +639,6 @@ echo -e "${YELL}Running the Externalz application script:${NC} ./scripts/externa
 # Launch TGW
 
 # ==============================================================================================================================
-#                                                      Outputs
-# ==============================================================================================================================
-
-if $ARG_EKSONLY;
-  then
-    export UNICORN_FRONTEND_UI_ADDR=$(kubectl get svc unicorn-frontend -nunicorn --context $KDC3 -o json | jq -r '"http://\(.status.loadBalancer.ingress[0].hostname):\(.spec.ports[0].port)"')
-    # export UNICORN_SSG_FRONTEND_UI_ADDR=$(kubectl get svc unicorn-ssg-frontend -nunicorn --context $KDC3 -o json | jq -r '"http://\(.status.loadBalancer.ingress[0].hostname):\(.spec.ports[0].port)"')
-
-    while true; do    # Trying this instead of the above, since we keep hitting race conditions in the EKSOnly outputs.
-      SSG_HOSTNAME=$(kubectl get svc unicorn-ssg-frontend -n unicorn --context $KDC3 -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-      SSG_PORT=$(kubectl get svc unicorn-ssg-frontend -n unicorn --context $KDC3 -o jsonpath='{.spec.ports[0].port}')
-
-      if [ ! -z "$SSG_HOSTNAME" ]; then
-        UNICORN_SSG_FRONTEND_UI_ADDR=http://$SSG_HOSTNAME:$SSG_PORT
-        break
-      fi
-
-      echo "Waiting for the SSG load balancer to get an ingress hostname..."
-      sleep 5
-    done
-
-    while true; do
-      DC3_EXTERNALZ_TCP_HOSTNAME=$(kubectl get svc externalz-tcp -nexternalz --context $KDC3 -o json | jq -r '.status.loadBalancer.ingress[0].hostname')
-
-      if [ ! -z "$DC3_EXTERNALZ_TCP_HOSTNAME" ]; then
-        DC3_EXTERNALZ_TCP_ADDR=http://$DC3_EXTERNALZ_TCP_HOSTNAME:8001
-        break
-      fi
-
-      echo "Waiting for the externalz-tcp load balancer to get an ingress hostname..."
-      sleep 5
-    done
-
-echo -e "$(cat << EOF
-${GRN}
-------------------------------------------
-            EKSOnly Outputs
-------------------------------------------${NC}
-
-${GRN}Consul UI Addresses: ${NC}
- ${YELL}DC3${NC}: http://$DC3_LB_IP:8500
- ${YELL}DC4${NC}: http://$DC4_LB_IP:8500
-
-${RED}Don't forget to login to the UI using token${NC}: 'root'
-
-${GRN}Fake Service UI addresses: ${NC}
- ${YELL}Unicorn-Frontend:${NC} $UNICORN_FRONTEND_UI_ADDR/ui/
- ${YELL}Unicorn-SSG-Frontend:${NC} $UNICORN_SSG_FRONTEND_UI_ADDR/ui/
-
-${GRN}Externalz-tcp UI address: ${NC}
- ${YELL}Externalz-tcp:${NC} $DC3_EXTERNALZ_TCP_ADDR/ui/
-
-${GRN}Export ENV Variables ${NC}
- export DC3=http://$DC3_LB_IP:8500
- export DC4=http://$DC4_LB_IP:8500
-
-${GRN}Port forwards to map services / UI to traditional Doctor Consul local ports: ${NC}
- kubectl -nunicorn --context $KDC3 port-forward svc/unicorn-frontend 11000:8000 > /dev/null 2>&1 &
- kubectl -nunicorn --context $KDC3 port-forward svc/unicorn-ssg-frontend 11001:8001  > /dev/null 2>&1 &
- kubectl -n consul --context $KDC3 port-forward svc/consul-expose-servers 8502:8501 > /dev/null 2>&1 &
- kubectl -n consul --context $KDC4 port-forward svc/consul-expose-servers 8503:8501 > /dev/null 2>&1 &
- kubectl -nexternalz --context $KDC3 port-forward svc/externalz-tcp 8002:8002 > /dev/null 2>&1 &
-
-$(printf "${RED}"'Happy Consul'\''ing!!! '"${NC}\n")
-
-Before running ${YELL}terraform destroy${NC}, first run ${YELL}./kill.sh -eksonly${NC} to prevent AWS from horking. Trust me.
-EOF
-)"
-
-# If Unicorn-SSG-Frontend is blank - run do this. EKS is being slow and I need to build a check: kubectl get svc unicorn-ssg-frontend -nunicorn --context $KDC3 -o json | jq -r 'http://\(.status.loadBalancer.ingress[0].hostname):\(.spec.ports[0].port)'
-
-  else
-
-echo -e "$(cat << EOF
-${GRN}------------------------------------------
-            K3d Outputs
-------------------------------------------${NC}
-
-${GRN}Consul UI Addresses: ${NC}
- ${YELL}DC3${NC}: https://127.0.0.1:8502/ui/
- ${YELL}DC4${NC}: https://127.0.0.1:8503/ui/
-
-${RED}Don't forget to login to the UI using token${NC}: 'root'
-
-${GRN}Fake Service UI addresses: ${NC}
- ${YELL}Unicorn-Frontend:${NC} http://127.0.0.1:11000/ui/
- ${YELL}Unicorn-SSG-Frontend:${NC} http://localhost:11001/ui/
- ${YELL}Externalz-tcp:${NC} http://127.0.0.1:8002/ui/
-
-${GRN}Export ENV Variables ${NC}
- export DC3=https://127.0.0.1:8502
- export DC4=https://127.0.0.1:8503
-EOF
-)"
-
-fi
-
-
-# ==============================================================================================================================
 #                                                     Consul API Gateway
 # ==============================================================================================================================
 
@@ -745,4 +646,11 @@ fi
 #     Consul API Gateway config script
 # ------------------------------------------
 
-./apigw-config.sh
+./scripts/apigw-config.sh
+
+# ==============================================================================================================================
+#                                                      Outputs
+# ==============================================================================================================================
+
+./scripts/outputs.sh                   # Outputs script the generates outputs for K3d / EKSOnly
+

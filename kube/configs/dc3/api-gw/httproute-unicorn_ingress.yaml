@@ -1,0 +1,72 @@
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: HTTPRoute
+metadata:
+  name: unicorn-ingress
+  namespace: unicorn
+spec:
+  parentRefs:
+  - name: consul-api-gateway      # Name of the Gateway as defined in the Gateway spec (kind: Gateway)
+    namespace: consul             # Namespace the Consul APIGW lives in
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /unicorn-frontend/
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              replacePrefixMatch: /
+              type: ReplacePrefixMatch
+      backendRefs:                # Defines the backend service (upstream Consul service).
+      - kind: Service             # Kubernetes Service.
+        name: unicorn-frontend    # Kubernetes Service name that points to the Consul Mesh service.
+        # port: 8000                # This doesn't appear to even matter. I had wrong ports and it all still worked.... OK... old>>This needs to be the Kube "Service.port", not "targetPort"
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /unicorn-ssg-frontend/
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              replacePrefixMatch: /
+              type: ReplacePrefixMatch
+      backendRefs:
+      - kind: Service
+        name: unicorn-ssg-frontend
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /externalz-http/
+      filters:
+        - type: URLRewrite
+          urlRewrite:
+            path:
+              replacePrefixMatch: /
+              type: ReplacePrefixMatch
+      backendRefs:
+      - kind: Service
+        name: externalz-http
+        namespace: externalz
+
+# reference grant allows a route from a different namespace to send to a destination service in the same namespace as the referenceGrant.
+# IE: referenceGrant and backend service in "externalz" NS and HTTPRoute in "unicorn" NS
+# Without a referenceGrant, the API gateway returns a 404
+# Docs: https://developer.hashicorp.com/consul/docs/api-gateway/configuration/routes#rules-backendrefs
+
+---
+
+apiVersion: gateway.networking.k8s.io/v1alpha2
+kind: ReferenceGrant
+metadata:
+  name: grants
+  namespace: externalz      # ReferenceGrant and destination upstream service need to exists in the same NS
+spec:
+  from:
+  - group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    namespace: unicorn     # NS where the HTTPRoute lives
+  to:
+  - group: ""              # I assume this means any services within the specified namespace...
+    kind: Service

@@ -12,7 +12,7 @@ metadata:
   name: externalz-http
   namespace: externalz
 spec:
-  protocol: tcp             # This is tcp because the Fake service UI itself is being handled as TCP. But the external services are access through the mesh as HTTP, as defined in the service-defaults for the external services.
+  protocol: http             # This is tcp because the Fake service UI itself is being handled as TCP. But the external services are access through the mesh as HTTP, as defined in the service-defaults for the external services.
 
 ---
 
@@ -59,7 +59,7 @@ spec:
       serviceAccountName: externalz-http
       containers:
         - name: externalz-http
-          image: k3d-doctorconsul.localhost:12345/nicholasjackson/fake-service:v0.25.0
+          image: nicholasjackson/fake-service:v0.25.0
           ports:
             - containerPort: 10000
           env:

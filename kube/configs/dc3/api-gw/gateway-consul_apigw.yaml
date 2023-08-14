@@ -16,7 +16,7 @@ spec:
     allowedRoutes:
       kinds:
       - kind: HTTPRoute
-      namespaces:                # Choose which namespaces are allowed to use this Gateway
+      namespaces:                # Choose which namespaces are allowed to use this Gateway. Not required.
         from: Selector
         selector:
           matchLabels:           # This label is added automatically as of K8s 1.22 to all namespaces
@@ -34,4 +34,15 @@ spec:
         from: Selector
         selector:
           matchLabels:
-            kubernetes.io/metadata.name: unicorn
+            kubernetes.io/metadata.name: externalz
+  - name: consul-apig-tcp-listener2
+    protocol: TCP
+    port: 1668
+    allowedRoutes:
+      kinds:
+      - kind: TCPRoute
+      namespaces:
+        from: Selector
+        selector:
+          matchLabels:
+            kubernetes.io/metadata.name: externalz

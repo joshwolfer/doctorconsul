@@ -1,0 +1,12 @@
+apiVersion: consul.hashicorp.com/v1alpha1
+kind: ServiceIntentions
+metadata:
+  name: externalz-tcp
+  namespace: externalz
+spec:
+  destination:
+    name: externalz-tcp
+  sources:
+    - name: consul-api-gateway
+      namespace: consul
+      action: allow
