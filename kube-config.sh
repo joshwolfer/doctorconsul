@@ -47,6 +47,7 @@ help () {
     echo "  -nuke-eksonly       Destroy the EKSOnly resources so it's safe to tf destroy"
     echo "  -no-apps            Install Consul into clusters with additional NO services"
     echo "  -debug              Run Helm installation with --debug"
+    echo "  -vars               List environment variables"
     echo ""
     exit 0
 }
@@ -64,6 +65,7 @@ export ARG_NUKE_EKSONLY=false
 export ARG_NO_APPS=false
 export ARG_DEBUG=false
 export ARG_HELP=false
+export ARG_VARS=false
 
 if [ $# -eq 0 ]; then
   echo ""
@@ -97,6 +99,9 @@ else
       -help)
         ARG_HELP=true
         ;;
+      -vars)
+        ARG_VARS=true
+        ;;
       *)
         echo -e "${RED}Invalid Argument... ${NC}"
         echo ""
@@ -109,6 +114,11 @@ fi
 
 if $ARG_HELP; then
   help
+fi
+
+if $ARG_vars; then
+  ./scripts/vars.sh
+  exit 0
 fi
 
 if [ "$ARG_EKSONLY" = "true" ] || [ "$ARG_EKSONLY_CONTEXT" = "true" ]; then

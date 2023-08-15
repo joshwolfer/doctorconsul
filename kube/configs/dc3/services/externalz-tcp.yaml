@@ -81,3 +81,5 @@ spec:
               value: '90ms'
             - name: 'TIMING_VARIANCE'
               value: '10'
+            - name: 'HTTP_CLIENT_REQUEST_TIMEOUT'
+              value: '3s'
