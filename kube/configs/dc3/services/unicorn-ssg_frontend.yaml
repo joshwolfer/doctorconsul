@@ -59,7 +59,7 @@ spec:
       serviceAccountName: unicorn-ssg-frontend
       containers:
         - name: unicorn-ssg-frontend
-          image: nicholasjackson/fake-service:v0.25.0
+          image: nicholasjackson/fake-service:v0.26.0
           ports:
             - containerPort: 10000
           # readinessProbe:

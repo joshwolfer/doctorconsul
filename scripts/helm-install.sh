@@ -197,6 +197,7 @@ InstallConsulDC4 () {
   fi
 
   echo -e "${GRN}DC4: Create Consul namespace:${NC} $(kubectl --context $KDC4 create namespace consul) \n"
+  echo -e "${GRN}DC4: Create sheol namespace:${NC} $(kubectl --context $KDC4 create namespace sheol) \n"
 
   echo -e "${GRN}DC4: Create secrets for gossip, ACL token, Consul License:${NC} \
   \n$(kubectl --context $KDC4 create secret generic consul-gossip-encryption-key --namespace consul --from-literal=key="$(consul keygen)") \

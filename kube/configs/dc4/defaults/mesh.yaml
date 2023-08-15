@@ -1,0 +1,11 @@
+apiVersion: consul.hashicorp.com/v1alpha1
+kind: Mesh
+metadata:
+  name: mesh
+  namespace: default                # Must be default - config applies to all namespaces within a partition.
+spec:
+  peering:
+    peerThroughMeshGateways: true
+  transparentProxy:
+    meshDestinationsOnly: true      # Prevents Pods from *mostly* connecting to upstreams that are not in Consul.
+

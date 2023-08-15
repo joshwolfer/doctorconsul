@@ -12,10 +12,10 @@ if $ARG_EKSONLY;
     # export UNICORN_SSG_FRONTEND_UI_ADDR=$(kubectl get svc unicorn-ssg-frontend -nunicorn --context $KDC3 -o json | jq -r '"http://\(.status.loadBalancer.ingress[0].hostname):\(.spec.ports[0].port)"')
 
     # ------------------------------------------
-    #  Wait and Discover SSG Unicorn LB
+    #  (DC3) Wait and Discover SSG Unicorn LB
     # ------------------------------------------
 
-    while true; do    
+    while true; do
       SSG_HOSTNAME=$(kubectl get svc unicorn-ssg-frontend -n unicorn --context $KDC3 -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
       SSG_PORT=$(kubectl get svc unicorn-ssg-frontend -n unicorn --context $KDC3 -o jsonpath='{.spec.ports[0].port}')
 
@@ -29,7 +29,7 @@ if $ARG_EKSONLY;
     done
 
     # ------------------------------------------
-    #  Wait and Discover Externalz TCP LB
+    #  (DC3) Wait and Discover Externalz TCP LB
     # ------------------------------------------
 
     while true; do
@@ -45,7 +45,7 @@ if $ARG_EKSONLY;
     done
 
     # ------------------------------------------
-    #  Wait and Discover Externalz HTTP LB
+    #  (DC3) Wait and Discover Externalz HTTP LB
     # ------------------------------------------
 
     while true; do
@@ -60,6 +60,10 @@ if $ARG_EKSONLY;
       sleep 2
     done
 
+    # ------------------------------------------
+    #  (DC3) Wait and Consul API GW
+    # ------------------------------------------
+
     while true; do
         DC3_CONSUL_API_GATEWAY_HOSTNAME=$(kubectl get svc consul-api-gateway -nconsul --context $KDC3 -o json | jq -r '.status.loadBalancer.ingress[0].hostname')
 
@@ -69,6 +73,49 @@ if $ARG_EKSONLY;
         fi
 
         echo "Waiting for the consul-api-gateway load balancer to get an ingress hostname..."
+        sleep 2
+    done
+
+    # ------------------------------------------
+    #  Wait for Sheol services
+    # ------------------------------------------
+
+    # Wait for Sheol-App
+    while true; do
+        DC4_SHEOL_HOSTNAME=$(kubectl get svc sheol-app -nsheol --context $KDC4 -o json | jq -r '.status.loadBalancer.ingress[0].hostname')
+
+        if [ ! -z "$DC4_SHEOL_HOSTNAME" ]; then
+            DC4_SHEOL_ADDR=http://$DC4_SHEOL_HOSTNAME
+            break
+        fi
+
+        echo "Waiting for the sheol-app load balancer to get an ingress hostname..."
+        sleep 2
+    done
+
+    # Wait for Sheol-App1
+    while true; do
+        DC4_SHEOL1_HOSTNAME=$(kubectl get svc sheol-app1 -nsheol-app1 --context $KDC4 -o json | jq -r '.status.loadBalancer.ingress[0].hostname')
+
+        if [ ! -z "$DC4_SHEOL1_HOSTNAME" ]; then
+            DC4_SHEOL1_ADDR=http://$DC4_SHEOL1_HOSTNAME
+            break
+        fi
+
+        echo "Waiting for the sheol-app1 load balancer to get an ingress hostname..."
+        sleep 2
+    done
+
+    # Wait for Sheol-App2
+    while true; do
+        DC4_SHEOL2_HOSTNAME=$(kubectl get svc sheol-app2 -nsheol-app2 --context $KDC4 -o json | jq -r '.status.loadBalancer.ingress[0].hostname')
+
+        if [ ! -z "$DC4_SHEOL2_HOSTNAME" ]; then
+            DC4_SHEOL2_ADDR=http://$DC4_SHEOL2_HOSTNAME
+            break
+        fi
+
+        echo "Waiting for the sheol-app2 load balancer to get an ingress hostname..."
         sleep 2
     done
 
@@ -96,6 +143,11 @@ ${GRN}Externalz-tcp UI address: ${NC}
  ${YELL}Externalz-tcp:${NC} $DC3_EXTERNALZ_TCP_ADDR
  ${YELL}Externalz-tcp:${NC} $DC3_EXTERNALZ_HTTP_ADDR
 
+${GRN}Sheol App UI addresses: ${NC}
+ ${YELL}Sheol-App:${NC} $DC4_SHEOL_ADDR:8004/ui/
+ ${YELL}Sheol-App1:${NC} $DC4_SHEOL1_ADDR:8005/ui/
+ ${YELL}Sheol-App2:${NC} $DC4_SHEOL2_ADDR:8006/ui/
+
 ${GRN}Consul API-GW LB Address: ${NC}
  ${YELL}Consul APIG HTTP Listener:${NC} $DC3_CONSUL_API_GATEWAY_ADDR:1666"
  ${YELL}Consul APIG TCP Listener:${NC} $DC3_CONSUL_API_GATEWAY_ADDR:1667"
@@ -113,6 +165,9 @@ ${GRN}Port forwards to map services / UI to traditional Doctor Consul local port
  kubectl -nexternalz --context $KDC3 port-forward svc/externalz-http 8003:8003 > /dev/null 2>&1 &
  kubectl -nconsul --context $KDC3 port-forward svc/consul-api-gateway 1666:1666 > /dev/null 2>&1 &
  kubectl -nconsul --context $KDC3 port-forward svc/consul-api-gateway 1667:1667 > /dev/null 2>&1 &
+ kubectl -nsheol --context $KDC4 port-forward svc/sheol-app 8004:8004 > /dev/null 2>&1 &
+ kubectl -nsheol-app1 --context $KDC4 port-forward svc/sheol-app1 8005:8005 > /dev/null 2>&1 &
+ kubectl -nsheol-app2 --context $KDC4 port-forward svc/sheol-app2 8006:8006 > /dev/null 2>&1 &
 
 $(printf "${RED}"'Happy Consul'\''ing!!! '"${NC}\n")
 
@@ -144,6 +199,9 @@ ${GRN}Fake Service UI addresses: ${NC}
  ${YELL}Unicorn-SSG-Frontend:${NC} http://localhost:11001/ui/
  ${YELL}Externalz-tcp:${NC} http://127.0.0.1:8002/ui/
  ${YELL}Externalz-http:${NC} http://127.0.0.1:8003/ui/
+ ${YELL}(DC4) sheol-app:${NC} http://127.0.0.1:8004/ui/
+ ${YELL}(DC4) sheol-app1:${NC} http://127.0.0.1:8005/ui/
+ ${YELL}(DC4) sheol-app2:${NC} http://127.0.0.1:8006/ui/
 
 ${GRN}Consul API-GW LB Address: ${NC}
  ${YELL}Consul APIG HTTP Listener:${NC} http://127.0.0.1:1666"

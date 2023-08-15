@@ -57,7 +57,7 @@ spec:
       serviceAccountName: unicorn-backend
       containers:
         - name: unicorn-backend
-          image: nicholasjackson/fake-service:v0.25.0
+          image: nicholasjackson/fake-service:v0.26.0
           # imagePullPolicy: Always       # Probably don't need this
           ports:
             - containerPort: 10002

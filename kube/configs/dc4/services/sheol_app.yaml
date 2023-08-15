@@ -1,16 +1,16 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: externalz-tcp
-  namespace: externalz
+  name: sheol-app
+  namespace: sheol
 
 ---
 
 apiVersion: consul.hashicorp.com/v1alpha1
 kind: ServiceDefaults
 metadata:
-  name: externalz-tcp
-  namespace: externalz
+  name: sheol-app
+  namespace: sheol
 spec:
   protocol: tcp
 
@@ -19,16 +19,20 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: externalz-tcp
-  namespace: externalz
+  name: sheol-app
+  namespace: sheol
+  # annotations:         # This would group each of the services together IF they were in the same namespace. Meh.
+  #   service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+  #   service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "ip"
+  #   service.beta.kubernetes.io/aws-load-balancer-shared: "true"
 spec:
   type: LoadBalancer        # This may not work with k3s, since this was taken from an AKS config
   selector:
-    app: externalz-tcp
+    app: sheol-app
   ports:
-    - name: tcp
+    - name: http
       protocol: TCP
-      port: 8002            # Should be the port the Kube LB will listen on to forward to TCP/10000
+      port: 8004            # Should be the port the Kube LB will listen on to forward to TCP/10000
       targetPort: 10000     # This should line up with the FakeService LISTEN_ADDR: 0.0.0.0:10000
 
 ---
@@ -36,29 +40,29 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: externalz-tcp
-  namespace: externalz
+  name: sheol-app
+  namespace: sheol
   labels:
-    app: externalz-tcp
+    app: sheol-app
     version: v1
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: externalz-tcp
+      app: sheol-app
   template:
     metadata:
       labels:
-        app: externalz-tcp
+        app: sheol-app
       annotations:
         consul.hashicorp.com/connect-inject: 'true'
         consul.hashicorp.com/transparent-proxy: 'true'
-        consul.hashicorp.com/service-tags: 'dc3'
+        consul.hashicorp.com/service-tags: 'dc4'
         consul.hashicorp.com/transparent-proxy-exclude-inbound-ports: "10000"   # Without this exclusion the FakeService UI is shitcanned.
     spec:
-      serviceAccountName: externalz-tcp
+      serviceAccountName: sheol-app
       containers:
-        - name: externalz-tcp
+        - name: sheol-app
           image: nicholasjackson/fake-service:v0.26.0
           ports:
             - containerPort: 10000
@@ -66,20 +70,12 @@ spec:
             - name: 'LISTEN_ADDR'
               value: '0.0.0.0:10000'
             - name: 'UPSTREAM_URIS'
-              value: 'http://example.com, https://example.com, http://www.wolfmansound.com, https://www.wolfmansound.com'
+              value: 'https://github.com:443/, https://api.github.com'
             - name: 'NAME'
-              value: 'externalz-tcp (DC3)'
+              value: 'sheol-app (DC4)'
             - name: 'MESSAGE'
-              value: '<p><strong>The externalz-tcp Application</strong></p>'
+              value: '<p><strong>The sheol-app Application</strong></p>'
             - name: 'SERVER_TYPE'
               value: 'http'
-            - name: 'TIMING_50_PERCENTILE'
-              value: '30ms'
-            - name: 'TIMING_90_PERCENTILE'
-              value: '60ms'
-            - name: 'TIMING_99_PERCENTILE'
-              value: '90ms'
-            - name: 'TIMING_VARIANCE'
-              value: '10'
             - name: 'HTTP_CLIENT_REQUEST_TIMEOUT'
-              value: '3s'
+              value: '2s'

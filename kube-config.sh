@@ -27,7 +27,7 @@ export KDC3_P1="k3d-dc3-p1"
 export KDC4="k3d-dc4"
 export KDC4_P1="k3d-dc4-p1"
 
-export FAKESERVICE_VER="v0.25.0"
+export FAKESERVICE_VER="v0.26.0"
 
 export HELM_CHART_VER=""
 # HELM_CHART_VER="--version 1.2.0-rc1"                # pinned consul-k8s chart version
@@ -116,7 +116,7 @@ if $ARG_HELP; then
   help
 fi
 
-if $ARG_vars; then
+if $ARG_VARS; then
   ./scripts/vars.sh
   exit 0
 fi
@@ -210,6 +210,8 @@ if $ARG_NUKE_EKSONLY; then
   for CONTEXT in "${CONTEXTS[@]}"; do
     kubectl delete namespace externalz --context $CONTEXT
   done
+
+  kubectl delete namespace sheol --context $KDC4
 
   CleanupTempStuff
 
@@ -599,7 +601,7 @@ echo -e "${GRN}DC3 (default): mesh config: ${YELL}Mesh Destinations Only: False 
 #          Unicorn Application
 # ------------------------------------------
 
-./scripts/unicorn-app.sh
+./scripts/app-unicorn.sh
 # Launch script to build out all the Unicorn application components
 
 
@@ -638,14 +640,14 @@ kubectl apply --context $KDC4_P1 -f ./kube/configs/dc4/sameness-groups/dc4-taran
 # ------------------------------------------
 
 echo -e "${YELL}Running the Externalz application script:${NC} ./scripts/externalz-app.sh"
-./scripts/externalz-app.sh
+./scripts/app-externalz.sh
 # Launch the externalz applications script to provision the externalz application that consumes external services
 
 # ------------------------------------------
 #           Terminating Gateway
 # ------------------------------------------
 
-./scripts/terminating-gateway-dc3-default.sh
+./scripts/terminating-gateway.sh
 # Launch TGW
 
 # ==============================================================================================================================

@@ -1,0 +1,12 @@
+apiVersion: consul.hashicorp.com/v1alpha1
+kind: ServiceIntentions
+metadata:
+  name: sheol-ext1
+  namespace: sheol-app1
+spec:
+  destination:
+    name: sheol-ext1
+  sources:
+    - name: sheol-app1
+      namespace: sheol-app1
+      action: allow

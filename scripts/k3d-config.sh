@@ -226,6 +226,9 @@ kubectl apply --context=$KDC3_P1 -f ./kube/calico.yaml) &
     -p "8200:8200@loadbalancer" \
     -p "12000:8000" \
     -p "9092:9090" \
+    -p "8004:8004" \
+    -p "8005:8005" \
+    -p "8006:8006" \
     --k3s-arg '--flannel-backend=none@server:*' \
     --registry-use k3d-doctorconsul.localhost:12345 \
     --k3s-arg="--disable=traefik@server:0" && \
@@ -234,6 +237,9 @@ kubectl apply --context=$KDC4 -f ./kube/calico.yaml) &
 #  12000 > 8000 - whatever app UI
 #  local 8503 > 443 - Consul UI
 #  8200 > 8200 - Vault API
+    # -p "8004:8004" sheol-app
+    # -p "8005:8005" sheol-app1
+    # -p "8006:8006" sheol-app2
 
 # ------------------------------------------
 #            DC4-P1 taranis

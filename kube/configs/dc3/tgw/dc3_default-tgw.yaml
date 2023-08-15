@@ -1,0 +1,11 @@
+apiVersion: consul.hashicorp.com/v1alpha1
+kind: TerminatingGateway
+metadata:
+  name: terminating-gateway
+  namespace: default
+spec:
+  services:
+    - name: '*'                     # Testing wildcards and it works fine. I need to test wildcards on the non-default NS next.
+      namespace: default
+    # - name: example-tcp
+    # - name: example-http

@@ -1,0 +1,19 @@
+apiVersion: consul.hashicorp.com/v1alpha1
+kind: TerminatingGateway
+metadata:
+  name: sheol-tgw
+  namespace: sheol
+spec:
+  services:
+    # - name: '*'
+    #   namespace: sheol
+    # - name: '*'
+    #   namespace: sheol-app1
+    # - name: '*'
+    #   namespace: sheol-app2
+    - name: sheol-ext
+      namespace: sheol
+    - name: sheol-ext1
+      namespace: sheol-app1
+    - name: sheol-ext2
+      namespace: sheol-app2

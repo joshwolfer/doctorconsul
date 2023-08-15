@@ -88,6 +88,14 @@ ui:
     baseURL: http://prometheus-server
     # baseURL: http://192.169.7.200:9090
 
+terminatingGateways:
+  enabled: true
+  defaults:
+    replicas: 1
+  gateways:
+  - name: sheol-tgw
+    consulNamespace: "sheol"
+
 prometheus:
   enabled: true
 

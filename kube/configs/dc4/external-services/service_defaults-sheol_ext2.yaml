@@ -1,0 +1,11 @@
+apiVersion: consul.hashicorp.com/v1alpha1
+kind: ServiceDefaults
+metadata:
+  name: sheol-ext2
+  namespace: sheol-app2
+spec:
+  protocol: tcp
+  destination:
+    addresses:
+      - www.google.com
+    port: 443
