@@ -9,8 +9,8 @@ services:
   #   container_name: vault-server
   #   restart: always
   #   # volumes:
-  #   #  - ./agent-configs/server1-dc1.hcl:/consul/config/server1-dc1.hcl
-  #   #  - ./certs/:/consul/config/certs/
+  #   #  - ./docker-configs/agent-configs/server1-dc1.hcl:/consul/config/server1-dc1.hcl
+  #   #  - ./docker-configs/certs/:/consul/config/certs/
   #   networks:
   #     - consul
   #   ports:
@@ -27,7 +27,7 @@ services:
     ports:
       - 9090:9090
     volumes:
-      - ./prometheus:/etc/prometheus
+      - ./docker-configs/prometheus/:/etc/prometheus
       - prometheus-data:/prometheus
     command: --config.file=/etc/prometheus/prometheus.yml
     networks:
@@ -41,8 +41,8 @@ services:
     container_name: consul-server1-dc1
     restart: always
     volumes:
-     - ./agent-configs/server1-dc1.hcl:/consul/config/server1-dc1.hcl
-     - ./certs/:/consul/config/certs/
+     - ./docker-configs/agent-configs/server1-dc1.hcl:/consul/config/server1-dc1.hcl
+     - ./docker-configs/certs/:/consul/config/certs/
      - ./license:/consul/config/license
     networks:
       dc1:
@@ -84,7 +84,7 @@ services:
       # "-l", "debug"]
     volumes:
       - ./license:/consul/config/license
-      - ./certs/:/consul/config/certs/
+      - ./docker-configs/certs/:/consul/config/certs/
     ports:
       - "19006:19000"
     networks:
@@ -117,7 +117,7 @@ services:
       # "-l", "debug"]
     volumes:
       - ./license:/consul/config/license
-      - ./certs/:/consul/config/certs/
+      - ./docker-configs/certs/:/consul/config/certs/
     ports:
       - "19001:19000"
     networks:
@@ -136,10 +136,10 @@ services:
     container_name: consul-client-dc1-alpha
     restart: always
     volumes:
-     - ./agent-configs/client-dc1-alpha.hcl:/consul/config/client-dc1-alpha.hcl
-     - ./certs/:/consul/config/certs/
-     - ./configs/services/dc1-josh-long.hcl:/consul/config/services-dc1-josh-long.hcl
-     - ./configs/services/dc1-josh.hcl:/consul/config/services-dc1-josh.hcl
+     - ./docker-configs/agent-configs/client-dc1-alpha.hcl:/consul/config/client-dc1-alpha.hcl
+     - ./docker-configs/certs/:/consul/config/certs/
+     - ./docker-configs/configs/services/dc1-josh-long.hcl:/consul/config/services-dc1-josh-long.hcl
+     - ./docker-configs/configs/services/dc1-josh.hcl:/consul/config/services-dc1-josh.hcl
     networks:
       dc1:
         ipv4_address: 10.5.0.10
@@ -151,9 +151,9 @@ services:
     container_name: consul-client-dc1-charlie-ap1
     restart: always
     volumes:
-     - ./agent-configs/client-dc1-charlie-ap1.hcl:/consul/config/dc1-client-charlie-ap1.hcl
-     - ./certs/:/consul/config/certs/
-     - ./configs/services/donkey-ap1.hcl:/consul/config/services-donkey-ap1.hcl
+     - ./docker-configs/agent-configs/client-dc1-charlie-ap1.hcl:/consul/config/dc1-client-charlie-ap1.hcl
+     - ./docker-configs/certs/:/consul/config/certs/
+     - ./docker-configs/configs/services/donkey-ap1.hcl:/consul/config/services-donkey-ap1.hcl
     networks:
       dc1:
         ipv4_address: 10.5.0.11
@@ -165,8 +165,8 @@ services:
     container_name: consul-client-dc1-unicorn
     restart: always
     volumes:
-     - ./agent-configs/client-dc1-unicorn.hcl:/consul/config/client-dc1-unicorn.hcl
-     - ./certs/:/consul/config/certs/
+     - ./docker-configs/agent-configs/client-dc1-unicorn.hcl:/consul/config/client-dc1-unicorn.hcl
+     - ./docker-configs/certs/:/consul/config/certs/
     networks:
       dc1:
         ipv4_address: 10.5.0.12
@@ -178,9 +178,9 @@ services:
     container_name: consul-client-dc1-echo-proj1
     restart: always
     volumes:
-     - ./agent-configs/client-dc1-echo-proj1.hcl:/consul/config/client-dc1-echo-proj1.hcl
-     - ./certs/:/consul/config/certs/
-     - ./configs/services/dc1-proj1-baphomet.hcl:/consul/config/services-dc1-proj1-baphomet.hcl
+     - ./docker-configs/agent-configs/client-dc1-echo-proj1.hcl:/consul/config/client-dc1-echo-proj1.hcl
+     - ./docker-configs/certs/:/consul/config/certs/
+     - ./docker-configs/configs/services/dc1-proj1-baphomet.hcl:/consul/config/services-dc1-proj1-baphomet.hcl
     networks:
       dc1:
         ipv4_address: 10.5.0.13
@@ -228,8 +228,8 @@ services:
       SERVICE_CONFIG: /consul/config/services-dc1-web_v1.hcl
     volumes:
       - ./license:/consul/config/license
-      - ./certs/:/consul/config/certs/
-      - "./configs/services/dc1-web_v1.hcl:/consul/config/services-dc1-web_v1.hcl"
+      - ./docker-configs/certs/:/consul/config/certs/
+      - "./docker-configs/configs/services/dc1-web_v1.hcl:/consul/config/services-dc1-web_v1.hcl"
     command: ["consul", "connect", "envoy",
       "-sidecar-for", "web-v1",
       "-partition=default",
@@ -264,8 +264,8 @@ services:
       SERVICE_CONFIG: /consul/config/services-dc1-web-upstream_v1.hcl
     volumes:
       - ./license:/consul/config/license
-      - ./certs/:/consul/config/certs/
-      - "./configs/services/dc1-web-upstream_v1.hcl:/consul/config/services-dc1-web-upstream_v1.hcl"
+      - ./docker-configs/certs/:/consul/config/certs/
+      - "./docker-configs/configs/services/dc1-web-upstream_v1.hcl:/consul/config/services-dc1-web-upstream_v1.hcl"
     command: ["consul", "connect", "envoy",
       "-sidecar-for", "web-upstream-v1",
       "-partition=default",
@@ -303,8 +303,8 @@ services:
       SERVICE_CONFIG: /consul/config/services-dc1-unicorn-frontend.hcl
     volumes:
       - ./license:/consul/config/license
-      - ./certs/:/consul/config/certs/
-      - "./configs/services/dc1-unicorn-frontend.hcl:/consul/config/services-dc1-unicorn-frontend.hcl"
+      - ./docker-configs/certs/:/consul/config/certs/
+      - "./docker-configs/configs/services/dc1-unicorn-frontend.hcl:/consul/config/services-dc1-unicorn-frontend.hcl"
     command: ["consul", "connect", "envoy",
       "-sidecar-for", "unicorn-frontend-1",
       "-partition=unicorn", "-namespace=frontend",
@@ -341,8 +341,8 @@ services:
       SERVICE_CONFIG: /consul/config/services-dc1-unicorn-backend.hcl
     volumes:
       - ./license:/consul/config/license
-      - ./certs/:/consul/config/certs/
-      - "./configs/services/dc1-unicorn-backend.hcl:/consul/config/services-dc1-unicorn-backend.hcl"
+      - ./docker-configs/certs/:/consul/config/certs/
+      - "./docker-configs/configs/services/dc1-unicorn-backend.hcl:/consul/config/services-dc1-unicorn-backend.hcl"
     command: ["consul", "connect", "envoy",
       "-sidecar-for", "unicorn-backend-1",
       "-partition=unicorn", "-namespace=backend",
@@ -359,8 +359,8 @@ services:
     container_name: consul-server1-dc2
     restart: always
     volumes:
-     - ./agent-configs/server1-dc2.hcl:/consul/config/server1-dc2.hcl
-     - ./certs/:/consul/config/certs/
+     - ./docker-configs/agent-configs/server1-dc2.hcl:/consul/config/server1-dc2.hcl
+     - ./docker-configs/certs/:/consul/config/certs/
      - ./license:/consul/config/license
     networks:
       dc2:
@@ -400,7 +400,7 @@ services:
       # "-l", "debug"]
     volumes:
       - ./license:/consul/config/license
-      - ./certs/:/consul/config/certs/
+      - ./docker-configs/certs/:/consul/config/certs/
     ports:
       - "19007:19000"
     networks:
@@ -433,7 +433,7 @@ services:
       # "-l", "debug"]
     volumes:
       - ./license:/consul/config/license
-      - ./certs/:/consul/config/certs/
+      - ./docker-configs/certs/:/consul/config/certs/
     ports:
       - "19008:19000"
     networks:
@@ -466,7 +466,7 @@ services:
       # "-l", "debug"]
     volumes:
       - ./license:/consul/config/license
-      - ./certs/:/consul/config/certs/
+      - ./docker-configs/certs/:/consul/config/certs/
     ports:
       - "19009:19000"
     networks:
@@ -485,9 +485,9 @@ services:
     container_name: consul-client-dc2-bravo
     restart: always
     volumes:
-     - ./agent-configs/client-dc2-bravo.hcl:/consul/config/client-dc2-bravo.hcl
-     - ./certs/:/consul/config/certs/
-     - ./configs/services/dc2-josh.hcl:/consul/config/services-dc2-josh.hcl
+     - ./docker-configs/agent-configs/client-dc2-bravo.hcl:/consul/config/client-dc2-bravo.hcl
+     - ./docker-configs/certs/:/consul/config/certs/
+     - ./docker-configs/configs/services/dc2-josh.hcl:/consul/config/services-dc2-josh.hcl
     networks:
       dc2:
         ipv4_address: 10.6.0.10
@@ -499,8 +499,8 @@ services:
     container_name: consul-client-dc2-foxtrot
     restart: always
     volumes:
-     - ./agent-configs/client-dc2-foxtrot.hcl:/consul/config/client-dc2-foxtrot.hcl
-     - ./certs/:/consul/config/certs/
+     - ./docker-configs/agent-configs/client-dc2-foxtrot.hcl:/consul/config/client-dc2-foxtrot.hcl
+     - ./docker-configs/certs/:/consul/config/certs/
     networks:
       dc2:
         ipv4_address: 10.6.0.11
@@ -512,8 +512,8 @@ services:
     container_name: consul-client-dc2-unicorn
     restart: always
     volumes:
-     - ./agent-configs/client-dc2-unicorn.hcl:/consul/config/client-dc2-unicorn.hcl
-     - ./certs/:/consul/config/certs/
+     - ./docker-configs/agent-configs/client-dc2-unicorn.hcl:/consul/config/client-dc2-unicorn.hcl
+     - ./docker-configs/certs/:/consul/config/certs/
     networks:
       dc2:
         ipv4_address: 10.6.0.12
@@ -551,8 +551,8 @@ services:
       SERVICE_CONFIG: /consul/config/services-dc2-web-chunky_v1.hcl
     volumes:
       - ./license:/consul/config/license
-      - ./certs/:/consul/config/certs/
-      - ./configs/services/dc2-web-chunky_v1.hcl:/consul/config/services-dc2-web-chunky_v1.hcl
+      - ./docker-configs/certs/:/consul/config/certs/
+      - ./docker-configs/configs/services/dc2-web-chunky_v1.hcl:/consul/config/services-dc2-web-chunky_v1.hcl
     command: ["consul", "connect", "envoy",
       "-sidecar-for", "web-chunky-v1",
       "-partition=chunky",
@@ -589,8 +589,8 @@ services:
       SERVICE_CONFIG: /consul/config/services-dc2-unicorn-backend.hcl
     volumes:
       - ./license:/consul/config/license
-      - ./certs/:/consul/config/certs/
-      - "./configs/services/dc2-unicorn-backend.hcl:/consul/config/services-dc2-unicorn-backend.hcl"
+      - ./docker-configs/certs/:/consul/config/certs/
+      - "./docker-configs/configs/services/dc2-unicorn-backend.hcl:/consul/config/services-dc2-unicorn-backend.hcl"
     command: ["consul", "connect", "envoy",
       "-sidecar-for", "unicorn-backend-1",
       # "--ignore-envoy-compatibility",
