@@ -458,7 +458,7 @@ DockerFunction () {
         case $option in
             "Reload Docker Compose (Root Tokens)")
                 echo ""
-                echo -e "${YELL}docker-compose --env-file ./docker_vars/acl-root.env up -d ${NC}"
+                echo -e "${YELL}docker-compose --env-file ./docker-configs/docker_vars/acl-root.env up -d ${NC}"
                 echo ""
                 docker-compose --env-file docker_vars/acl-root.env up -d
                 echo ""
@@ -467,7 +467,7 @@ DockerFunction () {
                 ;;
             "Reload Docker Compose (Secure Tokens)")
                 echo ""
-                echo -e "${YELL}docker-compose --env-file ./docker_vars/acl-secure.env up -d ${NC}"
+                echo -e "${YELL}docker-compose --env-file ./docker-configs/docker_vars/acl-secure.env up -d ${NC}"
                 echo ""
                 docker-compose --env-file docker_vars/acl-secure.env up -d
                 echo ""
@@ -476,7 +476,7 @@ DockerFunction () {
                 ;;
             "Reload Docker Compose (Custom Tokens)")
                 echo ""
-                echo -e "${YELL}docker-compose --env-file ./docker_vars/acl-custom.env up -d ${NC}"
+                echo -e "${YELL}docker-compose --env-file ./docker-configs/docker_vars/acl-custom.env up -d ${NC}"
                 echo ""
                 docker-compose --env-file docker_vars/acl-custom.env up -d
                 echo ""
@@ -509,7 +509,7 @@ UpdateFakeService () {
         if [[ $user_input =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             export FAKESERVICE_VERSION="$user_input"
             find ./kube/configs/dc*/services/ -type f -name "*.yaml" -exec grep -l "nicholasjackson/fake-service:v[0-9]*\.[0-9]*\.[0-9]*" {} \; -exec sed -i "s|\(nicholasjackson/fake-service:\)v[0-9]*\.[0-9]*\.[0-9]*|\1v$FAKESERVICE_VERSION|g" {} \;
-            find ./docker_vars/ -type f -name "*.env" -exec grep -l "nicholasjackson/fake-service:v[0-9]*\.[0-9]*\.[0-9]*" {} \; -exec sed -i "s|\(nicholasjackson/fake-service:\)v[0-9]*\.[0-9]*\.[0-9]*|\1v$FAKESERVICE_VERSION|g" {} \;
+            find ./docker-configs/docker_vars/ -type f -name "*.env" -exec grep -l "nicholasjackson/fake-service:v[0-9]*\.[0-9]*\.[0-9]*" {} \; -exec sed -i "s|\(nicholasjackson/fake-service:\)v[0-9]*\.[0-9]*\.[0-9]*|\1v$FAKESERVICE_VERSION|g" {} \;
             find ./k3d-config.sh -exec grep -l "IMAGE_FAKESERVICE=" {} \; -exec sed -i "s|\(nicholasjackson/fake-service:\)v[0-9]*\.[0-9]*\.[0-9]*|\1v$FAKESERVICE_VERSION|g" {} \;
 
             echo ""
@@ -533,7 +533,7 @@ UpdateConsul () {
         if [[ $user_input =~ ^[0-9]+\.[0-9]+\.[0-9]+-ent$ ]]; then
             export CONSUL_VERSION="$user_input"
             find ./kube/helm/dc* -type f -name "*.yaml" -exec grep -l "image: hashicorp/consul-enterprise:" {} \; -exec sed -E -i "s|(image: hashicorp/consul-enterprise:)[0-9]+\.[0-9]+\.[0-9]+-ent|\1$CONSUL_VERSION|g" {} \;
-            find ./docker_vars/ -type f -name "*.env" -exec grep -l "CONSUL_IMAGE" {} \; -exec sed -E -i "s|(hashicorp/consul-enterprise:)[0-9]+\.[0-9]+\.[0-9]+-ent|\1$CONSUL_VERSION|g" {} \;
+            find ./docker-configs/docker_vars/ -type f -name "*.env" -exec grep -l "CONSUL_IMAGE" {} \; -exec sed -E -i "s|(hashicorp/consul-enterprise:)[0-9]+\.[0-9]+\.[0-9]+-ent|\1$CONSUL_VERSION|g" {} \;
             echo ""
             echo "Consul is now set to: ${YELL}$CONSUL_VERSION${NC}"
             echo ""
@@ -553,7 +553,7 @@ UpdateConvoy () {
         # Validate the user input against the regex pattern
         if [[ $user_input =~ ^v[0-9]+\.[0-9]+\.[0-9]+-ent_v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             export CONVOY_VERSION="$user_input"
-            find ./docker_vars/ -type f -name "*.env" -exec grep -l "CONVOY_IMAGE" {} \; -exec sed -E -i "s|(joshwolfer/consul-envoy:)v[0-9]+\.[0-9]+\.[0-9]+-ent_v[0-9]+\.[0-9]+\.[0-9]+|\1$CONVOY_VERSION|g" {} \;
+            find ./docker-configs/docker_vars/ -type f -name "*.env" -exec grep -l "CONVOY_IMAGE" {} \; -exec sed -E -i "s|(joshwolfer/consul-envoy:)v[0-9]+\.[0-9]+\.[0-9]+-ent_v[0-9]+\.[0-9]+\.[0-9]+|\1$CONVOY_VERSION|g" {} \;
             echo ""
             echo "Convoy is now set to: ${YELL}$CONVOY_VERSION${NC}"
             echo ""
@@ -576,9 +576,9 @@ ShowComponentVersions () {
     CONSUL_KUBE_CUR_VERSION=$(egrep 'image: hashicorp/consul-enterprise' ./kube/helm/dc3-helm-values.yaml | egrep -o '[0-9]+\.[0-9]+\.[0-9]+')
     FAKESERVICE_KUBE_CUR_VERSION=$(egrep -o 'v[0-9]+\.[0-9]+\.[0-9]+' ./kube/configs/dc3/services/unicorn-frontend.yaml | cut -c 2-)
 
-    CONSUL_DOCKER_CUR_VERSION="$(egrep 'CONSUL_IMAGE' ./docker_vars/acl-custom.env | egrep -o '[0-9]+\.[0-9]+\.[0-9]+')"
-    FAKESERVICE_DOCKER_CUR_VERSION=$(egrep 'FAKESERVICE_IMAGE' ./docker_vars/acl-custom.env | egrep -o 'v[0-9]+\.[0-9]+\.[0-9]+' | cut -c 2-)
-    CONVOY_DOCKER_CUR_VERSION="$(egrep 'CONVOY_IMAGE' ./docker_vars/acl-custom.env | egrep -o 'v[0-9]+\.[0-9]+\.[0-9]+-ent_v[0-9]+\.[0-9]+\.[0-9]+')"
+    CONSUL_DOCKER_CUR_VERSION="$(egrep 'CONSUL_IMAGE' ./docker-configs/docker_vars/acl-custom.env | egrep -o '[0-9]+\.[0-9]+\.[0-9]+')"
+    FAKESERVICE_DOCKER_CUR_VERSION=$(egrep 'FAKESERVICE_IMAGE' ./docker-configs/docker_vars/acl-custom.env | egrep -o 'v[0-9]+\.[0-9]+\.[0-9]+' | cut -c 2-)
+    CONVOY_DOCKER_CUR_VERSION="$(egrep 'CONVOY_IMAGE' ./docker-configs/docker_vars/acl-custom.env | egrep -o 'v[0-9]+\.[0-9]+\.[0-9]+-ent_v[0-9]+\.[0-9]+\.[0-9]+')"
 
     echo -e "${YELL}Kubernetes          ${NC} | ${YELL}Docker Compose${NC}"
     echo ""

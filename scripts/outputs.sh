@@ -6,63 +6,58 @@ set -e
 #                                                      Outputs
 # ==============================================================================================================================
 
+if $ARG_NO_APPS;
+  then
+
+echo -e "$(cat << EOF
+${RED} Consul is installed. Exiting before applications are installed! ${NC}
+
+${GRN}
+------------------------------------------
+  No Installed Apps (Kube Clusters only)
+------------------------------------------${NC}
+
+${GRN}Consul UI Addresses: ${NC}
+ ${YELL}DC3${NC}: http://$DC3_LB_IP:8500
+ ${YELL}DC4${NC}: http://$DC4_LB_IP:8500
+
+${RED}Don't forget to login to the UI using token${NC}: 'root'
+
+${GRN}Export ENV Variables ${NC}
+ export DC3=http://$DC3_LB_IP:8500
+ export DC4=http://$DC4_LB_IP:8500
+
+ KDC3=k3d-dc3
+ KDC3_P1=k3d-dc3-p1
+ KDC4=k3d-dc4
+ KDC4_P1=k3d-dc4-p1
+
+${GRN}Port forwards to map UI to traditional Doctor Consul local ports: ${NC}
+ kubectl -n consul --context $KDC3 port-forward svc/consul-expose-servers 8502:8501 > /dev/null 2>&1 &
+ kubectl -n consul --context $KDC4 port-forward svc/consul-expose-servers 8503:8501 > /dev/null 2>&1 &
+
+${RED}Happy Consul'ing!!! ${NC}
+
+Before running ${YELL}terraform destroy${NC}, first run ${YELL}./kill.sh -eksonly${NC} to prevent AWS from horking. Trust me.
+
+You can now start manually provisioning the applications in the kube-config.sh starting at line: $(grep -n "Install Unicorn Application" ./kube-config.sh | cut -f1 -d: | awk 'NR==2')
+EOF
+)"
+
+exit 0
+
+fi
+
 if $ARG_EKSONLY;
   then
     export UNICORN_FRONTEND_UI_ADDR=$(kubectl get svc unicorn-frontend -nunicorn --context $KDC3 -o json | jq -r '"http://\(.status.loadBalancer.ingress[0].hostname):\(.spec.ports[0].port)"')
     # export UNICORN_SSG_FRONTEND_UI_ADDR=$(kubectl get svc unicorn-ssg-frontend -nunicorn --context $KDC3 -o json | jq -r '"http://\(.status.loadBalancer.ingress[0].hostname):\(.spec.ports[0].port)"')
 
     # # ------------------------------------------
-    # #  (DC3) Wait and Discover SSG Unicorn LB
-    # # ------------------------------------------
-
-    # while true; do
-    #   SSG_HOSTNAME=$(kubectl get svc unicorn-ssg-frontend -n unicorn --context $KDC3 -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-    #   SSG_PORT=$(kubectl get svc unicorn-ssg-frontend -n unicorn --context $KDC3 -o jsonpath='{.spec.ports[0].port}')
-
-    #   if [ ! -z "$SSG_HOSTNAME" ]; then
-    #     UNICORN_SSG_FRONTEND_UI_ADDR=http://$SSG_HOSTNAME:$SSG_PORT/ui/
-    #     break
-    #   fi
-
-    #   echo "Waiting for the SSG load balancer to get an ingress hostname..."
-    #   sleep 2
-    # done
-
-    # # ------------------------------------------
-    # #  (DC3) Wait and Discover Externalz TCP LB
-    # # ------------------------------------------
-
-    # while true; do
-    #   DC3_EXTERNALZ_TCP_HOSTNAME=$(kubectl get svc externalz-tcp -nexternalz --context $KDC3 -o json | jq -r '.status.loadBalancer.ingress[0].hostname')
-
-    #   if [ ! -z "$DC3_EXTERNALZ_TCP_HOSTNAME" ]; then
-    #     DC3_EXTERNALZ_TCP_ADDR=http://$DC3_EXTERNALZ_TCP_HOSTNAME:8002/ui/
-    #     break
-    #   fi
-
-    #   echo "Waiting for the externalz-tcp load balancer to get an ingress hostname..."
-    #   sleep 2
-    # done
-
-    # # ------------------------------------------
-    # #  (DC3) Wait and Discover Externalz HTTP LB
-    # # ------------------------------------------
-
-    # while true; do
-    #   DC3_EXTERNALZ_HTTP_HOSTNAME=$(kubectl get svc externalz-http -nexternalz --context $KDC3 -o json | jq -r '.status.loadBalancer.ingress[0].hostname')
-
-    #   if [ ! -z "$DC3_EXTERNALZ_HTTP_HOSTNAME" ]; then
-    #     DC3_EXTERNALZ_HTTP_ADDR=http://$DC3_EXTERNALZ_HTTP_HOSTNAME:8003/ui/
-    #     break
-    #   fi
-
-    #   echo "Waiting for the externalz-http load balancer to get an ingress hostname..."
-    #   sleep 2
-    # done
-
-    # # ------------------------------------------
     # #  (DC3) Wait and Consul API GW
     # # ------------------------------------------
+
+    # APIG has two ports, can't use the wait_for_service() function
 
     while true; do
         DC3_CONSUL_API_GATEWAY_HOSTNAME=$(kubectl get svc consul-api-gateway -nconsul --context $KDC3 -o json | jq -r '.status.loadBalancer.ingress[0].hostname')
@@ -75,49 +70,6 @@ if $ARG_EKSONLY;
         echo "Waiting for the consul-api-gateway load balancer to get an ingress hostname..."
         sleep 2
     done
-
-    # # ------------------------------------------
-    # #  Wait for Sheol services
-    # # ------------------------------------------
-
-    # # Wait for Sheol-App
-    # while true; do
-    #     DC4_SHEOL_HOSTNAME=$(kubectl get svc sheol-app -nsheol --context $KDC4 -o json | jq -r '.status.loadBalancer.ingress[0].hostname')
-
-    #     if [ ! -z "$DC4_SHEOL_HOSTNAME" ]; then
-    #         DC4_SHEOL_ADDR=http://$DC4_SHEOL_HOSTNAME
-    #         break
-    #     fi
-
-    #     echo "Waiting for the sheol-app load balancer to get an ingress hostname..."
-    #     sleep 2
-    # done
-
-    # # Wait for Sheol-App1
-    # while true; do
-    #     DC4_SHEOL1_HOSTNAME=$(kubectl get svc sheol-app1 -nsheol-app1 --context $KDC4 -o json | jq -r '.status.loadBalancer.ingress[0].hostname')
-
-    #     if [ ! -z "$DC4_SHEOL1_HOSTNAME" ]; then
-    #         DC4_SHEOL1_ADDR=http://$DC4_SHEOL1_HOSTNAME
-    #         break
-    #     fi
-
-    #     echo "Waiting for the sheol-app1 load balancer to get an ingress hostname..."
-    #     sleep 2
-    # done
-
-    # # Wait for Sheol-App2
-    # while true; do
-    #     DC4_SHEOL2_HOSTNAME=$(kubectl get svc sheol-app2 -nsheol-app2 --context $KDC4 -o json | jq -r '.status.loadBalancer.ingress[0].hostname')
-
-    #     if [ ! -z "$DC4_SHEOL2_HOSTNAME" ]; then
-    #         DC4_SHEOL2_ADDR=http://$DC4_SHEOL2_HOSTNAME
-    #         break
-    #     fi
-
-    #     echo "Waiting for the sheol-app2 load balancer to get an ingress hostname..."
-    #     sleep 2
-    # done
 
     # Function to wait for service to get its ingress hostname
     wait_for_service() {

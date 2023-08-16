@@ -504,40 +504,8 @@ consul peering establish -name dc3-default -partition taranis -http-addr="$DC4" 
 
 if $ARG_NO_APPS;
   then
-echo -e "$(cat << EOF
-${RED} Consul is installed. Exiting before applications are installed! ${NC}
-
-${GRN}
-------------------------------------------
-         EKSOnly Outputs (No Apps)
-------------------------------------------${NC}
-
-${GRN}Consul UI Addresses: ${NC}
- ${YELL}DC3${NC}: http://$DC3_LB_IP:8500
- ${YELL}DC4${NC}: http://$DC4_LB_IP:8500
-
-${RED}Don't forget to login to the UI using token${NC}: 'root'
-
-${GRN}Export ENV Variables ${NC}
- export DC3=http://$DC3_LB_IP:8500
- export DC4=http://$DC4_LB_IP:8500
-
- KDC3=k3d-dc3
- KDC3_P1=k3d-dc3-p1
- KDC4=k3d-dc4
- KDC4_P1=k3d-dc4-p1
-
-${GRN}Port forwards to map UI to traditional Doctor Consul local ports: ${NC}
- kubectl -n consul --context $KDC3 port-forward svc/consul-expose-servers 8502:8501 > /dev/null 2>&1 &
- kubectl -n consul --context $KDC4 port-forward svc/consul-expose-servers 8503:8501 > /dev/null 2>&1 &
-
-${RED}Happy Consul'ing!!! ${NC}
-
-Before running ${YELL}terraform destroy${NC}, first run ${YELL}./kill.sh -eksonly${NC} to prevent AWS from horking. Trust me.
-
-You can now start manually provisioning the applications in the kube-config.sh starting at line: $(grep -n "Install Unicorn Application" ./kube-config.sh | cut -f1 -d: | awk 'NR==2')
-EOF
-)"
+    ./scripts/outputs.sh
+    # If No apps should be installed, display the
     exit 0
 fi
 

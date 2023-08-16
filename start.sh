@@ -15,7 +15,7 @@ if [[ "$*" == *"help"* ]]
     echo "Options:"
     echo "  [DEFAULT]   Launch all agents and services with ACL tokens (least privileges)."
     echo "  -root       Launch all agents and services with root tokens"
-    echo "  -custom     Launch all agents and services with a custom token config (docker_vars/acl-custom.env)"
+    echo "  -custom     Launch all agents and services with a custom token config (docker-configs/docker_vars/acl-custom.env)"
     echo ""
     exit 0
 fi
@@ -71,38 +71,38 @@ echo -e "${NC}"
 
 if [[ "$*" == *"-root"* ]]
   then
-    echo -e "${YELL}docker-compose --env-file ./docker_vars/acl-root.env up ${NC}"
+    echo -e "${YELL}docker-compose --env-file ./docker-configs/docker_vars/acl-root.env up ${NC}"
     echo "=========================================="
-    cat ./docker_vars/acl-root.env
+    cat ./docker-configs/docker_vars/acl-root.env
     echo ""
     echo "=========================================="
-    docker-compose --env-file docker_vars/acl-root.env up 
-    # docker compose --env-file docker_vars/acl-root.env convert | vsc yaml
+    docker-compose --env-file docker-configs/docker_vars/acl-root.env up
+    # docker compose --env-file docker-configs/docker_vars/acl-root.env convert | vsc yaml
     echo ""
     exit 0
 fi
 
 if [[ "$*" == *"-custom"* ]]
   then
-    echo -e "${YELL}docker-compose --env-file ./docker_vars/acl-custom.env up ${NC}"
+    echo -e "${YELL}docker-compose --env-file ./docker-configs/docker_vars/acl-custom.env up ${NC}"
     echo "=========================================="
-    cat ./docker_vars/acl-custom.env
+    cat ./docker-configs/docker_vars/acl-custom.env
     echo ""
     echo "=========================================="
-    docker-compose --env-file docker_vars/acl-custom.env up 
-    # docker compose --env-file docker_vars/acl-custom.env convert | vsc yaml
+    docker-compose --env-file docker-configs/docker_vars/acl-custom.env up
+    # docker compose --env-file docker-configs/docker_vars/acl-custom.env convert | vsc yaml
     echo ""
     exit 0
 fi
 
-    echo -e "${YELL}docker-compose --env-file ./docker_vars/acl-secure.env up ${NC}"
+    echo -e "${YELL}docker-compose --env-file ./docker-configs/docker_vars/acl-secure.env up ${NC}"
     echo "=========================================="
-    cat ./docker_vars/acl-secure.env
+    cat ./docker-configs/docker_vars/acl-secure.env
     echo ""
     echo "=========================================="
-    docker-compose --env-file docker_vars/acl-secure.env up 
-    # docker compose --env-file docker_vars/acl-secure.env convert | vsc yaml
+    docker-compose --env-file docker-configs/docker_vars/acl-secure.env up
+    # docker compose --env-file docker-configs/docker_vars/acl-secure.env convert | vsc yaml
     echo ""
 
 # Validated the string substitution
-# docker compose --env-file ./docker_vars/acl-root.env convert | vsc yaml
+# docker compose --env-file ./docker-configs/docker_vars/acl-root.env convert | vsc yaml
