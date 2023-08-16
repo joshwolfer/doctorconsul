@@ -187,6 +187,11 @@ if $ARG_NUKE_EKSONLY; then
   kubectl delete svc unicorn-frontend -n unicorn --context $KDC3
   kubectl delete svc consul-api-gateway -n consul --context $KDC3
 
+  echo -e "${GRN}Deleting additional DC4 Loadbalancer services:${NC}"
+  kubectl delete svc sheol-app -n sheol --context $KDC4
+  kubectl delete svc sheol-app1 -n sheol-app1 --context $KDC4
+  kubectl delete svc sheol-app2 -n sheol-app2 --context $KDC4
+
   # If you need to nuke all the CRDs to nuke namespaces, this can be used. Don't typically need to do this just to "tf destroy" though.
   # This is really on for rebuilding Doctor Consul useing the same eksonly clusters.
   CONTEXTS=("$KDC3" "$KDC3_P1" "$KDC4" "$KDC4_P1")
@@ -212,6 +217,8 @@ if $ARG_NUKE_EKSONLY; then
   done
 
   kubectl delete namespace sheol --context $KDC4
+  kubectl delete namespace sheol-app1 --context $KDC4
+  kubectl delete namespace sheol-app2 --context $KDC4
 
   CleanupTempStuff
 
@@ -642,6 +649,13 @@ kubectl apply --context $KDC4_P1 -f ./kube/configs/dc4/sameness-groups/dc4-taran
 echo -e "${YELL}Running the Externalz application script:${NC} ./scripts/externalz-app.sh"
 ./scripts/app-externalz.sh
 # Launch the externalz applications script to provision the externalz application that consumes external services
+
+#  ------------------------------------------
+#  External Services - externalz-alpha Application
+# ------------------------------------------
+
+echo -e "${YELL}Running the Sheol application script:${NC} ./scripts/app-sheol.sh"
+./scripts/app-sheol.sh
 
 # ------------------------------------------
 #           Terminating Gateway

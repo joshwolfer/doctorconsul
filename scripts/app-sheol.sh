@@ -33,8 +33,8 @@ echo -e "------------------------------------------${NC}"
 # --------
 
 echo ""
-echo -e "${GRN}DC4 (default): Create sheol namespace:${NC} $(kubectl --context $KDC4 create namespace sheol-app1)"
-echo -e "${GRN}DC4 (default): Create sheol namespace:${NC} $(kubectl --context $KDC4 create namespace sheol-app2) \n"
+echo -e "${GRN}DC4 (default): Create sheol-app1 namespace:${NC} $(kubectl --context $KDC4 create namespace sheol-app1)"
+echo -e "${GRN}DC4 (default): Create sheol-app2 namespace:${NC} $(kubectl --context $KDC4 create namespace sheol-app2) \n"
 
 # --------
 # service-defaults

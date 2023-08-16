@@ -51,3 +51,7 @@ consul acl role update -id $DC4_TGW_ROLEID -policy-name "Terminating-Gateway-Ser
 echo -e "${GRN}DC4 (default): Terminating-Gateway config   ${NC}"
 kubectl apply --context $KDC4 -f ./kube/configs/dc4/tgw/dc4_sheol-tgw.yaml
 # kubectl delete --context $KDC3 -f ./kube/configs/dc4/tgw/dc4_sheol-tgw.yaml
+
+
+# curl 'http://af321be31a9474e3a919914b9567f910-1542581749.us-east-1.elb.amazonaws.com:8500/v1/catalog/gateway-services/sheol-tgw?token=root&ns=sheol'
+# API to see what's attached to a TGW

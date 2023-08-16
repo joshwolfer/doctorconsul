@@ -11,58 +11,58 @@ if $ARG_EKSONLY;
     export UNICORN_FRONTEND_UI_ADDR=$(kubectl get svc unicorn-frontend -nunicorn --context $KDC3 -o json | jq -r '"http://\(.status.loadBalancer.ingress[0].hostname):\(.spec.ports[0].port)"')
     # export UNICORN_SSG_FRONTEND_UI_ADDR=$(kubectl get svc unicorn-ssg-frontend -nunicorn --context $KDC3 -o json | jq -r '"http://\(.status.loadBalancer.ingress[0].hostname):\(.spec.ports[0].port)"')
 
-    # ------------------------------------------
-    #  (DC3) Wait and Discover SSG Unicorn LB
-    # ------------------------------------------
+    # # ------------------------------------------
+    # #  (DC3) Wait and Discover SSG Unicorn LB
+    # # ------------------------------------------
 
-    while true; do
-      SSG_HOSTNAME=$(kubectl get svc unicorn-ssg-frontend -n unicorn --context $KDC3 -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-      SSG_PORT=$(kubectl get svc unicorn-ssg-frontend -n unicorn --context $KDC3 -o jsonpath='{.spec.ports[0].port}')
+    # while true; do
+    #   SSG_HOSTNAME=$(kubectl get svc unicorn-ssg-frontend -n unicorn --context $KDC3 -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+    #   SSG_PORT=$(kubectl get svc unicorn-ssg-frontend -n unicorn --context $KDC3 -o jsonpath='{.spec.ports[0].port}')
 
-      if [ ! -z "$SSG_HOSTNAME" ]; then
-        UNICORN_SSG_FRONTEND_UI_ADDR=http://$SSG_HOSTNAME:$SSG_PORT/ui/
-        break
-      fi
+    #   if [ ! -z "$SSG_HOSTNAME" ]; then
+    #     UNICORN_SSG_FRONTEND_UI_ADDR=http://$SSG_HOSTNAME:$SSG_PORT/ui/
+    #     break
+    #   fi
 
-      echo "Waiting for the SSG load balancer to get an ingress hostname..."
-      sleep 2
-    done
+    #   echo "Waiting for the SSG load balancer to get an ingress hostname..."
+    #   sleep 2
+    # done
 
-    # ------------------------------------------
-    #  (DC3) Wait and Discover Externalz TCP LB
-    # ------------------------------------------
+    # # ------------------------------------------
+    # #  (DC3) Wait and Discover Externalz TCP LB
+    # # ------------------------------------------
 
-    while true; do
-      DC3_EXTERNALZ_TCP_HOSTNAME=$(kubectl get svc externalz-tcp -nexternalz --context $KDC3 -o json | jq -r '.status.loadBalancer.ingress[0].hostname')
+    # while true; do
+    #   DC3_EXTERNALZ_TCP_HOSTNAME=$(kubectl get svc externalz-tcp -nexternalz --context $KDC3 -o json | jq -r '.status.loadBalancer.ingress[0].hostname')
 
-      if [ ! -z "$DC3_EXTERNALZ_TCP_HOSTNAME" ]; then
-        DC3_EXTERNALZ_TCP_ADDR=http://$DC3_EXTERNALZ_TCP_HOSTNAME:8002/ui/
-        break
-      fi
+    #   if [ ! -z "$DC3_EXTERNALZ_TCP_HOSTNAME" ]; then
+    #     DC3_EXTERNALZ_TCP_ADDR=http://$DC3_EXTERNALZ_TCP_HOSTNAME:8002/ui/
+    #     break
+    #   fi
 
-      echo "Waiting for the externalz-tcp load balancer to get an ingress hostname..."
-      sleep 2
-    done
+    #   echo "Waiting for the externalz-tcp load balancer to get an ingress hostname..."
+    #   sleep 2
+    # done
 
-    # ------------------------------------------
-    #  (DC3) Wait and Discover Externalz HTTP LB
-    # ------------------------------------------
+    # # ------------------------------------------
+    # #  (DC3) Wait and Discover Externalz HTTP LB
+    # # ------------------------------------------
 
-    while true; do
-      DC3_EXTERNALZ_HTTP_HOSTNAME=$(kubectl get svc externalz-http -nexternalz --context $KDC3 -o json | jq -r '.status.loadBalancer.ingress[0].hostname')
+    # while true; do
+    #   DC3_EXTERNALZ_HTTP_HOSTNAME=$(kubectl get svc externalz-http -nexternalz --context $KDC3 -o json | jq -r '.status.loadBalancer.ingress[0].hostname')
 
-      if [ ! -z "$DC3_EXTERNALZ_HTTP_HOSTNAME" ]; then
-        DC3_EXTERNALZ_HTTP_ADDR=http://$DC3_EXTERNALZ_HTTP_HOSTNAME:8003/ui/
-        break
-      fi
+    #   if [ ! -z "$DC3_EXTERNALZ_HTTP_HOSTNAME" ]; then
+    #     DC3_EXTERNALZ_HTTP_ADDR=http://$DC3_EXTERNALZ_HTTP_HOSTNAME:8003/ui/
+    #     break
+    #   fi
 
-      echo "Waiting for the externalz-http load balancer to get an ingress hostname..."
-      sleep 2
-    done
+    #   echo "Waiting for the externalz-http load balancer to get an ingress hostname..."
+    #   sleep 2
+    # done
 
-    # ------------------------------------------
-    #  (DC3) Wait and Consul API GW
-    # ------------------------------------------
+    # # ------------------------------------------
+    # #  (DC3) Wait and Consul API GW
+    # # ------------------------------------------
 
     while true; do
         DC3_CONSUL_API_GATEWAY_HOSTNAME=$(kubectl get svc consul-api-gateway -nconsul --context $KDC3 -o json | jq -r '.status.loadBalancer.ingress[0].hostname')
@@ -76,48 +76,90 @@ if $ARG_EKSONLY;
         sleep 2
     done
 
-    # ------------------------------------------
-    #  Wait for Sheol services
-    # ------------------------------------------
+    # # ------------------------------------------
+    # #  Wait for Sheol services
+    # # ------------------------------------------
 
-    # Wait for Sheol-App
-    while true; do
-        DC4_SHEOL_HOSTNAME=$(kubectl get svc sheol-app -nsheol --context $KDC4 -o json | jq -r '.status.loadBalancer.ingress[0].hostname')
+    # # Wait for Sheol-App
+    # while true; do
+    #     DC4_SHEOL_HOSTNAME=$(kubectl get svc sheol-app -nsheol --context $KDC4 -o json | jq -r '.status.loadBalancer.ingress[0].hostname')
 
-        if [ ! -z "$DC4_SHEOL_HOSTNAME" ]; then
-            DC4_SHEOL_ADDR=http://$DC4_SHEOL_HOSTNAME
-            break
+    #     if [ ! -z "$DC4_SHEOL_HOSTNAME" ]; then
+    #         DC4_SHEOL_ADDR=http://$DC4_SHEOL_HOSTNAME
+    #         break
+    #     fi
+
+    #     echo "Waiting for the sheol-app load balancer to get an ingress hostname..."
+    #     sleep 2
+    # done
+
+    # # Wait for Sheol-App1
+    # while true; do
+    #     DC4_SHEOL1_HOSTNAME=$(kubectl get svc sheol-app1 -nsheol-app1 --context $KDC4 -o json | jq -r '.status.loadBalancer.ingress[0].hostname')
+
+    #     if [ ! -z "$DC4_SHEOL1_HOSTNAME" ]; then
+    #         DC4_SHEOL1_ADDR=http://$DC4_SHEOL1_HOSTNAME
+    #         break
+    #     fi
+
+    #     echo "Waiting for the sheol-app1 load balancer to get an ingress hostname..."
+    #     sleep 2
+    # done
+
+    # # Wait for Sheol-App2
+    # while true; do
+    #     DC4_SHEOL2_HOSTNAME=$(kubectl get svc sheol-app2 -nsheol-app2 --context $KDC4 -o json | jq -r '.status.loadBalancer.ingress[0].hostname')
+
+    #     if [ ! -z "$DC4_SHEOL2_HOSTNAME" ]; then
+    #         DC4_SHEOL2_ADDR=http://$DC4_SHEOL2_HOSTNAME
+    #         break
+    #     fi
+
+    #     echo "Waiting for the sheol-app2 load balancer to get an ingress hostname..."
+    #     sleep 2
+    # done
+
+    # Function to wait for service to get its ingress hostname
+    wait_for_service() {
+      local svc_name=$1
+      local namespace=$2
+      local context=$3
+      local max_retries=$4
+      local port_suffix=$5
+      local counter=0
+      local hostname_var_name=$6
+      local addr_var_name=$7
+
+      while [ $counter -lt $max_retries ]; do
+        local hostname=$(kubectl get svc $svc_name -n$namespace --context $context -o json | jq -r '.status.loadBalancer.ingress[0].hostname')
+        local port=$(kubectl get svc $svc_name -n$namespace --context $context -o jsonpath='{.spec.ports[0].port}')
+
+        if [ ! -z "$hostname" ]; then
+          eval "$hostname_var_name=$hostname"
+          eval "$addr_var_name=http://$hostname:$port$port_suffix"
+          break
         fi
 
-        echo "Waiting for the sheol-app load balancer to get an ingress hostname..."
-        sleep 2
-    done
-
-    # Wait for Sheol-App1
-    while true; do
-        DC4_SHEOL1_HOSTNAME=$(kubectl get svc sheol-app1 -nsheol-app1 --context $KDC4 -o json | jq -r '.status.loadBalancer.ingress[0].hostname')
-
-        if [ ! -z "$DC4_SHEOL1_HOSTNAME" ]; then
-            DC4_SHEOL1_ADDR=http://$DC4_SHEOL1_HOSTNAME
-            break
+        counter=$((counter+1))
+        if [ $counter -eq $max_retries ]; then
+          echo "Giving up on $svc_name after $max_retries attempts."
+          break
         fi
 
-        echo "Waiting for the sheol-app1 load balancer to get an ingress hostname..."
+        echo "Waiting for $svc_name load balancer to get an ingress hostname... Attempt $counter/$max_retries."
         sleep 2
-    done
+      done
+    }
 
-    # Wait for Sheol-App2
-    while true; do
-        DC4_SHEOL2_HOSTNAME=$(kubectl get svc sheol-app2 -nsheol-app2 --context $KDC4 -o json | jq -r '.status.loadBalancer.ingress[0].hostname')
+    # Usage
+    wait_for_service "unicorn-ssg-frontend" "unicorn" "$KDC3" 6 "/ui/" "SSG_HOSTNAME" "UNICORN_SSG_FRONTEND_UI_ADDR"
+    wait_for_service "externalz-tcp" "externalz" "$KDC3" 6 "/ui/" "DC3_EXTERNALZ_TCP_HOSTNAME" "DC3_EXTERNALZ_TCP_ADDR"
+    wait_for_service "externalz-http" "externalz" "$KDC3" 6 "/ui/" "DC3_EXTERNALZ_HTTP_HOSTNAME" "DC3_EXTERNALZ_HTTP_ADDR"
+    wait_for_service "sheol-app" "sheol" "$KDC4" 6 "/ui/" "DC4_SHEOL_HOSTNAME" "DC4_SHEOL_ADDR"
+    wait_for_service "sheol-app1" "sheol-app1" "$KDC4" 6 "/ui/" "DC4_SHEOL1_HOSTNAME" "DC4_SHEOL1_ADDR"
+    wait_for_service "sheol-app2" "sheol-app2" "$KDC4" 6 "/ui/" "DC4_SHEOL2_HOSTNAME" "DC4_SHEOL2_ADDR"
+    # wait_for_service "consul-api-gateway" "consul" "$KDC3" 6 "" "DC3_CONSUL_API_GATEWAY_HOSTNAME" "DC3_CONSUL_API_GATEWAY_ADDR"    # APIG has two ports, can't use this function for now
 
-        if [ ! -z "$DC4_SHEOL2_HOSTNAME" ]; then
-            DC4_SHEOL2_ADDR=http://$DC4_SHEOL2_HOSTNAME
-            break
-        fi
-
-        echo "Waiting for the sheol-app2 load balancer to get an ingress hostname..."
-        sleep 2
-    done
 
 # ------------------------------------------------------------------------------------
 #                                 EKSOnly Outputs
@@ -144,9 +186,9 @@ ${GRN}Externalz-tcp UI address: ${NC}
  ${YELL}Externalz-tcp:${NC} $DC3_EXTERNALZ_HTTP_ADDR
 
 ${GRN}Sheol App UI addresses: ${NC}
- ${YELL}Sheol-App:${NC} $DC4_SHEOL_ADDR:8004/ui/
- ${YELL}Sheol-App1:${NC} $DC4_SHEOL1_ADDR:8005/ui/
- ${YELL}Sheol-App2:${NC} $DC4_SHEOL2_ADDR:8006/ui/
+ ${YELL}Sheol-App:${NC} $DC4_SHEOL_ADDR
+ ${YELL}Sheol-App1:${NC} $DC4_SHEOL1_ADDR
+ ${YELL}Sheol-App2:${NC} $DC4_SHEOL2_ADDR
 
 ${GRN}Consul API-GW LB Address: ${NC}
  ${YELL}Consul APIG HTTP Listener:${NC} $DC3_CONSUL_API_GATEWAY_ADDR:1666"
