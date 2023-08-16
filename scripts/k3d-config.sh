@@ -127,7 +127,7 @@ IMAGE_CALICO_CNI="calico/cni:v3.15.0"
 IMAGE_CALICO_FLEXVOL="calico/pod2daemon-flexvol:v3.15.0"
 IMAGE_CALICO_NODE="calico/node:v3.15.0"
 IMAGE_CALICO_CONTROLLER="calico/kube-controllers:v3.15.0"
-IMAGE_FAKESERVICE="nicholasjackson/fake-service:v0.25.0"
+IMAGE_FAKESERVICE="nicholasjackson/fake-service:v0.26.0"
 
 echo -e "${GRN}Caching docker images locally${NC}"
 

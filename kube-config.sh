@@ -40,6 +40,7 @@ help () {
     echo ""
     echo "Options:"
     echo "  -k3d-full           Integrate with full docker compose environment. Without this, only launch Consul in k3d"
+    echo "  -no-k3d             Skip installing k3d - Configures k8s in a local k3d style (IE: IP based LBs)"
     echo "  -k8s-only           Only Install raw K3d clusters without Consul. Useful when you want to play with k8s alone"
     echo "  -update             Update K3d to the latest version"
     echo "  -eksonly            Sets 4 Kube Contexts to the appropriate names from EKSonly (https://github.com/ramramhariram/EKSonly)"
@@ -57,6 +58,7 @@ help () {
 # ------------------------------------------
 
 export ARG_K3D_FULL=false
+export ARG_NO_K3D=false
 export ARG_K8S_ONLY=false
 export ARG_UPDATE=false
 export ARG_EKSONLY=false
@@ -74,6 +76,9 @@ else
     case $arg in
       -k3d-full)
         ARG_K3D_FULL=true
+        ;;
+      -no-k3d)
+        ARG_NO_K3D=true
         ;;
       -k8s-only)
         ARG_K8S_ONLY=true
@@ -285,8 +290,12 @@ if $ARG_EKSONLY;
     echo ""
   else
 
-    ./scripts/k3d-config.sh
-
+    if $ARG_NO_K3D;
+      then
+        echo "Just say no to k3d"
+      else
+        ./scripts/k3d-config.sh
+    fi
 fi
 # Ends the eksonly bypass
 
