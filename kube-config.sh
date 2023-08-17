@@ -225,18 +225,17 @@ wait_for_consul_connect_inject_service $KDC4_P1 "consul-taranis-connect-injector
   # Environment variables cannot be passed back to this parent script. So the sub shells write these addresses to temp disk and
   # we re-assign the variables here. MAGIC.
 
-    export DC3_LB_IP=$(cat ./tokens/dc3_lb_ip.txt)
-    export DC3_P1_K8S_IP=$(cat ./tokens/dc3_p1_k8s_ip.txt)
+export DC3_LB_IP=$(cat ./tokens/dc3_lb_ip.txt)
+export DC3_P1_K8S_IP=$(cat ./tokens/dc3_p1_k8s_ip.txt)
 
-    export DC4_LB_IP=$(cat ./tokens/dc4_lb_ip.txt)
-    export DC4_P1_K8S_IP=$(cat ./tokens/dc4_p1_k8s_ip.txt)
+export DC4_LB_IP=$(cat ./tokens/dc4_lb_ip.txt)
+export DC4_P1_K8S_IP=$(cat ./tokens/dc4_p1_k8s_ip.txt)
 
-    export DC3="http://$DC3_LB_IP:8500"
-    export DC4="http://$DC4_LB_IP:8500"
-    echo -e "${GRN}Export ENV Variables ${NC}"
-    echo "export DC3=http://$DC3_LB_IP:8500"
-    echo "export DC4=http://$DC4_LB_IP:8500"
-
+export DC3="http://$DC3_LB_IP:8500"
+export DC4="http://$DC4_LB_IP:8500"
+echo -e "${GRN}Export ENV Variables ${NC}"
+echo "export DC3=http://$DC3_LB_IP:8500"
+echo "export DC4=http://$DC4_LB_IP:8500"
 
   # ------------------------------------------
   # Peering over Mesh Gateway
@@ -309,9 +308,9 @@ consul peering establish -name dc3-default -partition taranis -http-addr="$DC4" 
 # kubectl apply --context $KDC3 -f ./kube/configs/peering/peering-dialer_dc3-default_dc4-default.yaml
 
 
-# ==========================================
-#        Applications / Deployments
-# ==========================================
+# ==============================================================================================================================
+#                                                     Applications / Deployments
+# ==============================================================================================================================
 
 if $ARG_NO_APPS;
   then

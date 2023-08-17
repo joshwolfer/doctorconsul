@@ -4,20 +4,10 @@ set -e
 
 source ./scripts/functions.sh
 
-export GCP_PROJECT_ID=hc-1de95f2aa38e498ab96760d6cba
-export GCP_REGION=us-east1
-# Get the project from the GCP UI upper right hamburger > project settings
-
-export KDC3="k3d-dc3"
-export KDC3_P1="k3d-dc3-p1"
-export KDC4="k3d-dc4"
-export KDC4_P1="k3d-dc4-p1"
-
 # GKE stuff goes here.
 
 # gcloud auth login
 # Make sure it uses the business account not personal, since chrome can be logged in as either. ugh.
-
 
 # sudo apt-get install google-cloud-sdk-gke-gcloud-auth-plugin
 # Need this to authenticate to GKE

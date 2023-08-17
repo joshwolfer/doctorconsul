@@ -278,9 +278,9 @@ InstallConsulDC4_P1 () {
       echo -e ""
       echo -e "${GRN}Discover the DC4 Taranis cluster Kube API${NC}"
 
-      export DC4_K8S_IP="https://$(kubectl get node k3d-dc4-p1-server-0 --context $KDC4_P1 -o json | jq -r '.metadata.annotations."k3s.io/internal-ip"'):6443"
+      export DC4_P1_K8S_IP="https://$(kubectl get node k3d-dc4-p1-server-0 --context $KDC4_P1 -o json | jq -r '.metadata.annotations."k3s.io/internal-ip"'):6443"
       echo "$DC4_P1_K8S_IP" > ./tokens/dc4_p1_k8s_ip.txt
-      echo -e "${YELL}DC4 K8s API address is:${NC} $DC4_K8S_IP"
+      echo -e "${YELL}DC4-P1 K8s API address is:${NC} $DC4_P1_K8S_IP"
 
   fi
 
@@ -297,7 +297,7 @@ InstallConsulDC4_P1 () {
       # Not sure how to work around this: https://hashicorp.slack.com/archives/CPEPBFDEJ/p1690218332117449
     else
       helm install consul hashicorp/consul -f ./kube/helm/dc4-p1-helm-values.yaml --namespace consul --kube-context $KDC4_P1 $HELM_CHART_VER $DEBUG \
-      --set externalServers.k8sAuthMethodHost=$DC4_K8S_IP \
+      --set externalServers.k8sAuthMethodHost=$DC4_P1_K8S_IP \
       --set externalServers.hosts[0]=$DC4_LB_IP > ./logs/dc4_p1-helm-install.log 2>&1
   fi
 }
