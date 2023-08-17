@@ -144,7 +144,10 @@ ${GRN}Sheol App UI addresses: ${NC}
 
 ${GRN}Consul API-GW LB Address: ${NC}
  ${YELL}Consul APIG HTTP Listener:${NC} $DC3_CONSUL_API_GATEWAY_ADDR:1666"
- ${YELL}Consul APIG TCP Listener:${NC} $DC3_CONSUL_API_GATEWAY_ADDR:1667"
+        ${YELL}Consul APIG HTTP Apps:${NC} $DC3_CONSUL_API_GATEWAY_ADDR:1666/unicorn-frontend/ui/"
+        ${YELL}Consul APIG HTTP Apps:${NC} $DC3_CONSUL_API_GATEWAY_ADDR:1666/unicorn-ssg-frontend/ui/"
+        ${YELL}Consul APIG HTTP Apps:${NC} $DC3_CONSUL_API_GATEWAY_ADDR:1666/externalz-http/ui/"
+ ${YELL}Consul APIG TCP Listener:${NC} $DC3_CONSUL_API_GATEWAY_ADDR:1667/ui/"
 
 ${GRN}Export ENV Variables ${NC}
  export DC3=http://$DC3_LB_IP:8500
@@ -199,7 +202,10 @@ ${GRN}Fake Service UI addresses: ${NC}
 
 ${GRN}Consul API-GW LB Address: ${NC}
  ${YELL}Consul APIG HTTP Listener:${NC} http://127.0.0.1:1666"
- ${YELL}Consul APIG TCP Listener:${NC} http://127.0.0.1:1667"
+     ${YELL}Consul APIG HTTP Apps:${NC} http://127.0.0.1:1666/unicorn-frontend/ui/"
+     ${YELL}Consul APIG HTTP Apps:${NC} http://127.0.0.1:1666/unicorn-ssg-frontend/ui/"
+     ${YELL}Consul APIG HTTP Apps:${NC} http://127.0.0.1:1666/externalz-http/ui/"
+ ${YELL}Consul APIG TCP Listener:${NC} http://127.0.0.1:1667/ui/"
 
 ${GRN}Export ENV Variables ${NC}
  export DC3=https://127.0.0.1:8502

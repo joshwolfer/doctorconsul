@@ -7,5 +7,5 @@ spec:
   peering:
     peerThroughMeshGateways: true
   transparentProxy:
-    meshDestinationsOnly: true      # Prevents Pods from *mostly* connecting to upstreams that are not in Consul. 
+    meshDestinationsOnly: true      # Prevents Pods from *mostly* connecting to upstreams that are not in Consul.
 
