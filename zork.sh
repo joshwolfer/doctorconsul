@@ -20,7 +20,7 @@ GRN=$(tput setaf 10)
 YELL=$(tput setaf 3)
 NC=$(tput sgr0)
 
-export FAKESERVICE_VER="v0.25.0"
+export FAKESERVICE_VER="v0.26.0"
 
 COLUMNS=12
 
