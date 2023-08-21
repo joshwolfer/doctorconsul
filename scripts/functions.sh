@@ -38,9 +38,27 @@ export AWS_REGION=us-east-1
 #                                                        General Functions
 # ==============================================================================================================================
 
-# Delete temporary files and kill lingering processes
+consul_binary_check() {
+  echo -e "${GRN}Consul Binary Check: ${NC}"
 
-CleanupTempStuff () {
+  # Check if 'consul' command is available
+  if ! command -v consul &> /dev/null
+  then
+      echo -e "${RED}Consul command could not be found. ${NC}"
+      echo -e "Please make sure it is installed and available in your PATH."
+      printf "${RED}"'Make sure Consul is on the latest enterprise version!!! '"${NC}\n"
+      exit 1
+  fi
+
+  # Print the location of 'consul'
+  echo -e "Consul is located at: ${YELL}$(which consul)"
+
+  # Run 'consul version' and print only the lines that contain 'Consul'
+  echo -e "${YELL}$(consul version | grep Consul) ${NC}"
+  printf "${RED}"'Make sure Consul is on the latest enterprise version!!! '"${NC}\n"
+}
+
+CleanupTempStuff () {    # Delete temporary files and kill lingering processes
 
   echo ""
   echo -e "${RED}Nuking the Env Variables...${NC}"
@@ -62,6 +80,18 @@ CleanupTempStuff () {
   echo ""
 }
 
+fakeservice_from_internet() {
+  find ./kube/configs/dc3/services/*.yaml -type f -exec sed -i "s/^\( *\)image: .*/\1image: nicholasjackson\/fake-service:$FAKESERVICE_VER/" {} \;
+  find ./kube/configs/dc4/services/*.yaml -type f -exec sed -i "s/^\( *\)image: .*/\1image: nicholasjackson\/fake-service:$FAKESERVICE_VER/" {} \;
+  # Pull fake service from the interwebz instead of local k3d registry (which doesn't exist when using EKS)
+}
+
+fakeservice_from_k3d() {
+  find ./kube/configs/dc3/services/*.yaml -type f -exec sed -i "s/^\( *\)image: .*/\1image: k3d-doctorconsul.localhost:12345\/nicholasjackson\/fake-service:$FAKESERVICE_VER/" {} \;
+  find ./kube/configs/dc4/services/*.yaml -type f -exec sed -i "s/^\( *\)image: .*/\1image: k3d-doctorconsul.localhost:12345\/nicholasjackson\/fake-service:$FAKESERVICE_VER/" {} \;
+  # Puts the files back to a local k3d registry if they were previously changed (same as checked into the repo)
+}
+
 wait_for_consul_connect_inject_service() {
     local context="$1"
     local deployment_name="$2"
@@ -80,6 +110,8 @@ wait_for_consul_connect_inject_service() {
 }
 
 k3dPeeringToVM () {
+
+# Peers the local k3d clusters to the doctor consul docker compose clusters DC1 / DC2 (they must be running, obviously)
 
   # ------------------------------------------
   # Peer DC3/default -> DC1/default
@@ -137,36 +169,26 @@ update_aws_context() {
     echo ""
 }
 
-nuke_aws_eksonly() {
+nuke_consul_k8s() {
   set +e
   echo -e "${GRN}Deleting Consul Helm installs in each Cluster:${NC}"
 
-  echo -e "${YELL}DC3:${NC}"
-  consul-k8s uninstall -auto-approve -context $KDC3
-  # helm delete consul --namespace consul --kube-context $KDC3
+  echo -e "${YELL}DC3:${NC} $(consul-k8s uninstall -auto-approve -context $KDC3)" &
+  echo -e "${YELL}DC3_P1:${NC} $(consul-k8s uninstall -auto-approve -context $KDC3_P1)" &
+  echo -e "${YELL}DC4:${NC} $(consul-k8s uninstall -auto-approve -context $KDC4)" &
+  echo -e "${YELL}DC4_P1:${NC} $(consul-k8s uninstall -auto-approve -context $KDC4_P1)" &
 
-  echo -e "${YELL}DC3_P1:${NC}"
-  consul-k8s uninstall -auto-approve -context $KDC3_P1
-  # helm delete consul --namespace consul --kube-context $KDC3_P1
-
-  echo -e "${YELL}DC4:${NC}"
-  consul-k8s uninstall -auto-approve -context $KDC4
-  # helm delete consul --namespace consul --kube-context $KDC4
-
-  echo -e "${YELL}DC4_P1:${NC}"
-  consul-k8s uninstall -auto-approve -context $KDC4_P1
-  # helm delete consul --namespace consul --kube-context $KDC4_P1
   echo ""
 
   echo -e "${GRN}Deleting additional DC3 Loadbalancer services:${NC}"
   kubectl delete --namespace consul --context $KDC3 -f ./kube/prometheus/dc3-prometheus-service.yaml
-  kubectl delete svc unicorn-frontend -n unicorn --context $KDC3
-  kubectl delete svc consul-api-gateway -n consul --context $KDC3
+  kubectl delete svc unicorn-frontend -n unicorn --context $KDC3 &
+  kubectl delete svc consul-api-gateway -n consul --context $KDC3 &
 
   echo -e "${GRN}Deleting additional DC4 Loadbalancer services:${NC}"
-  kubectl delete svc sheol-app -n sheol --context $KDC4
-  kubectl delete svc sheol-app1 -n sheol-app1 --context $KDC4
-  kubectl delete svc sheol-app2 -n sheol-app2 --context $KDC4
+  kubectl delete svc sheol-app -n sheol --context $KDC4 &
+  kubectl delete svc sheol-app1 -n sheol-app1 --context $KDC4 &
+  kubectl delete svc sheol-app2 -n sheol-app2 --context $KDC4 &
 
   # If you need to nuke all the CRDs to nuke namespaces, this can be used. Don't typically need to do this just to "tf destroy" though.
   # This is really on for rebuilding Doctor Consul useing the same eksonly clusters.
@@ -181,26 +203,25 @@ nuke_aws_eksonly() {
   done
 
   for CONTEXT in "${CONTEXTS[@]}"; do
-    kubectl delete namespace consul --context $CONTEXT
+    kubectl delete namespace consul --context $CONTEXT &
   done
 
   for CONTEXT in "${CONTEXTS[@]}"; do
-    kubectl delete namespace unicorn --context $CONTEXT
+    kubectl delete namespace unicorn --context $CONTEXT &
   done
 
   for CONTEXT in "${CONTEXTS[@]}"; do
-    kubectl delete namespace externalz --context $CONTEXT
+    kubectl delete namespace externalz --context $CONTEXT &
   done
 
-  kubectl delete namespace sheol --context $KDC4
-  kubectl delete namespace sheol-app1 --context $KDC4
-  kubectl delete namespace sheol-app2 --context $KDC4
+  kubectl delete namespace sheol --context $KDC4 &
+  kubectl delete namespace sheol-app1 --context $KDC4 &
+  kubectl delete namespace sheol-app2 --context $KDC4 &
 
   CleanupTempStuff
 
-  echo ""
-  echo -e "${RED}It's now safe to TF destroy! ${NC}"
-  echo ""
+  wait
+
 }
 
 # ==============================================================================================================================
@@ -210,28 +231,37 @@ nuke_aws_eksonly() {
 # Function to create GKE cluster
 
 create_gke_cluster() {
-    local cluster_name="$1"
+    local CLUSTER_NAME="$1"
 
-    (gcloud container clusters create-auto "$cluster_name" \
+    (gcloud container clusters create-auto "$CLUSTER_NAME" \
       --project $GCP_PROJECT_ID \
       --region $GCP_REGION --release-channel "regular" \
       --network "projects/$GCP_PROJECT_ID/global/networks/default" \
       --subnetwork "projects/$GCP_PROJECT_ID/regions/$GCP_REGION/subnetworks/default" \
-      --cluster-ipv4-cidr "/17" > /dev/null 2>&1 && echo "Cluster $cluster_name creation successful!" || echo "Cluster creation failed!") &
+      --cluster-ipv4-cidr "/17" > /dev/null 2>&1 && echo "Cluster $CLUSTER_NAME creation successful!" || echo "Cluster creation failed!") &
 }
 
 # Change gke contexts to match doctor consul friendly ones.
 
 update_gke_context() {
-    local cluster_name="$1"
+    local CLUSTER_NAME="$1"
+
+    echo ""
+    echo -e "${GRN}$CLUSTER_NAME:${NC}"
+
+    # Update kube config from GKE
+    gcloud container clusters get-credentials $CLUSTER_NAME --region $GCP_REGION --project $GCP_PROJECT_ID
 
     # Delete the context
-    kubectl config delete-context "$cluster_name"
+    kubectl config delete-context "$CLUSTER_NAME"
 
     # Rename the context
-    kubectl config rename-context gke_${GCP_PROJECT_ID}_${GCP_REGION}_$cluster_name $cluster_name
+    kubectl config rename-context gke_${GCP_PROJECT_ID}_${GCP_REGION}_$CLUSTER_NAME $CLUSTER_NAME
 }
 
+# ==============================================================================================================================
+#                                                             FIN
+# ==============================================================================================================================
 
-
-
+echo -e "${GRN}Functions file sourced correctly. ${NC}"
+echo ""

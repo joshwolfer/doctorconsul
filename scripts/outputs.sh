@@ -50,6 +50,10 @@ fi
 
 if $ARG_EKSONLY;
   then
+
+    echo -e "${RED}Generating Outputs (Might take a second to run all the checks...) ${NC}"
+    echo ""
+
     export UNICORN_FRONTEND_UI_ADDR=$(kubectl get svc unicorn-frontend -nunicorn --context $KDC3 -o json | jq -r '"http://\(.status.loadBalancer.ingress[0].hostname):\(.spec.ports[0].port)"')
     # export UNICORN_SSG_FRONTEND_UI_ADDR=$(kubectl get svc unicorn-ssg-frontend -nunicorn --context $KDC3 -o json | jq -r '"http://\(.status.loadBalancer.ingress[0].hostname):\(.spec.ports[0].port)"')
 

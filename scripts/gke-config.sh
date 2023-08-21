@@ -25,6 +25,9 @@ echo -e "=========================================="
 echo -e "     Create 4 beautiful GKE clusters"
 echo -e "==========================================${NC}"
 
+# These get created as "GKE autopilot" clusters, which evidently are not supported on Consul yet. Supposed to be in Aug 2023.
+# Gonna pause this project until they're supported.
+
 create_gke_cluster "$KDC3"
 create_gke_cluster "$KDC3_P1"
 create_gke_cluster "$KDC4"

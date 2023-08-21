@@ -3,7 +3,7 @@
 set -e
 
 source ./scripts/functions.sh
-# ^^^ Variables and shared functions
+# # ^^^ Variables and shared functions
 
 if [[ -z "${EKSONLY_TF_STATE_FILE}" ]]; then
   export EKSONLY_TF_STATE_FILE="/home/mourne/git/EKSonly/terraform.tfstate"
@@ -16,12 +16,18 @@ help () {
     echo ""
     echo "Options:"
     echo "  -k3d-full           Integrate with full docker compose environment. Without this, only launch Consul in k3d"
-    echo "  -no-k3d             Skip installing k3d - Configures k8s in a local k3d style (IE: IP based LBs)"
+    echo "  -no-k3d             Likely broken... Skip installing k3d - Configures k8s in a local k3d style (IE: IP based LBs)"
+    echo "  -k3d-update         Update K3d to the latest version"
+    echo ""
     echo "  -k8s-only           Only Install raw K3d clusters without Consul. Useful when you want to play with k8s alone"
-    echo "  -update             Update K3d to the latest version"
-    echo "  -eksonly            Sets 4 Kube Contexts to the appropriate names from EKSonly (https://github.com/ramramhariram/EKSonly)"
-    echo "  -eksonly-context    Refreshes the EKSOnly Kube Contexts"
-    echo "  -nuke-eksonly       Destroy the EKSOnly resources so it's safe to tf destroy"
+    echo ""
+    echo "  -eks                Sets 4 Kube Contexts to the appropriate names from EKSonly (https://github.com/ramramhariram/EKSonly)"
+    echo "  -eks-context        Refreshes the EKSOnly Kube Contexts"
+    echo "  -nuke-eks           Destroy the EKSOnly resources so it's safe to tf destroy"
+    echo ""
+    echo "  -gke                Configures 4 Kube Contexts within GKE using standard context names."
+    echo "  -gke-context        Refreshes the GKE Kube Contexts"
+    echo ""
     echo "  -no-apps            Install Consul into clusters with additional NO services"
     echo "  -debug              Run Helm installation with --debug"
     echo "  -vars               List environment variables"
@@ -36,7 +42,7 @@ help () {
 export ARG_K3D_FULL=false
 export ARG_NO_K3D=false
 export ARG_K8S_ONLY=false
-export ARG_UPDATE=false
+export ARG_K3D_UPDATE=false
 export ARG_EKSONLY=false
 export ARG_EKSONLY_CONTEXT=false
 export ARG_NUKE_EKSONLY=false
@@ -44,6 +50,9 @@ export ARG_NO_APPS=false
 export ARG_DEBUG=false
 export ARG_HELP=false
 export ARG_VARS=false
+export ARG_GKE=false
+export ARG_NUKE_GKE=false
+export ARG_GKE_CONTEXT=false
 
 if [ $# -eq 0 ]; then
   echo ""
@@ -59,16 +68,16 @@ else
       -k8s-only)
         ARG_K8S_ONLY=true
         ;;
-      -update)
-        ARG_UPDATE=true
+      -k3d-update)
+        ARG_K3D_UPDATE=true
         ;;
-      -eksonly)
+      -eks)
         ARG_EKSONLY=true
         ;;
-      -eksonly-context)
+      -eks-context)
         ARG_EKSONLY_CONTEXT=true
         ;;
-      -nuke-eksonly)
+      -nuke-eks)
         ARG_NUKE_EKSONLY=true
         ;;
       -no-apps)
@@ -82,6 +91,15 @@ else
         ;;
       -vars)
         ARG_VARS=true
+        ;;
+      -gke-context)
+        ARG_GKE_CONTEXT=true
+        ;;
+      -gke)
+        ARG_GKE=true
+        ;;
+      -nuke-gke)
+        ARG_NUKE_GKE=true
         ;;
       *)
         echo -e "${RED}Invalid Argument... ${NC}"
@@ -102,22 +120,9 @@ if $ARG_VARS; then       # Output a list of environemnt variables that can be co
   exit 0
 fi
 
-if [ "$ARG_EKSONLY" = "true" ] || [ "$ARG_EKSONLY_CONTEXT" = "true" ]; then     # Update the Kube contexts for EKSOnly
-  update_aws_context
-fi
+if $ARG_K8S_ONLY; then echo -e "${RED} Building K3d clusters ONLY (-k8s-only) ${NC}"; fi
 
-if $ARG_EKSONLY_CONTEXT; then         # If we're only re-genning the AWS EKS contexts, exit gracefully.
-  echo -e "${GRN}Exiting (-eksonly-context)${NC}"
-  echo ""
-  exit 0
-fi
-
-if $ARG_NUKE_EKSONLY; then           # Run AWS EKSonly nuke script if commanded
-  nuke_aws_eksonly
-  exit 0     # Exit here.
-fi
-
-if $ARG_UPDATE; then
+if $ARG_K3D_UPDATE; then       # k3d Update
   echo ""
   echo -e "${GRN}Updating K3d... ${NC}"
   echo -e "${YELL}Pulling from https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh ${NC}"
@@ -126,44 +131,73 @@ if $ARG_UPDATE; then
   exit 0
 fi
 
-if $ARG_K8S_ONLY; then echo -e "${RED} Building K3d clusters ONLY (-k8s-only) ${NC}"; fi
+# ------------------------------------------
+#                EKS STUFF
+# ------------------------------------------
+
+if [ "$ARG_EKSONLY" = "true" ] || [ "$ARG_EKSONLY_CONTEXT" = "true" ]; then     # Update the Kube contexts for EKSOnly
+  update_aws_context
+
+  if $ARG_EKSONLY_CONTEXT; then         # If we're only re-genning the AWS EKS contexts, exit gracefully.
+    echo -e "${GRN}Exiting (-eksonly-context)${NC}"
+    echo ""
+    exit 0
+  fi
+fi
+
+if $ARG_NUKE_EKSONLY; then           # Run AWS EKSonly nuke script if commanded
+  nuke_consul_k8s
+
+  echo ""
+  echo -e "${RED}It's now safe to TF destroy! ${NC}"
+  echo ""
+
+  exit 0     # Exit here.
+fi
+
+# ------------------------------------------
+#                GKE STUFF
+# ------------------------------------------
+
+if $ARG_GKE_CONTEXT; then
+  set +e
+  update_gke_context "$KDC3"
+  update_gke_context "$KDC3_P1"
+  update_gke_context "$KDC4"
+  update_gke_context "$KDC4_P1"
+  echo ""
+  echo -e "${GRN}Exiting (-gke-context)${NC}"
+  echo ""
+  exit 0
+fi
+
+if $ARG_NUKE_GKE; then           # Run GKE nuke script if commanded
+  nuke_consul_k8s
+  exit 0     # Exit here.
+fi
+
+# ------------------------------------------
+#            Setup Hygiene
+# ------------------------------------------
 
 if [[ $PWD == *"doctorconsul"* ]]; then rm -f ./logs/*.log; fi
 # Delete previous logs
 
-# ------------------------------------------
-#           Consul binary check
-# ------------------------------------------
-
-echo -e "${GRN}Consul Binary Check: ${NC}"
-# Check if 'consul' command is available
-if ! command -v consul &> /dev/null
-then
-    echo -e "${RED}Consul command could not be found. ${NC}"
-    echo -e "Please make sure it is installed and available in your PATH."
-    printf "${RED}"'Make sure Consul is on the latest enterprise version!!! '"${NC}\n"
-    exit 1
-fi
-
-# Print the location of 'consul'
-echo -e "Consul is located at: ${YELL}$(which consul)"
-
-# Run 'consul version' and print only the lines that contain 'Consul'
-echo -e "${YELL}$(consul version | grep Consul) ${NC}"
-printf "${RED}"'Make sure Consul is on the latest enterprise version!!! '"${NC}\n"
-
-# ------------------------------------------
-#           Tokens Directory
-# ------------------------------------------
-
 mkdir -p ./tokens/
 # Creates the tokens directory (used later, and also in the .gitignore)
 
-# ==========================================
-# Checks if we're provisioning using EKSOnly or k3d
-# ==========================================
+consul_binary_check
+# Check if the consul binary is installed and exit if not
 
-if $ARG_EKSONLY || $ARG_NO_K3D; then
+# ==============================================================================================================================
+# ==============================================================================================================================
+#
+#                           Do Kube clusters already exist or do we need to install K3d?
+#
+# ==============================================================================================================================
+# ==============================================================================================================================
+
+if $ARG_EKSONLY || $ARG_NO_K3D || $ARG_GKE; then        # Checks if we're provisioning using K3d local install or not
     echo ""
     echo -e "${RED}Skipping k3d cluster install${NC}"
     echo ""
@@ -309,7 +343,11 @@ consul peering establish -name dc3-default -partition taranis -http-addr="$DC4" 
 
 
 # ==============================================================================================================================
-#                                                     Applications / Deployments
+# ==============================================================================================================================
+#
+#                                                  Applications / Deployments
+#
+# ==============================================================================================================================
 # ==============================================================================================================================
 
 if $ARG_NO_APPS;
@@ -328,15 +366,11 @@ fi
 # And switches them back to k3d local if no argument is provided.
 # This is a messy way of doing it, but I don't see a better way, without having to manage multiple sets of files since templating in YAML is a pain in the ass.
 
-if $ARG_EKSONLY;
+if $ARG_EKSONLY || $ARG_GKE;
   then
-    find ./kube/configs/dc3/services/*.yaml -type f -exec sed -i "s/^\( *\)image: .*/\1image: nicholasjackson\/fake-service:$FAKESERVICE_VER/" {} \;
-    find ./kube/configs/dc4/services/*.yaml -type f -exec sed -i "s/^\( *\)image: .*/\1image: nicholasjackson\/fake-service:$FAKESERVICE_VER/" {} \;
-# Pull fake service from the interwebz instead of local k3d registry (which doesn't exist when using EKS)
+    fakeservice_from_internet
   else
-    find ./kube/configs/dc3/services/*.yaml -type f -exec sed -i "s/^\( *\)image: .*/\1image: k3d-doctorconsul.localhost:12345\/nicholasjackson\/fake-service:$FAKESERVICE_VER/" {} \;
-    find ./kube/configs/dc4/services/*.yaml -type f -exec sed -i "s/^\( *\)image: .*/\1image: k3d-doctorconsul.localhost:12345\/nicholasjackson\/fake-service:$FAKESERVICE_VER/" {} \;
-    # Puts the files back to a local k3d registry if they were previously changed (same as checked into the repo)
+    fakeservice_from_k3d
 fi
 
 # Ideal order of operations, per Derek:
