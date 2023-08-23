@@ -28,6 +28,8 @@ help () {
     echo "  -gke                Configures 4 Kube Contexts within GKE using standard context names."
     echo "  -gke-context        Refreshes the GKE Kube Contexts"
     echo ""
+    echo "  -vault              Install a Vault cluster into DC3"
+    echo ""
     echo "  -no-apps            Install Consul into clusters with additional NO services"
     echo "  -debug              Run Helm installation with --debug"
     echo "  -vars               List environment variables"
@@ -55,6 +57,7 @@ export ARG_GKE=false
 export ARG_NUKE_GKE=false
 export ARG_GKE_CONTEXT=false
 export ARG_OUTPUTS=false
+export ARG_VAULT=false
 
 if [ $# -eq 0 ]; then
   echo ""
@@ -105,6 +108,9 @@ else
         ;;
       -outputs)
         ARG_OUTPUTS=true
+        ;;
+      -outputs)
+        ARG_VAULT=true
         ;;
       *)
         echo -e "${RED}Invalid Argument... ${NC}"
@@ -230,7 +236,6 @@ fi
 ./scripts/helm-install.sh
 # Execute helm install script.
 
-
 # ==========================================
 #              Prometheus configs
 # ==========================================
@@ -263,7 +268,6 @@ wait_for_consul_connect_inject_service $KDC3 "consul-connect-injector" "DC3 (def
 wait_for_consul_connect_inject_service $KDC3_P1 "consul-cernunnos-connect-injector" "DC3 (cernunnos)"
 wait_for_consul_connect_inject_service $KDC4 "consul-connect-injector" "DC4 (default)"
 wait_for_consul_connect_inject_service $KDC4_P1 "consul-taranis-connect-injector" "DC4 (taranis)"
-
 
   # ------------------------------------------
   #   Pull in address information from sub processes
@@ -522,6 +526,16 @@ echo -e "${YELL}Running the Consul API-GW script:${NC} ./scripts/apigw-config.sh
 
 echo -e "${YELL}Running the Paris script:${NC} ./scripts/app-paris.sh"
 ./scripts/app-paris.sh
+
+# ==============================================================================================================================
+#                                                             Vault
+# ==============================================================================================================================
+
+if $ARG_VAULT; then
+  echo -e "${YELL}Launching Vault cluster script:${NC} ./scripts/vault-config.sh"
+  ./scripts/vault-config.sh
+fi
+
 
 # ==============================================================================================================================
 #                                                      Outputs

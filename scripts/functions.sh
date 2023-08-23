@@ -109,6 +109,54 @@ wait_for_consul_connect_inject_service() {
     # wait_for_consul_connect_inject_service $KDC3 "consul-connect-injector" "DC3 (default)"
 }
 
+wait_for_kube_service() {    # Example: wait_for_kube_service vault-ui vault $CONTEXT 10 VAULT_HOST
+
+  local svc_name=$1          # Kube service name
+  local namespace=$2         # Kube namespace
+  local context=$3           # Kube context
+  local max_retries=$4
+  local counter=0
+  local hostname_var_name=$5 # Variable name to reference in this script
+  local jq_query=""
+
+  # Debugging prints
+  # echo "Function called with parameters:"
+  # echo "Service name: $svc_name"
+  # echo "Namespace: $namespace"
+  # echo "Context: $context"
+  # echo "Max retries: $max_retries"
+  # echo "Host variable name: $hostname_var_name"
+
+  # Determine which jq query to use based on $ARG_EKSONLY
+  if $ARG_EKSONLY; then
+    jq_query='.status.loadBalancer.ingress[0].hostname'     # AWS uses hostnames
+  else
+    jq_query='.status.loadBalancer.ingress[0].ip'           # K3d uses IPs
+  fi
+
+  echo "Using jq query: $jq_query"  # Debug print
+
+  while [ $counter -lt $max_retries ]; do
+    local lb_address=$(kubectl get svc $svc_name -n$namespace --context $context -o json | jq -r "$jq_query")
+
+    # echo "Current lb_address value: $lb_address"   # Debug print
+
+    if [ ! -z "$lb_address" ] && [ "$lb_address" != "null" ]; then
+      eval "$hostname_var_name=$lb_address"
+      break
+    fi
+
+    counter=$((counter+1))
+    if [ $counter -eq $max_retries ]; then
+      echo "Giving up on $svc_name after $max_retries attempts."
+      break
+    fi
+
+    echo "Waiting for $svc_name load balancer to get an ingress... Attempt $counter/$max_retries."
+    sleep 3
+  done
+}
+
 k3dPeeringToVM() {
   # Peers the local k3d clusters to the doctor consul docker compose clusters DC1 / DC2 (they must be running, obviously)
 

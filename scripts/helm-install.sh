@@ -5,6 +5,8 @@ set -e
 echo -e "${RED}EKS only Argument is:${NC} $ARG_EKSONLY"
 echo ""
 
+mkdir -p ./logs/     # Create logs dir if it doesn't exist.
+
 echo -e "${GRN}"
 echo -e "=========================================="
 echo -e "    Setup Consul in Kubernetes Clusters"

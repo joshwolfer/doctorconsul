@@ -30,8 +30,8 @@ DC3_P1_PARIS_PLEASE_ADDR=http://127.0.0.1:8101/ui/
 
 if $ARG_EKSONLY; then
 
-  DC3_LB_IP=$(cat ./tokens/dc3_lb_ip.txt)
-  DC4_LB_IP=$(cat ./tokens/dc4_lb_ip.txt)
+  DC3_LB_IP=$(cat ./tokens/dc3_lb_ip.txt)     # When -outputs is run after the initial provision, we have to re-pull the address from the text file.
+  DC4_LB_IP=$(cat ./tokens/dc4_lb_ip.txt)     # ^^^
 
   DC3_ADDR=http://$DC3_LB_IP:8500/
   DC4_ADDR=http://$DC4_LB_IP:8500/
@@ -46,7 +46,7 @@ if $ARG_EKSONLY; then
   # #  (DC3) Wait and Consul API GW
   # # ------------------------------------------
 
-  # APIG has two ports, can't use the wait_for_service() function
+  # APIG has two ports, can't use the wait_for_kube_service_w_port() function
 
   while true; do
       DC3_CONSUL_API_GATEWAY_HOSTNAME=$(kubectl get svc consul-api-gateway -nconsul --context $KDC3 -o json | jq -r '.status.loadBalancer.ingress[0].hostname')
@@ -61,7 +61,7 @@ if $ARG_EKSONLY; then
   done
 
   # Function to wait for service to get its ingress hostname
-  wait_for_service() {
+  wait_for_kube_service_w_port() {
     local svc_name=$1        # Kube service name
     local namespace=$2       # Kube namespace
     local context=$3         # Kube context
@@ -93,15 +93,15 @@ if $ARG_EKSONLY; then
   }
 
   # Usage
-  wait_for_service "unicorn-ssg-frontend" "unicorn" "$KDC3" 6 "/ui/" "SSG_HOSTNAME" "UNICORN_SSG_FRONTEND_UI_ADDR"
-  wait_for_service "externalz-tcp" "externalz" "$KDC3" 6 "/ui/" "DC3_EXTERNALZ_TCP_HOSTNAME" "DC3_EXTERNALZ_TCP_ADDR"
-  wait_for_service "externalz-http" "externalz" "$KDC3" 6 "/ui/" "DC3_EXTERNALZ_HTTP_HOSTNAME" "DC3_EXTERNALZ_HTTP_ADDR"
-  wait_for_service "sheol-app" "sheol" "$KDC4" 6 "/ui/" "DC4_SHEOL_HOSTNAME" "DC4_SHEOL_ADDR"
-  wait_for_service "sheol-app1" "sheol-app1" "$KDC4" 6 "/ui/" "DC4_SHEOL1_HOSTNAME" "DC4_SHEOL1_ADDR"
-  wait_for_service "sheol-app2" "sheol-app2" "$KDC4" 6 "/ui/" "DC4_SHEOL2_HOSTNAME" "DC4_SHEOL2_ADDR"
-  # wait_for_service "consul-api-gateway" "consul" "$KDC3" 6 "" "DC3_CONSUL_API_GATEWAY_HOSTNAME" "DC3_CONSUL_API_GATEWAY_ADDR"    # APIG has two ports, can't use this function for now
-  wait_for_service "leroy-jenkins" "paris" "$KDC3_P1" 6 "/ui/" "DC3_P1_PARIS_LEROY_HOSTNAME" "DC3_P1_PARIS_LEROY_ADDR"
-  wait_for_service "pretty-please" "paris" "$KDC3_P1" 6 "/ui/" "DC3_P1_PARIS_PLEASE_HOSTNAME" "DC3_P1_PARIS_PLEASE_ADDR"
+  wait_for_kube_service_w_port "unicorn-ssg-frontend" "unicorn" "$KDC3" 6 "/ui/" "SSG_HOSTNAME" "UNICORN_SSG_FRONTEND_UI_ADDR"
+  wait_for_kube_service_w_port "externalz-tcp" "externalz" "$KDC3" 6 "/ui/" "DC3_EXTERNALZ_TCP_HOSTNAME" "DC3_EXTERNALZ_TCP_ADDR"
+  wait_for_kube_service_w_port "externalz-http" "externalz" "$KDC3" 6 "/ui/" "DC3_EXTERNALZ_HTTP_HOSTNAME" "DC3_EXTERNALZ_HTTP_ADDR"
+  wait_for_kube_service_w_port "sheol-app" "sheol" "$KDC4" 6 "/ui/" "DC4_SHEOL_HOSTNAME" "DC4_SHEOL_ADDR"
+  wait_for_kube_service_w_port "sheol-app1" "sheol-app1" "$KDC4" 6 "/ui/" "DC4_SHEOL1_HOSTNAME" "DC4_SHEOL1_ADDR"
+  wait_for_kube_service_w_port "sheol-app2" "sheol-app2" "$KDC4" 6 "/ui/" "DC4_SHEOL2_HOSTNAME" "DC4_SHEOL2_ADDR"
+  # wait_for_kube_service_w_port "consul-api-gateway" "consul" "$KDC3" 6 "" "DC3_CONSUL_API_GATEWAY_HOSTNAME" "DC3_CONSUL_API_GATEWAY_ADDR"    # APIG has two ports, can't use this function for now
+  wait_for_kube_service_w_port "leroy-jenkins" "paris" "$KDC3_P1" 6 "/ui/" "DC3_P1_PARIS_LEROY_HOSTNAME" "DC3_P1_PARIS_LEROY_ADDR"
+  wait_for_kube_service_w_port "pretty-please" "paris" "$KDC3_P1" 6 "/ui/" "DC3_P1_PARIS_PLEASE_HOSTNAME" "DC3_P1_PARIS_PLEASE_ADDR"
 
 fi
 

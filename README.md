@@ -241,6 +241,5 @@ HashiCorp Vault will eventually be implemented in the future as the Certificate 
 ### Requests from the field
 
 * Consul API Gateway
-* Permissive Mode
 * Vault as TLS CA in one of the clusters.
 * README's for each application and it's uses.
