@@ -23,7 +23,7 @@ spec:
             kubernetes.io/metadata.name: unicorn
     # tls:
     #   certificateRefs:
-    #     - name: cert-one
+    #     - name: apigw-http-listener-cert
   - name: consul-apig-tcp-listener
     protocol: TCP
     port: 1667

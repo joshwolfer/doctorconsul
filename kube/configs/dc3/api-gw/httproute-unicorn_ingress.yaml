@@ -8,7 +8,7 @@ spec:
   - name: consul-api-gateway      # Name of the Gateway as defined in the Gateway spec (kind: Gateway)
     namespace: consul             # Namespace the Consul APIGW lives in
   rules:
-    - matches:
+    - matches:                          # Match Path + rewrite: /unicorn-frontend/
         - path:
             type: PathPrefix
             value: /unicorn-frontend/
@@ -21,8 +21,7 @@ spec:
       backendRefs:                # Defines the backend service (upstream Consul service).
       - kind: Service             # Kubernetes Service.
         name: unicorn-frontend    # Kubernetes Service name that points to the Consul Mesh service.
-        # port: 8000                # This doesn't appear to even matter. I had wrong ports and it all still worked.... OK... old>>This needs to be the Kube "Service.port", not "targetPort"
-    - matches:
+    - matches:                          # Match Path + rewrite: /unicorn-ssg-frontend/
         - path:
             type: PathPrefix
             value: /unicorn-ssg-frontend/
@@ -35,7 +34,7 @@ spec:
       backendRefs:
       - kind: Service
         name: unicorn-ssg-frontend
-    - matches:
+    - matches:                          # Match Path + rewrite: /externalz-http/
         - path:
             type: PathPrefix
             value: /externalz-http/
@@ -45,6 +44,28 @@ spec:
             path:
               replacePrefixMatch: /
               type: ReplacePrefixMatch
+      backendRefs:
+      - kind: Service
+        name: externalz-http
+        namespace: externalz
+    - matches:                          # Match Host: unicorn-frontend
+        - headers:
+          - name: "Host"
+            value: "unicorn-frontend"
+      backendRefs:
+      - kind: Service
+        name: unicorn-frontend
+    - matches:                          # Match Host: unicorn-ssg-frontend
+        - headers:
+          - name: "Host"
+            value: "unicorn-ssg-frontend"
+      backendRefs:
+      - kind: Service
+        name: unicorn-ssg-frontend
+    - matches:                          # Match Host: externalz-http
+        - headers:
+          - name: "Host"
+            value: "externalz-http"
       backendRefs:
       - kind: Service
         name: externalz-http

@@ -51,7 +51,7 @@ kubectl apply --context $KDC3_P1 -f ./kube/configs/dc3/services/paris-paris-cern
 
 # Need two frontends:
 #   • One that goes direct - no Mesh (Permissive mode)
-#   • One that goes via the mess
+#   • One that goes via the mesh
 
 echo -e ""
 echo -e "${GRN}DC3 (Cernunnos): Apply Pretty-Please (downstream) serviceAccount, serviceDefaults, service, deployment ${NC}"
