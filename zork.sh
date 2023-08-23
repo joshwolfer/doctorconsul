@@ -2,16 +2,11 @@
 
 export CONSUL_HTTP_TOKEN=root
 
-DC1="http://127.0.0.1:8500"
-DC2="http://127.0.0.1:8501"
-DC3="https://127.0.0.1:8502"
-DC4="https://127.0.0.1:8503"
-DC5=""
-DC6=""
+export FAKESERVICE_VER="v0.26.0"
 
-KDC3="k3d-dc3"
-KDC3_P1="k3d-dc3-p1"
-KDC4="k3d-dc4"
+COLUMNS=12
+
+source ./scripts/functions.sh
 
 RED=$(tput setaf 1)
 BLUE=$(tput setaf 4)
@@ -19,10 +14,6 @@ DGRN=$(tput setaf 2)
 GRN=$(tput setaf 10)
 YELL=$(tput setaf 3)
 NC=$(tput sgr0)
-
-export FAKESERVICE_VER="v0.26.0"
-
-COLUMNS=12
 
 clear
 
@@ -693,6 +684,7 @@ ElseFunction () {
         "FakeService Kube: Image switch back to PUBLIC registry"
         "FakeService Kube: Image switch back to K3D registry"
         "K9s: Add plugin"
+        "Upgrade Consul Binary"
         "Go Back"
     )
     select option in "${options[@]}"; do
@@ -751,12 +743,20 @@ ElseFunction () {
                 COLUMNS=1
                 REPLY=
                 ;;
+            "Upgrade Consul Binary")
+                echo ""
+                UpgradeConsulBinary
+                echo ""
+                COLUMNS=1
+                REPLY=
+                ;;
             "Go Back")
                 echo ""
                 clear
                 COLUMNS=1
                 break
                 ;;
+
             *) echo "invalid option $REPLY";;
         esac
     done

@@ -208,6 +208,8 @@ kubectl apply --context=$KDC3 -f ./kube/calico.yaml) &
 (k3d cluster create dc3-p1 --network doctorconsul_wan \
     --api-port 127.0.0.1:6444 \
     -p "8443:8443" \
+    -p "8100:8100" \
+    -p "8101:8101" \
     --k3s-arg="--disable=traefik@server:0" \
     --registry-use k3d-doctorconsul.localhost:12345 \
     --k3s-arg '--flannel-backend=none@server:*' && \
@@ -215,6 +217,8 @@ kubectl apply --context=$KDC3_P1 -f ./kube/calico.yaml) &
 
     # -p "8443:8443"      api-gateway ingress
     # -p "12000:8000"     reserved for fakeservice something
+    # -p "8100:8100"      paris/pretty-please UI
+    # -p "8101:8101"      paris/leroy-jenkins UI
 
 # ------------------------------------------
 #                   DC4

@@ -15,8 +15,10 @@ set -e
 #          Mesh Destinations Only
 # ------------------------------------------
 
-echo -e "${GRN}DC3 (default): mesh config: ${YELL}Mesh Destinations Only: True ${NC}"
-kubectl apply --context $KDC3 -f ./kube/configs/dc3/defaults/mesh.yaml
+#   This is defined in the main kube-config.sh since you can only have one per partition
+
+# echo -e "${GRN}DC3 (default): mesh config: ${YELL}Mesh Destinations Only: True ${NC}"
+# kubectl apply --context $KDC3 -f ./kube/configs/dc3/defaults/mesh.yaml
 
 
 # ------------------------------------------

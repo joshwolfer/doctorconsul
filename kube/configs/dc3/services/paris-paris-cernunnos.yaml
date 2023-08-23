@@ -1,0 +1,90 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: paris
+  namespace: paris
+
+---
+
+apiVersion: consul.hashicorp.com/v1alpha1
+kind: ServiceDefaults
+metadata:
+  name: paris
+  namespace: paris
+spec:
+  protocol: http
+  mutualTLSMode: "permissive"         # Enables permissive mode for the Paris/Paris Upstream
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: paris
+  namespace: paris
+spec:
+  type: NodePort
+  selector:
+    app: paris
+  ports:
+    - name: http                              # How does Permissive mode
+      port: 8102            # Should be the port the Kube LB will listen on to forward to TCP/10000
+      targetPort: 10000     # This should line up with the FakeService LISTEN_ADDR: 0.0.0.0:10000
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: paris
+  namespace: paris
+  labels:
+    app: paris
+    version: v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: paris
+  template:
+    metadata:
+      labels:
+        app: paris
+      annotations:
+        consul.hashicorp.com/connect-inject: 'true'
+        consul.hashicorp.com/transparent-proxy: 'true'
+        consul.hashicorp.com/service-tags: 'dc3-cernunnos'
+    spec:
+      serviceAccountName: paris
+      containers:
+        - name: paris
+          image: nicholasjackson/fake-service:v0.26.0
+          # imagePullPolicy: Always       # Probably don't need this
+          ports:
+            - containerPort: 10000
+          env:
+            - name: 'LISTEN_ADDR'
+              value: '0.0.0.0:10000'
+            # - name: 'UPSTREAM_URIS'
+            #   value: 'http://.virtual.paris.ns.dc3.dc.consul,'
+              # value: 'http://127.0.0.1:11000,http://127.0.0.1:12000,http://paris-tp-backend.virtual.paris.ns.dc3.dc.consul,http://paris-tp-backend.virtual.paris.ns.cernunnos.ap.dc3.dc.consul'
+            - name: 'NAME'
+              value: 'paris (DC3 Cernunnos)'
+            - name: 'MESSAGE'
+              value: '<p><strong>The paris Application</strong></p>'
+            - name: 'SERVER_TYPE'
+              value: 'http'
+            - name: 'TIMING_50_PERCENTILE'
+              value: '30ms'
+            - name: 'TIMING_90_PERCENTILE'
+              value: '60ms'
+            - name: 'TIMING_99_PERCENTILE'
+              value: '90ms'
+            - name: 'TIMING_VARIANCE'
+              value: '10'
+            - name: 'HTTP_CLIENT_REQUEST_TIMEOUT'
+              value: '3s'
+            # - name: 'HTTP_CLIENT_APPEND_REQUEST'
+            #   value: 'true'
+            # - name: 'TRACING_ZIPKIN'
+            #   value: 'http://simplest-collector.default:9411'

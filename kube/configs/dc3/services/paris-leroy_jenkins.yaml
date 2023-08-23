@@ -1,0 +1,94 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: leroy-jenkins
+  namespace: paris
+
+---
+
+apiVersion: consul.hashicorp.com/v1alpha1
+kind: ServiceDefaults
+metadata:
+  name: leroy-jenkins
+  namespace: paris
+spec:
+  protocol: http
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: leroy-jenkins
+  namespace: paris
+spec:
+  type: LoadBalancer        # This may not work with k3s, since this was taken from an AKS config
+  selector:
+    app: leroy-jenkins
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8100            # Should be the port the Kube LB will listen on to forward to TCP/10000
+      targetPort: 10000     # This should line up with the FakeService LISTEN_ADDR: 0.0.0.0:10000
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: leroy-jenkins
+  namespace: paris
+  labels:
+    app: leroy-jenkins
+    version: v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: leroy-jenkins
+  template:
+    metadata:
+      labels:
+        app: leroy-jenkins
+      annotations:
+        consul.hashicorp.com/connect-inject: 'true'
+        consul.hashicorp.com/transparent-proxy: 'true'
+        consul.hashicorp.com/service-tags: 'dc3 cernunnos'
+        consul.hashicorp.com/transparent-proxy-exclude-inbound-ports: "10000"   # Without this exclusion the FakeService UI is shitcanned.
+    spec:
+      serviceAccountName: leroy-jenkins
+      containers:
+        - name: leroy-jenkins
+          image: nicholasjackson/fake-service:v0.26.0
+          # imagePullPolicy: Always       # Probably don't need this
+          ports:
+            - containerPort: 10000
+          # readinessProbe:
+          #   httpGet:
+          #     scheme: HTTP
+          #     path: /
+          #     port: 10000
+            # initialDelaySeconds: 10
+            # periodSeconds: 5
+          env:
+            - name: 'LISTEN_ADDR'
+              value: '0.0.0.0:10000'
+            - name: 'UPSTREAM_URIS'
+              value: 'http://paris.virtual.paris.ns.cernunnos.ap.dc3.dc.consul'
+            - name: 'NAME'
+              value: 'leroy-jenkins (DC3 Cernunnos)'
+            - name: 'MESSAGE'
+              value: '<p><strong>The leroy-jenkins Application</strong></p>'
+            - name: 'SERVER_TYPE'
+              value: 'http'
+            - name: 'TIMING_50_PERCENTILE'
+              value: '30ms'
+            - name: 'TIMING_90_PERCENTILE'
+              value: '60ms'
+            - name: 'TIMING_99_PERCENTILE'
+              value: '90ms'
+            - name: 'TIMING_VARIANCE'
+              value: '10'
+            - name: 'HTTP_CLIENT_REQUEST_TIMEOUT'
+              value: '3s'
+

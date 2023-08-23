@@ -109,9 +109,8 @@ wait_for_consul_connect_inject_service() {
     # wait_for_consul_connect_inject_service $KDC3 "consul-connect-injector" "DC3 (default)"
 }
 
-k3dPeeringToVM () {
-
-# Peers the local k3d clusters to the doctor consul docker compose clusters DC1 / DC2 (they must be running, obviously)
+k3dPeeringToVM() {
+  # Peers the local k3d clusters to the doctor consul docker compose clusters DC1 / DC2 (they must be running, obviously)
 
   # ------------------------------------------
   # Peer DC3/default -> DC1/default
@@ -153,6 +152,73 @@ k3dPeeringToVM () {
   kubectl apply --namespace consul -f ./kube/configs/peering/peering_dc3-default_dc2-unicorn.yaml
 }
 
+UpgradeConsulBinary() {
+  (
+    # If no argument is provided, prompt the user for input
+    if [ -z "$1" ]; then
+        while true; do
+            read -p "Please specify a Consul version (or enter 'latest' or 'latest+ent'): " input_version
+            if [[ "$input_version" =~ ^(latest|latest\+ent|[0-9]+\.[0-9]+\.[0-9]+(\+ent)?)$ ]]; then
+                CONSUL_VER=${input_version}
+                break
+            else
+                echo "Invalid format. Please enter a valid Consul version (or 'latest' or 'latest+ent')."
+            fi
+        done
+    else
+        if [[ ! "$1" =~ ^(latest|latest\+ent|[0-9]+\.[0-9]+\.[0-9]+(\+ent)?)$ ]]; then
+            echo "Invalid argument format."
+            exit 1
+        fi
+        CONSUL_VER="$1"
+    fi
+
+    if [ "$CONSUL_VER" == "latest" ]; then
+        CONSUL_VER="$(curl -s "https://api.github.com/repos/hashicorp/consul/releases/latest" | jq -r .tag_name | sed 's/^v//')"
+    elif [ "$CONSUL_VER" == "latest+ent" ]; then
+        CONSUL_VER="$(curl -s "https://api.github.com/repos/hashicorp/consul/releases/latest" | jq -r .tag_name | sed 's/^v//')+ent"
+    fi
+
+    curl -s "https://api.github.com/repos/hashicorp/consul/releases/latest" | jq -r .tag_name | sed 's/^v//'
+
+    DIR=$HOME/consul_temp
+    BIN_DIR=/usr/local/bin
+
+    echo -e "${YELL}local binary directory is:${NC}$BIN_DIR"
+    echo -e "${YELL}Temp Directory is:${NC}"$DIR
+    echo ""
+
+    if [ ! -d "$DIR" ]; then
+    mkdir "$DIR"
+    fi
+
+    cd "$DIR" || exit
+
+    echo -e "${GRN}Downloading and unzipping Consul: ${NC}"
+    wget -q https://releases.hashicorp.com/consul/$CONSUL_VER/consul_${CONSUL_VER}_linux_amd64.zip
+    unzip consul_${CONSUL_VER}_linux_amd64.zip
+
+    echo ""
+    echo -e "${GRN}Moving Consul ($CONSUL_VER) to $BIN_DIR${NC}"
+    mv consul consul-$CONSUL_VER
+    sudo mv consul-$CONSUL_VER $BIN_DIR
+
+    # if [ -e "$BIN_DIR/consul" ] || [ -L "$BIN_DIR/consul" ]; then    # Nuke symlink or existing consul binary.
+    #     sudo rm "$BIN_DIR/consul"
+    # fi
+
+    sudo ln -sf $BIN_DIR/consul_${CONSUL_VER} $BIN_DIR/consul    # New symlink
+
+    echo ""
+    echo -e "${RED}Deleting Temp directory:${NC} $DIR"
+    rm -rf $DIR
+
+    echo ""
+
+  )
+}
+
+
 # ==============================================================================================================================
 #                                                AWS (EKSOnly) Functions
 # ==============================================================================================================================
@@ -184,6 +250,10 @@ nuke_consul_k8s() {
   kubectl delete --namespace consul --context $KDC3 -f ./kube/prometheus/dc3-prometheus-service.yaml
   kubectl delete svc unicorn-frontend -n unicorn --context $KDC3 &
   kubectl delete svc consul-api-gateway -n consul --context $KDC3 &
+
+  echo -e "${GRN}Deleting additional DC3 (Cernunnos) Loadbalancer services:${NC}"
+  kubectl delete svc leroy-jenkins -n paris --context $KDC3_P1 &
+  kubectl delete svc pretty-please -n paris --context $KDC3_P1 &
 
   echo -e "${GRN}Deleting additional DC4 Loadbalancer services:${NC}"
   kubectl delete svc sheol-app -n sheol --context $KDC4 &
@@ -217,6 +287,7 @@ nuke_consul_k8s() {
   kubectl delete namespace sheol --context $KDC4 &
   kubectl delete namespace sheol-app1 --context $KDC4 &
   kubectl delete namespace sheol-app2 --context $KDC4 &
+  kubectl delete namespace paris --context $KDC3_P1 &
 
   CleanupTempStuff
 
@@ -263,5 +334,6 @@ update_gke_context() {
 #                                                             FIN
 # ==============================================================================================================================
 
-echo -e "${GRN}Functions file sourced correctly. ${NC}"
+echo ""
+echo -e "${GRN}Functions file is done sourced. ${NC}"
 echo ""

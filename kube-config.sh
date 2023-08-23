@@ -31,6 +31,7 @@ help () {
     echo "  -no-apps            Install Consul into clusters with additional NO services"
     echo "  -debug              Run Helm installation with --debug"
     echo "  -vars               List environment variables"
+    echo "  -outputs            Re-run the Outputs. Can be combined with other args (IE: -eks -outputs)"
     echo ""
     exit 0
 }
@@ -53,6 +54,7 @@ export ARG_VARS=false
 export ARG_GKE=false
 export ARG_NUKE_GKE=false
 export ARG_GKE_CONTEXT=false
+export ARG_OUTPUTS=false
 
 if [ $# -eq 0 ]; then
   echo ""
@@ -100,6 +102,9 @@ else
         ;;
       -nuke-gke)
         ARG_NUKE_GKE=true
+        ;;
+      -outputs)
+        ARG_OUTPUTS=true
         ;;
       *)
         echo -e "${RED}Invalid Argument... ${NC}"
@@ -174,6 +179,15 @@ fi
 if $ARG_NUKE_GKE; then           # Run GKE nuke script if commanded
   nuke_consul_k8s
   exit 0     # Exit here.
+fi
+
+# ------------------------------------------
+#            Outputs
+# ------------------------------------------
+
+if $ARG_OUTPUTS; then
+  ./scripts/outputs.sh
+  exit 0
 fi
 
 # ------------------------------------------
@@ -411,9 +425,20 @@ echo -e "            Mesh Defaults"
 echo -e "------------------------------------------${NC}"
 
 echo -e ""
-echo -e "${GRN}DC3 (default): mesh config: ${YELL}Mesh Destinations Only: False ${NC}"      # leave only one of these on
-# echo -e "${GRN}DC3 (default): mesh config: ${YELL}Mesh Destinations Only: True ${NC}"
-# kubectl apply --context $KDC3 -f ./kube/configs/dc3/defaults/mesh.yaml
+echo -e "${GRN}DC3 (default): mesh config:\n  ${YELL}peering.peerThroughMeshGateways:${NC} true\n${YELL}  allowEnablingPermissiveMutualTLS:${NC} true ${NC}"
+kubectl apply --context $KDC3 -f ./kube/configs/dc3/defaults/mesh-dc3_default.yaml
+
+echo -e ""
+echo -e "${GRN}DC3 (Cernunnos): mesh config:\n  ${YELL}  allowEnablingPermissiveMutualTLS:${NC} true ${NC}"
+kubectl apply --context $KDC3_P1 -f ./kube/configs/dc3/defaults/mesh-dc3_cernunnos.yaml
+
+echo -e ""
+echo -e "${GRN}DC3 (default): mesh config:\n  ${YELL}peering.peerThroughMeshGateways:${NC} true\n${YELL}  allowEnablingPermissiveMutualTLS: ${RED}false ${NC}"
+kubectl apply --context $KDC4 -f ./kube/configs/dc4/defaults/mesh-dc4_default.yaml
+
+echo -e ""
+echo -e "${GRN}DC3 (Taranis): mesh config:\n  ${YELL}  allowEnablingPermissiveMutualTLS: ${RED}false ${NC}"
+kubectl apply --context $KDC4_P1 -f ./kube/configs/dc4/defaults/mesh-dc4_taranis.yaml
 
 # This is turned on later with the external services config. Just FYI. Since it's scoped to the entire partition, we can't mix and match.
 
@@ -478,6 +503,7 @@ echo -e "${YELL}Running the Sheol application script:${NC} ./scripts/app-sheol.s
 #           Terminating Gateway
 # ------------------------------------------
 
+echo -e "${YELL}Running the Terminating Gateway script:${NC} ./scripts/terminating-gateway.sh"
 ./scripts/terminating-gateway.sh
 # Launch TGWs:
     # DC3/default/terminating-gateway
@@ -487,11 +513,20 @@ echo -e "${YELL}Running the Sheol application script:${NC} ./scripts/app-sheol.s
 #                                                     Consul API Gateway
 # ==============================================================================================================================
 
+echo -e "${YELL}Running the Consul API-GW script:${NC} ./scripts/apigw-config.sh"
 ./scripts/apigw-config.sh
+
+# ==============================================================================================================================
+#                                                     Permissive Mode Application
+# ==============================================================================================================================
+
+echo -e "${YELL}Running the Paris script:${NC} ./scripts/app-paris.sh"
+./scripts/app-paris.sh
 
 # ==============================================================================================================================
 #                                                      Outputs
 # ==============================================================================================================================
 
+echo -e "${YELL}Running the Outputs script:${NC} ./scripts/outputs.sh"
 ./scripts/outputs.sh                   # Outputs script the generates outputs for K3d / EKSOnly
 

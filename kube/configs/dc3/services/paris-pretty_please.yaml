@@ -1,0 +1,90 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: pretty-please
+  namespace: paris
+
+---
+
+apiVersion: consul.hashicorp.com/v1alpha1
+kind: ServiceDefaults
+metadata:
+  name: pretty-please
+  namespace: paris
+spec:
+  protocol: http
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: pretty-please
+  namespace: paris
+spec:
+  type: LoadBalancer        # This may not work with k3s, since this was taken from an AKS config
+  selector:
+    app: pretty-please
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8101            # Should be the port the Kube LB will listen on to forward to TCP/10000
+      targetPort: 10000     # This should line up with the FakeService LISTEN_ADDR: 0.0.0.0:10000
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pretty-please
+  namespace: paris
+  labels:
+    app: pretty-please
+    version: v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pretty-please
+  template:
+    metadata:
+      labels:
+        app: pretty-please
+      # annotations:
+    spec:
+      serviceAccountName: pretty-please
+      containers:
+        - name: pretty-please
+          image: nicholasjackson/fake-service:v0.26.0
+          # imagePullPolicy: Always       # Probably don't need this
+          ports:
+            - containerPort: 10000
+          # readinessProbe:
+          #   httpGet:
+          #     scheme: HTTP
+          #     path: /
+          #     port: 10000
+            # initialDelaySeconds: 10
+            # periodSeconds: 5
+          env:
+            - name: 'LISTEN_ADDR'
+              value: '0.0.0.0:10000'
+            - name: 'UPSTREAM_URIS'
+              value: 'http://paris.paris.svc.cluster.local:8102/'
+            - name: 'NAME'
+              value: 'pretty-please (DC3 Cernunnos)'
+            - name: 'MESSAGE'
+              value: '<p><strong>The pretty-please Application</strong></p>'
+            - name: 'SERVER_TYPE'
+              value: 'http'
+            - name: 'TIMING_50_PERCENTILE'
+              value: '30ms'
+            - name: 'TIMING_90_PERCENTILE'
+              value: '60ms'
+            - name: 'TIMING_99_PERCENTILE'
+              value: '90ms'
+            - name: 'TIMING_VARIANCE'
+              value: '10'
+            - name: 'HTTP_CLIENT_REQUEST_TIMEOUT'
+              value: '3s'
+

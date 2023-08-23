@@ -1,0 +1,14 @@
+apiVersion: consul.hashicorp.com/v1alpha1
+kind: Mesh
+metadata:
+  name: mesh
+  namespace: default                # Must be default - config applies to all namespaces within a partition.
+spec:
+  peering:
+    peerThroughMeshGateways: true
+  allowEnablingPermissiveMutualTLS: true    # Enables the ability to use Permissive Mode. Should need to
+  transparentProxy:
+    meshDestinationsOnly: true              # Prevents Pods from *mostly* connecting to upstreams that are not in Consul.
+    # MutualTLSMode: permissive             # Not sure if this will work as a global enable of permissive mode.
+
+
