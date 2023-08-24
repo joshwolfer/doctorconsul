@@ -125,7 +125,7 @@ For more details, see the ACL docs.
 ### Configuration Script
 
 * Once the start script has finished, the VM-style environment must be configured.
-* Configure the core environment using the `post-config.sh` script:
+* Open a different shell (leave the `start.sh` script running) and configure the core environment using the `post-config.sh` script:
   * `./post-config.sh`
   * `./post-config.sh -k3d`
 
@@ -154,9 +154,9 @@ The kube-config on it's own has no reliance on the VM-style environment, meaning
   * KDC4 > nEKS2
   * KDC4_P1 > nEKS3
 * Build the K3d Kubernetes cluster using the `kube-config.sh` script:
-  * `./kube-config.sh -eksonly` : Builds Consul into 4 clusters that have previously been created using [EKSOnly](https://github.com/ramramhariram/EKSonly).
+  * `./kube-config.sh -eks` : Builds Consul into 4 clusters that have previously been created using [EKSOnly](https://github.com/ramramhariram/EKSonly).
 
-The kube-config on it's own has no reliance on the VM-style environment, meaning you can simply just run `./kube-config.sh -eksonly` and build a working 4 cluster configuration of Consul in AWS EKS.
+The kube-config on it's own has no reliance on the VM-style environment, meaning you can simply just run `./kube-config.sh -eks` and build a working 4 cluster configuration of Consul in AWS EKS.
 
 Be sure to follow the instructions completely in [EKSOnly](https://github.com/ramramhariram/EKSonly) building a 4 cluster setup.
 
@@ -173,7 +173,6 @@ When the docker-compose windows is sent control+c, most of the docker images wil
 Run the kill script to destroy varying levels of things:
 
 * `./kill.sh` : Destroys all docker containers including k3d, except for the k3d image registry
-* `./kill.sh -all` : Destroys all containers, including the registry. Nuke from orbit.
 
 I recommend leaving the registry intact, since it takes time to re-cache the images and the registry doesn't consume much in resources just sitting there. Also, if you pull too many images from dockerhub in a single day, you'll get cut off (the reason the registry was configured in the first place).
 
@@ -181,13 +180,13 @@ I recommend leaving the registry intact, since it takes time to re-cache the ima
 
 Run the kill script with the following option:
 
-* `./kill.sh -eksonly` : Deletes components out of the Kube environment preparring it for a `terraform destroy`.
+* `./kill.sh -eks` : Deletes components out of the Kube environment preparring it for a `terraform destroy`.
 
-NOTE: The kill script does NOT delete the EKS clusters or other infrastructure provisioned by Terraform in the EKSOnly repo. If you do not first run `./kill.sh -eksonly`, a terraform delete will hang when it attempts to delete everything from AWS and you'll have to manually delete loadbalancers and EINs associated with the EKS clusters that are orphaned by Terraform.
+NOTE: The kill script does NOT delete the EKS clusters or other infrastructure provisioned by Terraform in the EKSOnly repo. If you do not first run `./kill.sh -eks`, a terraform delete will hang when it attempts to delete everything from AWS and you'll have to manually delete loadbalancers and EINs associated with the EKS clusters that are orphaned by Terraform.
 
-TLDR; run `./kill.sh -eksonly` and THEN run `terraform destroy` and all will be right in the world.
+TLDR; run `./kill.sh -eks` and THEN run `terraform destroy` and all will be right in the world.
 
-IMPORTANT: The EKSOnly environment can only be built once by the `./kube-config -eksonly` script. There are orphaned resources left over by the `./kill.sh` script. I'm looking to have an option to completely clean up the EKS clusters so the `./kube-config -eksonly` script can be run additional times without having to rebuild the EKS clusters with terraform, but it's not there yet. Yay Devops'ing.
+IMPORTANT: The EKSOnly environment can only be built once by the `./kube-config -eks` script. There are orphaned resources left over by the `./kill.sh` script. I'm looking to have an option to completely clean up the EKS clusters so the `./kube-config -eks` script can be run additional times without having to rebuild the EKS clusters with terraform, but it's not there yet. Yay Devops'ing.
 
 # Documentation
 
