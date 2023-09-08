@@ -71,7 +71,7 @@ InstallConsulDC3 () {
   if $ARG_EKSONLY; then
     helm install consul hashicorp/consul -f ./kube/helm/dc3-helm-values.yaml --namespace consul --kube-context $KDC3 $DEBUG \
     --set server.exposeService.exposeGossipAndRPCPorts=true \
-    --set tls.serverAdditionalDNSSANs=\['*.us-east-1.elb.amazonaws.com'\] $HELM_CHART_VER > ./logs/dc3-helm-install.log 2>&1
+    --set tls.serverAdditionalDNSSANs=\['*.elb.amazonaws.com'\] $HELM_CHART_VER > ./logs/dc3-helm-install.log 2>&1       # Opening up the SANs to cover any AWS region.
 
     # On EKS we need to expose the grpc port for the consul dataplane child clusters to connect to.
     # The UI and expose services can't BOTH use a LoadBalancer service or the expose service won't pickup the UI and the child cluster can't connect.
@@ -80,7 +80,7 @@ InstallConsulDC3 () {
   elif $ARG_GKE; then
     helm install consul hashicorp/consul -f ./kube/helm/dc3-helm-values.yaml --namespace consul --kube-context $KDC3 $DEBUG \
     --set server.exposeService.exposeGossipAndRPCPorts=true \
-    --set tls.serverAdditionalDNSSANs=\['*.us-east-1.elb.amazonaws.com'\] \
+    --set tls.serverAdditionalDNSSANs=\['*.some-gke-address.com'\] \
     --set connectInject.apiGateway.manageExternalCRDs=false \
     $HELM_CHART_VER > ./logs/dc3-helm-install.log 2>&1
 
@@ -228,7 +228,7 @@ InstallConsulDC4 () {
   if $ARG_EKSONLY; then
       helm install consul hashicorp/consul -f ./kube/helm/dc4-helm-values.yaml --namespace consul --kube-context $KDC4 $DEBUG \
       --set server.exposeService.exposeGossipAndRPCPorts=true \
-      --set tls.serverAdditionalDNSSANs=\['*.us-east-1.elb.amazonaws.com'\] $HELM_CHART_VER > ./logs/dc4-helm-install.log 2>&1
+      --set tls.serverAdditionalDNSSANs=\['*.elb.amazonaws.com'\] $HELM_CHART_VER > ./logs/dc4-helm-install.log 2>&1
 
   elif $ARG_GKE; then
       helm install consul hashicorp/consul -f ./kube/helm/dc4-helm-values.yaml --namespace consul --kube-context $KDC4 $DEBUG \

@@ -2,6 +2,9 @@
 
 set -e
 
+export AWS_REGION=us-east-1
+# export AWS_REGION=eu-west-2      # London
+
 source ./scripts/functions.sh
 # # ^^^ Variables and shared functions
 
@@ -156,7 +159,7 @@ if [ "$ARG_EKSONLY" = "true" ] || [ "$ARG_EKSONLY_CONTEXT" = "true" ]; then     
   fi
 fi
 
-if $ARG_NUKE_EKSONLY; then           # Run AWS EKSonly nuke script if commanded
+if $ARG_NUKE_EKSONLY; then           # Run AWS EKS nuke script if commanded
   nuke_consul_k8s
 
   echo ""
@@ -467,6 +470,9 @@ kubectl apply --context $KDC4_P1 -f ./kube/configs/dc4/defaults/mesh-dc4_taranis
 #          Service Sameness Groups
 # ------------------------------------------
 
+# Sameness group configs can only be configured at the partition level, which is why these are defined here in the main kube-config.sh instead of dropping them in the app-unicorn.sh.
+#   It becomes a little tricky keeping track of which configs go where. The tenancy model can be a little difficult to wrangle. 
+
 echo -e "${GRN}"
 echo -e "------------------------------------------"
 echo -e "       Service Sameness Groups"
@@ -533,7 +539,7 @@ echo -e "${YELL}Running the Paris script:${NC} ./scripts/app-paris.sh"
 
 if $ARG_VAULT; then
   echo -e "${YELL}Launching Vault cluster script:${NC} ./scripts/vault-config.sh"
-  ./scripts/vault-config.sh
+  ./scripts/vault-config.sh $KDC3
 fi
 
 

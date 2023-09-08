@@ -62,6 +62,26 @@ DonkeyDiscovery () {
     done
 }
 
+# ------------------------------------------
+#     1.2 Service Discovery Template
+# ------------------------------------------
+
+DiscoveryTemplate () {
+    echo -e "${GRN}"
+    echo -e "=========================================="
+    echo -e "       Service Discovery Template "
+    echo -e "==========================================${NC}"
+    echo ""
+    echo -e "${GRN}Service API:${NC}"
+    echo -e "curl -s --header 'X-Consul-Token: root' \"\$CONSUL_HTTP_ADDR/v1/health/service/\$SVC_NAME?partition=\$PARTITION&ns=\$NAMESPACE\" | jq -r '.[0].Service.Address'"
+    echo -e "curl -s --header 'X-Consul-Token: root' \"\$CONSUL_HTTP_ADDR/v1/health/service/\$SVC_NAME?ns=\$NAMESPACE\" | jq -r '.[0].Service.Address'"
+    echo -e ""
+    echo -e "${GRN}Catalog API:${NC}"
+    echo -e "curl -s --header 'X-Consul-Token: root' \"\$CONSUL_HTTP_ADDR/v1/catalog/service/\$SVC_NAME?partition=\$PARTITION&ns=\$NAMESPACE\" | jq -r '.[0].ServiceAddress'"
+    echo -e "curl -s --header 'X-Consul-Token: root' \"\$CONSUL_HTTP_ADDR/v1/catalog/service/\$SVC_NAME?ns=\$NAMESPACE\" | jq -r '.[0].ServiceAddress'"
+    echo ""
+}
+
 # ==========================================
 #           1 Service Discovery
 # ==========================================
@@ -76,6 +96,7 @@ ServiceDiscovery () {
     COLUMNS=1
     PS3=$'\n\033[1;31mChoose an option: \033[0m'
     options=(
+        "Service Discovery Template"
         "DC1/donkey/donkey (local AP export)"
         "Go Back"
     )
@@ -83,6 +104,9 @@ ServiceDiscovery () {
         case $option in
             "DC1/donkey/donkey (local AP export)")
                 DonkeyDiscovery
+                ;;
+            "Service Discovery Template")
+                DiscoveryTemplate
                 ;;
             "Go Back")
                 echo ""

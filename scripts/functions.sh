@@ -32,7 +32,7 @@ export GCP_PROJECT_ID=hc-1de95f2aa38e498ab96760d6cba
 export GCP_REGION=us-east1
 # Get the project from the GCP UI upper right hamburger > project settings
 
-export AWS_REGION=us-east-1
+
 
 # ==============================================================================================================================
 #                                                        General Functions
@@ -322,6 +322,10 @@ nuke_consul_k8s() {
 
   for CONTEXT in "${CONTEXTS[@]}"; do
     kubectl delete namespace consul --context $CONTEXT &
+  done
+
+  for CONTEXT in "${CONTEXTS[@]}"; do
+    kubectl delete namespace vault --context $CONTEXT &
   done
 
   for CONTEXT in "${CONTEXTS[@]}"; do
