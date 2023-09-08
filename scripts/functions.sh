@@ -292,6 +292,13 @@ nuke_consul_k8s() {
   echo -e "${YELL}DC4:${NC} $(consul-k8s uninstall -auto-approve -context $KDC4)" &
   echo -e "${YELL}DC4_P1:${NC} $(consul-k8s uninstall -auto-approve -context $KDC4_P1)" &
 
+  wait    # We might need to wait for these to finish before we can proceed to nuking other things.
+
+  echo -e "${RED}"
+  echo -e "=========================================="
+  echo -e " Stage 1: Consul-k8s uninstalls complete "
+  echo -e "==========================================${NC}"
+
   echo ""
 
   echo -e "${GRN}Deleting additional DC3 Loadbalancer services:${NC}"
@@ -308,9 +315,17 @@ nuke_consul_k8s() {
   kubectl delete svc sheol-app1 -n sheol-app1 --context $KDC4 &
   kubectl delete svc sheol-app2 -n sheol-app2 --context $KDC4 &
 
+  wait
+
+  echo -e "${RED}"
+  echo -e "=========================================="
+  echo -e " Stage 2: Nuke Load Balancers Complete    "
+  echo -e "==========================================${NC}"
+
+
   # If you need to nuke all the CRDs to nuke namespaces, this can be used. Don't typically need to do this just to "tf destroy" though.
   # This is really on for rebuilding Doctor Consul useing the same eksonly clusters.
-  CONTEXTS=("$KDC3" "$KDC3_P1" "$KDC4" "$KDC4_P1")
+  export CONTEXTS=("$KDC3" "$KDC3_P1" "$KDC4" "$KDC4_P1")
 
   for CONTEXT in "${CONTEXTS[@]}"; do
     kubectl get crd -n consul --context $CONTEXT -o jsonpath='{.items[*].metadata.name}' | tr -s ' ' '\n' | grep "consul.hashicorp.com" | while read -r CRD
@@ -320,26 +335,47 @@ nuke_consul_k8s() {
     done
   done
 
-  for CONTEXT in "${CONTEXTS[@]}"; do
-    kubectl delete namespace consul --context $CONTEXT &
-  done
+  wait
+
+  echo -e "${RED}"
+  echo -e "=========================================="
+  echo -e " Stage 3: Nuke leftover CRDs    "
+  echo -e "==========================================${NC}"
 
   for CONTEXT in "${CONTEXTS[@]}"; do
-    kubectl delete namespace vault --context $CONTEXT &
+    kubectl delete namespace consul --context $CONTEXT
   done
+
+
 
   for CONTEXT in "${CONTEXTS[@]}"; do
-    kubectl delete namespace unicorn --context $CONTEXT &
+    kubectl delete namespace vault --context $CONTEXT
   done
+
+
 
   for CONTEXT in "${CONTEXTS[@]}"; do
-    kubectl delete namespace externalz --context $CONTEXT &
+    kubectl delete namespace unicorn --context $CONTEXT
   done
 
-  kubectl delete namespace sheol --context $KDC4 &
-  kubectl delete namespace sheol-app1 --context $KDC4 &
-  kubectl delete namespace sheol-app2 --context $KDC4 &
-  kubectl delete namespace paris --context $KDC3_P1 &
+
+
+  for CONTEXT in "${CONTEXTS[@]}"; do
+    kubectl delete namespace externalz --context $CONTEXT
+  done
+
+
+  kubectl delete namespace sheol --context $KDC4
+  kubectl delete namespace sheol-app1 --context $KDC4
+  kubectl delete namespace sheol-app2 --context $KDC4
+  kubectl delete namespace paris --context $KDC3_P
+
+  wait
+
+  echo -e "${RED}"
+  echo -e "=========================================="
+  echo -e " Stage 4: Nuke namespaces  "
+  echo -e "==========================================${NC}"
 
   CleanupTempStuff
 
@@ -356,12 +392,27 @@ nuke_consul_k8s() {
 create_gke_cluster() {
     local CLUSTER_NAME="$1"
 
-    (gcloud container clusters create-auto "$CLUSTER_NAME" \
+
+    # This creates autopilot clusters, which are evidently unsupport in Consul as of right now (Sept 2023)
+
+    # (gcloud container clusters create-auto "$CLUSTER_NAME" \
+    #   --project $GCP_PROJECT_ID \
+    #   --region $GCP_REGION --release-channel "regular" \
+    #   --network "projects/$GCP_PROJECT_ID/global/networks/default" \
+    #   --subnetwork "projects/$GCP_PROJECT_ID/regions/$GCP_REGION/subnetworks/default" \
+    #   --cluster-ipv4-cidr "/17" > /dev/null 2>&1 && echo "Cluster $CLUSTER_NAME creation successful!" || echo "Cluster $CLUSTER_NAME creation failed!") &
+
+
+    # This creates "standard clusters"
+
+    (gcloud container clusters create "$CLUSTER_NAME" \
       --project $GCP_PROJECT_ID \
-      --region $GCP_REGION --release-channel "regular" \
+      --zone us-east1-b --node-locations us-east1-b,us-east1-c \
+      --release-channel "regular" \
       --network "projects/$GCP_PROJECT_ID/global/networks/default" \
       --subnetwork "projects/$GCP_PROJECT_ID/regions/$GCP_REGION/subnetworks/default" \
-      --cluster-ipv4-cidr "/17" > /dev/null 2>&1 && echo "Cluster $CLUSTER_NAME creation successful!" || echo "Cluster creation failed!") &
+      --cluster-ipv4-cidr "/17" > /dev/null 2>&1 && echo "Cluster $CLUSTER_NAME creation successful!" || echo "Cluster $CLUSTER_NAME creation failed!") &
+
 }
 
 # Change gke contexts to match doctor consul friendly ones.
