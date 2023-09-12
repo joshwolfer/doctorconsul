@@ -53,8 +53,6 @@ command_check() {
 }
 
 consul_binary_check() {
-  echo -e "${GRN}Consul Binary Check: ${NC}"
-
   # Check if 'consul' command is available
   if ! command -v consul &> /dev/null
   then
@@ -65,10 +63,9 @@ consul_binary_check() {
   fi
 
   # Print the location of 'consul'
-  echo -e "Consul is located at: ${YELL}$(which consul)"
+  echo -e "${GRN}Present:${NC} ${YELL}$(consul version | grep Consul)${NC} ($(command -v consul))."
 
   # Run 'consul version' and print only the lines that contain 'Consul'
-  echo -e "${YELL}$(consul version | grep Consul) ${NC}"
   printf "${RED}"'Make sure Consul is on the latest enterprise version!!! '"${NC}\n"
 }
 
