@@ -14,7 +14,7 @@ source ./scripts/functions.sh
 # # ^^^ Variables and shared functions
 
 if [[ -z "${EKSONLY_TF_STATE_FILE}" ]]; then
-  export EKSONLY_TF_STATE_FILE="/home/mourne/git/EKSonly/terraform.tfstate"
+  export EKSONLY_TF_STATE_FILE="/Users/jessingrassellino/Projects/EKSonly/terraform.tfstate"
   # If it's already set, don't mess with it. If it's not set, it sets it to my personal location
   # Set this to the path of the EKSOnly repo so the outputs can be read! This MUST be set correctly!!!
 fi
