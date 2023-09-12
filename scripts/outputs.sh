@@ -6,8 +6,8 @@ set -e
 # Default Values (overwritten when provisioning to alternate environments (EKS, GKE, ...))
 # --------------------------------------------------------------------------------------------
 
-DC3_ADDR=https://127.0.0.1:8502/
-DC4_ADDR=https://127.0.0.1:8503/
+DC3_ADDR=https://127.0.0.1:8502
+DC4_ADDR=https://127.0.0.1:8503
 
 UNICORN_FRONTEND_UI_ADDR=http://127.0.0.1:11000
 UNICORN_SSG_FRONTEND_UI_ADDR=http://localhost:11001/ui/
@@ -33,8 +33,8 @@ if $ARG_EKSONLY; then
   DC3_LB_IP=$(cat ./tokens/dc3_lb_ip.txt)     # When -outputs is run after the initial provision, we have to re-pull the address from the text file.
   DC4_LB_IP=$(cat ./tokens/dc4_lb_ip.txt)     # ^^^
 
-  DC3_ADDR=http://$DC3_LB_IP:8500/
-  DC4_ADDR=http://$DC4_LB_IP:8500/
+  DC3_ADDR=http://$DC3_LB_IP:8500
+  DC4_ADDR=http://$DC4_LB_IP:8500
 
   if [[ "$ARG_NO_APPS" == "false" ]]; then
     echo -e "${RED}Generating Outputs (Might take a second to run all the checks...) ${NC}"

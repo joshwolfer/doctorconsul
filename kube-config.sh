@@ -218,8 +218,12 @@ if [[ $PWD == *"doctorconsul"* ]]; then rm -f ./logs/*.log; fi
 mkdir -p ./tokens/
 # Creates the tokens directory (used later, and also in the .gitignore)
 
-consul_binary_check
-# Check if the consul binary is installed and exit if not
+echo -e "${GRN}------------------------------------------ "
+echo -e "         Pre-req dependency checks:"
+echo -e "------------------------------------------${NC}"
+echo ""
+doctorconsul_dependancies_check
+# Check if the consul binary and other required programs are installed
 
 # ==============================================================================================================================
 # ==============================================================================================================================

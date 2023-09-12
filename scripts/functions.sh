@@ -38,6 +38,20 @@ export GCP_REGION=us-east1
 #                                                        General Functions
 # ==============================================================================================================================
 
+command_check() {
+    COMMAND=$1
+
+    if command -v $COMMAND &> /dev/null; then
+        echo -e "${GRN}Present:${NC} ${YELL}$COMMAND${NC} ($(command -v $COMMAND))."
+    else
+        echo ""
+        echo -e "${RED}$COMMAND is required by Doctor Consul and could not be found. ${NC}"
+        echo -e "Please make sure it is installed and available in your PATH."
+        echo ""
+        exit 1
+    fi
+}
+
 consul_binary_check() {
   echo -e "${GRN}Consul Binary Check: ${NC}"
 
@@ -56,6 +70,14 @@ consul_binary_check() {
   # Run 'consul version' and print only the lines that contain 'Consul'
   echo -e "${YELL}$(consul version | grep Consul) ${NC}"
   printf "${RED}"'Make sure Consul is on the latest enterprise version!!! '"${NC}\n"
+}
+
+doctorconsul_dependancies_check() {
+  command_check jq
+  command_check sed
+  command_check helm
+  command_check kubectl
+  consul_binary_check
 }
 
 CleanupTempStuff () {    # Delete temporary files and kill lingering processes
@@ -286,6 +308,12 @@ update_aws_context() {
 
 nuke_consul_k8s() {
   set +e
+
+  echo -e "${RED}"
+  echo -e "=========================================="
+  echo -e " Stage 1: Consul-k8s uninstalls"
+  echo -e "==========================================${NC}"
+
   echo -e "${GRN}Deleting Consul Helm installs in each Cluster:${NC}"
 
   echo -e "${YELL}DC3:${NC} $(consul-k8s uninstall -auto-approve -context $KDC3)" &
@@ -294,11 +322,6 @@ nuke_consul_k8s() {
   echo -e "${YELL}DC4_P1:${NC} $(consul-k8s uninstall -auto-approve -context $KDC4_P1)" &
 
   wait    # We might need to wait for these to finish before we can proceed to nuking other things.
-
-  echo -e "${RED}"
-  echo -e "=========================================="
-  echo -e " Stage 1: Consul-k8s uninstalls complete "
-  echo -e "==========================================${NC}"
 
   echo ""
 
@@ -320,7 +343,7 @@ nuke_consul_k8s() {
 
   echo -e "${RED}"
   echo -e "=========================================="
-  echo -e " Stage 2: Nuke Load Balancers Complete    "
+  echo -e " Stage 3: Nuke leftover CRDs"
   echo -e "==========================================${NC}"
 
 
@@ -340,7 +363,7 @@ nuke_consul_k8s() {
 
   echo -e "${RED}"
   echo -e "=========================================="
-  echo -e " Stage 3: Nuke leftover CRDs    "
+  echo -e " Stage 4: Nuke namespaces  "
   echo -e "==========================================${NC}"
 
   for CONTEXT in "${CONTEXTS[@]}"; do
@@ -375,7 +398,7 @@ nuke_consul_k8s() {
 
   echo -e "${RED}"
   echo -e "=========================================="
-  echo -e " Stage 4: Nuke namespaces  "
+  echo -e " Stage 5: Clean Local Temp stuff  "
   echo -e "==========================================${NC}"
 
   CleanupTempStuff
