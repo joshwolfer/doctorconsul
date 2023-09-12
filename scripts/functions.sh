@@ -275,8 +275,9 @@ update_aws_context() {
     echo -e "${GRN}Setting Contexts from EKSonly (https://github.com/ramramhariram/EKSonly):${NC}"
     echo ""
     echo -e "${YELL}Terraform EKSOnly state file is currently:${NC} $EKSONLY_TF_STATE_FILE"
+    echo -e "${YELL}AWS_REGION:${NC} $AWS_REGION"
     echo ""
-    aws eks update-kubeconfig --region $AWS_REGION --name nEKS0 --alias $KDC3
+    aws eks update-kubeconfig --region $AWS_REGION --name nEKS0 --alias $KDC3 || { echo -e "${RED}Did you specify the correct AWS region (AWS_REGION) and tfstate file (EKSONLY_TF_STATE_FILE)? ${NC}"; echo ""; exit 1; }
     aws eks update-kubeconfig --region $AWS_REGION --name nEKS1 --alias $KDC3_P1
     aws eks update-kubeconfig --region $AWS_REGION --name nEKS2 --alias $KDC4
     aws eks update-kubeconfig --region $AWS_REGION --name nEKS3 --alias $KDC4_P1
@@ -368,7 +369,7 @@ nuke_consul_k8s() {
   kubectl delete namespace sheol --context $KDC4
   kubectl delete namespace sheol-app1 --context $KDC4
   kubectl delete namespace sheol-app2 --context $KDC4
-  kubectl delete namespace paris --context $KDC3_P
+  kubectl delete namespace paris --context $KDC3_P1
 
   wait
 

@@ -147,7 +147,7 @@ if $ARG_EKSONLY;
     DC3_EXTERNALZ_HTTP_ADDR=$(kubectl get svc externalz-http -nexternalz --context $KDC3 -o json | jq -r '.status.loadBalancer.ingress[0].ip')
 fi
 
-echo -e " ${YELL}Externalz-http Load balancer address:${NC} http://$DC3_EXTERNALZ_TCP_ADDR:8003/ui/"
+echo -e " ${YELL}Externalz-http Load balancer address:${NC} http://$DC3_EXTERNALZ_HTTP_ADDR:8003/ui/"
 
 # ------------------------------------------
 #       Terminating Gateway Stuff

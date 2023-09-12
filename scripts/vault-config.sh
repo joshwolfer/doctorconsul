@@ -82,9 +82,9 @@ install_vault() {      # Example: install_vault $KDC3 [-eks]
 
   echo ""
   echo -e "${GRN}($DC_PREFIX) Vault Details: ${NC}"
-  echo -e "${YELL}Vault API Address:${NC} $(echo $VAULT_ADDR)"
-  echo -e "${YELL}Vault root token:${NC} $(echo $VAULT_TOKEN)"
-  echo -e "${YELL}Vault Unseal Key:${NC} $(echo $VAULT_UNSEAL)"
+  echo -e "${YELL}Vault API Address:${NC} $VAULT_ADDR"
+  echo -e "${YELL}Vault root token:${NC} $VAULT_TOKEN"
+  echo -e "${YELL}Vault Unseal Key:${NC} $VAULT_UNSEAL"
   echo ""
   echo -e "${GRN}Shell Env Variables:${NC}"
   echo "export VAULT_ADDR=$VAULT_ADDR"

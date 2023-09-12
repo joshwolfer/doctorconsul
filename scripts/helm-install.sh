@@ -71,7 +71,11 @@ InstallConsulDC3 () {
   if $ARG_EKSONLY; then
     helm install consul hashicorp/consul -f ./kube/helm/dc3-helm-values.yaml --namespace consul --kube-context $KDC3 $DEBUG \
     --set server.exposeService.exposeGossipAndRPCPorts=true \
-    --set tls.serverAdditionalDNSSANs=\['*.elb.amazonaws.com'\] $HELM_CHART_VER > ./logs/dc3-helm-install.log 2>&1       # Opening up the SANs to cover any AWS region.
+    --set tls.serverAdditionalDNSSANs=\['*.elb.amazonaws.com'\] $HELM_CHART_VER # > ./logs/dc3-helm-install.log 2>&1
+
+    # Because Macs are evidently dumb and can't handle stdout redirection AND multi-line bash... Cause who needs install logs anyway?
+
+    # Opening up the SANs to cover any AWS region.
 
     # On EKS we need to expose the grpc port for the consul dataplane child clusters to connect to.
     # The UI and expose services can't BOTH use a LoadBalancer service or the expose service won't pickup the UI and the child cluster can't connect.
@@ -88,7 +92,7 @@ InstallConsulDC3 () {
     helm install consul hashicorp/consul -f ./kube/helm/dc3-helm-values.yaml --namespace consul --kube-context $KDC3 $DEBUG \
     --set ui.enabled=true \
     --set ui.service.type=LoadBalancer \
-    --set ui.service.port.http=80 $HELM_CHART_VER > ./logs/dc3-helm-install.log 2>&1
+    --set ui.service.port.http=80 $HELM_CHART_VER # > ./logs/dc3-helm-install.log 2>&1
 
     # On k3d, I already expose grpc 8502 as 443, which works... but was a really bad practice, because the API HTTPS address won't work now.
     # But I'm only using HTTP to access the UI / API in k3d. This isn't a great practice and I should fix this at some point.
@@ -182,7 +186,7 @@ InstallConsulDC3_P1 () {
     helm install consul hashicorp/consul -f ./kube/helm/dc3-p1-helm-values.yaml --namespace consul --kube-context $KDC3_P1 $HELM_CHART_VER $DEBUG \
     --set externalServers.k8sAuthMethodHost=$DC3_P1_K8S_IP \
     --set externalServers.hosts[0]=$DC3_LB_IP \
-    --set externalServers.httpsPort=8501 > ./logs/dc3_p1-helm-install.log 2>&1
+    --set externalServers.httpsPort=8501 # > ./logs/dc3_p1-helm-install.log 2>&1
     # Specifying both LB addresses, because if you don't, the install will fail for no connection on gRPC or API.
     # Not sure how to work around this: https://hashicorp.slack.com/archives/CPEPBFDEJ/p1690218332117449
 
@@ -195,7 +199,7 @@ InstallConsulDC3_P1 () {
   else
     helm install consul hashicorp/consul -f ./kube/helm/dc3-p1-helm-values.yaml --namespace consul --kube-context $KDC3_P1 $HELM_CHART_VER $DEBUG \
     --set externalServers.k8sAuthMethodHost=$DC3_P1_K8S_IP \
-    --set externalServers.hosts[0]=$DC3_LB_IP > ./logs/dc3_p1-helm-install.log 2>&1
+    --set externalServers.hosts[0]=$DC3_LB_IP # > ./logs/dc3_p1-helm-install.log 2>&1
     # ^^^ --dry-run to test variable interpolation... if it actually worked.
 
   fi
@@ -228,14 +232,14 @@ InstallConsulDC4 () {
   if $ARG_EKSONLY; then
       helm install consul hashicorp/consul -f ./kube/helm/dc4-helm-values.yaml --namespace consul --kube-context $KDC4 $DEBUG \
       --set server.exposeService.exposeGossipAndRPCPorts=true \
-      --set tls.serverAdditionalDNSSANs=\['*.elb.amazonaws.com'\] $HELM_CHART_VER > ./logs/dc4-helm-install.log 2>&1
+      --set tls.serverAdditionalDNSSANs=\['*.elb.amazonaws.com'\] $HELM_CHART_VER # > ./logs/dc4-helm-install.log 2>&1
 
   elif $ARG_GKE; then
       helm install consul hashicorp/consul -f ./kube/helm/dc4-helm-values.yaml --namespace consul --kube-context $KDC4 $DEBUG \
       --set server.exposeService.exposeGossipAndRPCPorts=true \
       --set tls.serverAdditionalDNSSANs=\['*.some-gke-address.com'\] \
       --set connectInject.apiGateway.manageExternalCRDs=false \
-      $HELM_CHART_VER > ./logs/dc4-helm-install.log 2>&1
+      $HELM_CHART_VER # > ./logs/dc4-helm-install.log 2>&1
           # Figure out what the GKE SANs should be
 
 
@@ -243,7 +247,7 @@ InstallConsulDC4 () {
       helm install consul hashicorp/consul -f ./kube/helm/dc4-helm-values.yaml --namespace consul --kube-context $KDC4 $DEBUG \
       --set ui.enabled=true \
       --set ui.service.type=LoadBalancer \
-      --set ui.service.port.http=80 $HELM_CHART_VER > ./logs/dc4-helm-install.log 2>&1
+      --set ui.service.port.http=80 $HELM_CHART_VER # > ./logs/dc4-helm-install.log 2>&1
   fi
 
   echo -e "${GRN}DC4: Extract CA cert / key, bootstrap token, and partition token for child Consul Dataplane clusters ${NC} \n"
@@ -317,7 +321,7 @@ InstallConsulDC4_P1 () {
       helm install consul hashicorp/consul -f ./kube/helm/dc4-p1-helm-values.yaml --namespace consul --kube-context $KDC4_P1 $HELM_CHART_VER $DEBUG \
       --set externalServers.k8sAuthMethodHost=$DC4_P1_K8S_IP \
       --set externalServers.hosts[0]=$DC4_LB_IP \
-      --set externalServers.httpsPort=8501 > ./logs/dc4_p1-helm-install.log 2>&1
+      --set externalServers.httpsPort=8501 # > ./logs/dc4_p1-helm-install.log 2>&1
       # Specifying both LB addresses, because if you don't, the install will fail for no connection on gRPC or API.
       # Not sure how to work around this: https://hashicorp.slack.com/archives/CPEPBFDEJ/p1690218332117449
 
@@ -325,12 +329,12 @@ InstallConsulDC4_P1 () {
       helm install consul hashicorp/consul -f ./kube/helm/dc4-p1-helm-values.yaml --namespace consul --kube-context $KDC4_P1 $HELM_CHART_VER $DEBUG \
       --set externalServers.k8sAuthMethodHost=$DC4_P1_K8S_IP \
       --set externalServers.hosts[0]=$DC4_LB_IP \
-      --set externalServers.httpsPort=8501 > ./logs/dc4_p1-helm-install.log 2>&1
+      --set externalServers.httpsPort=8501 # > ./logs/dc4_p1-helm-install.log 2>&1
 
   else
       helm install consul hashicorp/consul -f ./kube/helm/dc4-p1-helm-values.yaml --namespace consul --kube-context $KDC4_P1 $HELM_CHART_VER $DEBUG \
       --set externalServers.k8sAuthMethodHost=$DC4_P1_K8S_IP \
-      --set externalServers.hosts[0]=$DC4_LB_IP > ./logs/dc4_p1-helm-install.log 2>&1
+      --set externalServers.hosts[0]=$DC4_LB_IP # > ./logs/dc4_p1-helm-install.log 2>&1
   fi
 }
 

@@ -2,8 +2,13 @@
 
 set -e
 
-export AWS_REGION=us-east-1
-# export AWS_REGION=eu-west-2      # London
+
+
+
+if [[ -z "${AWS_REGION}" ]]; then
+  export AWS_REGION=us-east-1
+  # export AWS_REGION=eu-west-2      # London
+fi
 
 source ./scripts/functions.sh
 # # ^^^ Variables and shared functions
@@ -17,7 +22,7 @@ fi
 help () {
     echo -e "Syntax: ./kube-config.sh [OPTIONS]"
     echo ""
-    echo "Options:"
+    echo -e "${YELL}Options:${NC}"
     echo "  -k3d-full           Integrate with full docker compose environment. Without this, only launch Consul in k3d"
     echo "  -no-k3d             Likely broken... Skip installing k3d - Configures k8s in a local k3d style (IE: IP based LBs)"
     echo "  -k3d-update         Update K3d to the latest version"
@@ -37,6 +42,10 @@ help () {
     echo "  -debug              Run Helm installation with --debug"
     echo "  -vars               List environment variables"
     echo "  -outputs            Re-run the Outputs. Can be combined with other args (IE: -eks -outputs)"
+    echo ""
+    echo -e "${YELL}Environment Variables Used:${NC}"
+    echo "  EKSONLY_TF_STATE_FILE     Absolute path to the EKSOnly terraform state file"
+    echo "  AWS_REGION                AWS Region where EKSOnly was built. (Default: us-east-1)"
     echo ""
     exit 0
 }
@@ -112,7 +121,7 @@ else
       -outputs)
         ARG_OUTPUTS=true
         ;;
-      -outputs)
+      -vault)
         ARG_VAULT=true
         ;;
       *)

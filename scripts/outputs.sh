@@ -36,73 +36,77 @@ if $ARG_EKSONLY; then
   DC3_ADDR=http://$DC3_LB_IP:8500/
   DC4_ADDR=http://$DC4_LB_IP:8500/
 
-  echo -e "${RED}Generating Outputs (Might take a second to run all the checks...) ${NC}"
-  echo ""
+  if [[ "$ARG_NO_APPS" == "false" ]]; then
+    echo -e "${RED}Generating Outputs (Might take a second to run all the checks...) ${NC}"
+    echo ""
 
-  export UNICORN_FRONTEND_UI_ADDR=$(kubectl get svc unicorn-frontend -nunicorn --context $KDC3 -o json | jq -r '"http://\(.status.loadBalancer.ingress[0].hostname):\(.spec.ports[0].port)"')
-  # export UNICORN_SSG_FRONTEND_UI_ADDR=$(kubectl get svc unicorn-ssg-frontend -nunicorn --context $KDC3 -o json | jq -r '"http://\(.status.loadBalancer.ingress[0].hostname):\(.spec.ports[0].port)"')
 
-  # # ------------------------------------------
-  # #  (DC3) Wait and Consul API GW
-  # # ------------------------------------------
+    export UNICORN_FRONTEND_UI_ADDR=$(kubectl get svc unicorn-frontend -nunicorn --context $KDC3 -o json | jq -r '"http://\(.status.loadBalancer.ingress[0].hostname):\(.spec.ports[0].port)"')
+    # export UNICORN_SSG_FRONTEND_UI_ADDR=$(kubectl get svc unicorn-ssg-frontend -nunicorn --context $KDC3 -o json | jq -r '"http://\(.status.loadBalancer.ingress[0].hostname):\(.spec.ports[0].port)"')
 
-  # APIG has two ports, can't use the wait_for_kube_service_w_port() function
+    # # ------------------------------------------
+    # #  (DC3) Wait and Consul API GW
+    # # ------------------------------------------
 
-  while true; do
-      DC3_CONSUL_API_GATEWAY_HOSTNAME=$(kubectl get svc consul-api-gateway -nconsul --context $KDC3 -o json | jq -r '.status.loadBalancer.ingress[0].hostname')
+    # APIG has two ports, can't use the wait_for_kube_service_w_port() function
 
-      if [ ! -z "$DC3_CONSUL_API_GATEWAY_HOSTNAME" ]; then
-          DC3_CONSUL_API_GATEWAY_ADDR=http://$DC3_CONSUL_API_GATEWAY_HOSTNAME
-          break
-      fi
+    while true; do
+        DC3_CONSUL_API_GATEWAY_HOSTNAME=$(kubectl get svc consul-api-gateway -nconsul --context $KDC3 -o json | jq -r '.status.loadBalancer.ingress[0].hostname')
 
-      echo "Waiting for the consul-api-gateway load balancer to get an ingress hostname..."
-      sleep 2
-  done
+        if [ ! -z "$DC3_CONSUL_API_GATEWAY_HOSTNAME" ]; then
+            DC3_CONSUL_API_GATEWAY_ADDR=http://$DC3_CONSUL_API_GATEWAY_HOSTNAME
+            break
+        fi
 
-  # Function to wait for service to get its ingress hostname
-  wait_for_kube_service_w_port() {
-    local svc_name=$1        # Kube service name
-    local namespace=$2       # Kube namespace
-    local context=$3         # Kube context
-    local max_retries=$4
-    local port_suffix=$5
-    local counter=0
-    local hostname_var_name=$6      # I dunno. chatgpt magic. Just follow suit, I guess.
-    local addr_var_name=$7          # Variable name to reference in this script
-
-    while [ $counter -lt $max_retries ]; do
-      local hostname=$(kubectl get svc $svc_name -n$namespace --context $context -o json | jq -r '.status.loadBalancer.ingress[0].hostname')
-      local port=$(kubectl get svc $svc_name -n$namespace --context $context -o jsonpath='{.spec.ports[0].port}')
-
-      if [ ! -z "$hostname" ]; then
-        eval "$hostname_var_name=$hostname"
-        eval "$addr_var_name=http://$hostname:$port$port_suffix"
-        break
-      fi
-
-      counter=$((counter+1))
-      if [ $counter -eq $max_retries ]; then
-        echo "Giving up on $svc_name after $max_retries attempts."
-        break
-      fi
-
-      echo "Waiting for $svc_name load balancer to get an ingress hostname... Attempt $counter/$max_retries."
-      sleep 2
+        echo "Waiting for the consul-api-gateway load balancer to get an ingress hostname..."
+        sleep 2
     done
-  }
 
-  # Usage
-  wait_for_kube_service_w_port "unicorn-ssg-frontend" "unicorn" "$KDC3" 6 "/ui/" "SSG_HOSTNAME" "UNICORN_SSG_FRONTEND_UI_ADDR"
-  wait_for_kube_service_w_port "externalz-tcp" "externalz" "$KDC3" 6 "/ui/" "DC3_EXTERNALZ_TCP_HOSTNAME" "DC3_EXTERNALZ_TCP_ADDR"
-  wait_for_kube_service_w_port "externalz-http" "externalz" "$KDC3" 6 "/ui/" "DC3_EXTERNALZ_HTTP_HOSTNAME" "DC3_EXTERNALZ_HTTP_ADDR"
-  wait_for_kube_service_w_port "sheol-app" "sheol" "$KDC4" 6 "/ui/" "DC4_SHEOL_HOSTNAME" "DC4_SHEOL_ADDR"
-  wait_for_kube_service_w_port "sheol-app1" "sheol-app1" "$KDC4" 6 "/ui/" "DC4_SHEOL1_HOSTNAME" "DC4_SHEOL1_ADDR"
-  wait_for_kube_service_w_port "sheol-app2" "sheol-app2" "$KDC4" 6 "/ui/" "DC4_SHEOL2_HOSTNAME" "DC4_SHEOL2_ADDR"
-  # wait_for_kube_service_w_port "consul-api-gateway" "consul" "$KDC3" 6 "" "DC3_CONSUL_API_GATEWAY_HOSTNAME" "DC3_CONSUL_API_GATEWAY_ADDR"    # APIG has two ports, can't use this function for now
-  wait_for_kube_service_w_port "leroy-jenkins" "paris" "$KDC3_P1" 6 "/ui/" "DC3_P1_PARIS_LEROY_HOSTNAME" "DC3_P1_PARIS_LEROY_ADDR"
-  wait_for_kube_service_w_port "pretty-please" "paris" "$KDC3_P1" 6 "/ui/" "DC3_P1_PARIS_PLEASE_HOSTNAME" "DC3_P1_PARIS_PLEASE_ADDR"
+    # Function to wait for service to get its ingress hostname
+    wait_for_kube_service_w_port() {
+      local svc_name=$1        # Kube service name
+      local namespace=$2       # Kube namespace
+      local context=$3         # Kube context
+      local max_retries=$4
+      local port_suffix=$5
+      local counter=0
+      local hostname_var_name=$6      # I dunno. chatgpt magic. Just follow suit, I guess.
+      local addr_var_name=$7          # Variable name to reference in this script
 
+      while [ $counter -lt $max_retries ]; do
+        local hostname=$(kubectl get svc $svc_name -n$namespace --context $context -o json | jq -r '.status.loadBalancer.ingress[0].hostname')
+        local port=$(kubectl get svc $svc_name -n$namespace --context $context -o jsonpath='{.spec.ports[0].port}')
+
+        if [ ! -z "$hostname" ]; then
+          eval "$hostname_var_name=$hostname"
+          eval "$addr_var_name=http://$hostname:$port$port_suffix"
+          break
+        fi
+
+        counter=$((counter+1))
+        if [ $counter -eq $max_retries ]; then
+          echo "Giving up on $svc_name after $max_retries attempts."
+          break
+        fi
+
+        echo "Waiting for $svc_name load balancer to get an ingress hostname... Attempt $counter/$max_retries."
+        sleep 2
+      done
+    }
+
+    # Usage
+    wait_for_kube_service_w_port "unicorn-ssg-frontend" "unicorn" "$KDC3" 6 "/ui/" "SSG_HOSTNAME" "UNICORN_SSG_FRONTEND_UI_ADDR"
+    wait_for_kube_service_w_port "externalz-tcp" "externalz" "$KDC3" 6 "/ui/" "DC3_EXTERNALZ_TCP_HOSTNAME" "DC3_EXTERNALZ_TCP_ADDR"
+    wait_for_kube_service_w_port "externalz-http" "externalz" "$KDC3" 6 "/ui/" "DC3_EXTERNALZ_HTTP_HOSTNAME" "DC3_EXTERNALZ_HTTP_ADDR"
+    wait_for_kube_service_w_port "sheol-app" "sheol" "$KDC4" 6 "/ui/" "DC4_SHEOL_HOSTNAME" "DC4_SHEOL_ADDR"
+    wait_for_kube_service_w_port "sheol-app1" "sheol-app1" "$KDC4" 6 "/ui/" "DC4_SHEOL1_HOSTNAME" "DC4_SHEOL1_ADDR"
+    wait_for_kube_service_w_port "sheol-app2" "sheol-app2" "$KDC4" 6 "/ui/" "DC4_SHEOL2_HOSTNAME" "DC4_SHEOL2_ADDR"
+    # wait_for_kube_service_w_port "consul-api-gateway" "consul" "$KDC3" 6 "" "DC3_CONSUL_API_GATEWAY_HOSTNAME" "DC3_CONSUL_API_GATEWAY_ADDR"    # APIG has two ports, can't use this function for now
+    wait_for_kube_service_w_port "leroy-jenkins" "paris" "$KDC3_P1" 6 "/ui/" "DC3_P1_PARIS_LEROY_HOSTNAME" "DC3_P1_PARIS_LEROY_ADDR"
+    wait_for_kube_service_w_port "pretty-please" "paris" "$KDC3_P1" 6 "/ui/" "DC3_P1_PARIS_PLEASE_HOSTNAME" "DC3_P1_PARIS_PLEASE_ADDR"
+  else
+    echo "Skipping Application Detection (-no-apps)"
+  fi
 fi
 
 # ==============================================================================================================================
@@ -150,11 +154,12 @@ echo -e ""
 echo -e "${GRN}Export ENV Variables ${NC}"
 echo -e " export DC3=$DC3_ADDR"
 echo -e " export DC4=$DC4_ADDR"
+echo -e " export CONSUL_HTTP_TOKEN=root"
 echo ""
-echo -e " KDC3=k3d-dc3"
-echo -e " KDC3_P1=k3d-dc3-p1"
-echo -e " KDC4=k3d-dc4"
-echo -e " KDC4_P1=k3d-dc4-p1"
+echo -e " export KDC3=k3d-dc3"
+echo -e " export KDC3_P1=k3d-dc3-p1"
+echo -e " export KDC4=k3d-dc4"
+echo -e " export KDC4_P1=k3d-dc4-p1"
 echo -e ""
 
 # ----------------------------------------------
@@ -189,30 +194,36 @@ fi
 #               Fake Service Addresses
 # ----------------------------------------------
 
-echo -e "${GRN}Fake Service UI addresses: ${NC}"
-echo -e " ${YELL}Unicorn-Frontend:${NC} $UNICORN_FRONTEND_UI_ADDR/ui/"
-echo -e " ${YELL}Unicorn-SSG-Frontend:${NC} $UNICORN_SSG_FRONTEND_UI_ADDR"
-echo ""
-echo -e "${GRN}Externalz-tcp UI address: ${NC}"
-echo -e " ${YELL}Externalz-tcp:${NC} $DC3_EXTERNALZ_TCP_ADDR"
-echo -e " ${YELL}Externalz-tcp:${NC} $DC3_EXTERNALZ_HTTP_ADDR"
-echo -e ""
-echo -e "${GRN}Sheol App UI addresses (External Services via TGW): ${NC}"
-echo -e " ${YELL}Sheol-App:${NC} $DC4_SHEOL_ADDR"
-echo -e " ${YELL}Sheol-App1:${NC} $DC4_SHEOL1_ADDR"
-echo -e " ${YELL}Sheol-App2:${NC} $DC4_SHEOL2_ADDR"
-echo -e ""
-echo -e "${GRN}Consul API-GW LB Address: ${NC}"
-echo -e " ${YELL}Consul APIG HTTP Listener:${NC} $DC3_CONSUL_API_GATEWAY_ADDR:1666"
-echo -e "  ${YELL}Consul APIG HTTP Apps:${NC} $DC3_CONSUL_API_GATEWAY_ADDR:1666/unicorn-frontend/ui/"
-echo -e "  ${YELL}Consul APIG HTTP Apps:${NC} $DC3_CONSUL_API_GATEWAY_ADDR:1666/unicorn-ssg-frontend/ui/"
-echo -e "  ${YELL}Consul APIG HTTP Apps:${NC} $DC3_CONSUL_API_GATEWAY_ADDR:1666/externalz-http/ui/"
-echo -e " ${YELL}Consul APIG TCP Listener:${NC} $DC3_CONSUL_API_GATEWAY_ADDR:1667/ui/"
-echo -e ""
-echo -e "${GRN}Paris App UI addresses (Permissive Mode): ${NC}"
-echo -e " ${YELL}Pretty-Please:${NC} $DC3_P1_PARIS_PLEASE_ADDR"
-echo -e " ${YELL}Leroy-Jenkins:${NC} $DC3_P1_PARIS_LEROY_ADDR"
-echo ""
+if $ARG_NO_APPS; then
+    echo ""
+
+  else
+
+    echo -e "${GRN}Fake Service UI addresses: ${NC}"
+    echo -e " ${YELL}Unicorn-Frontend:${NC} $UNICORN_FRONTEND_UI_ADDR/ui/"
+    echo -e " ${YELL}Unicorn-SSG-Frontend:${NC} $UNICORN_SSG_FRONTEND_UI_ADDR"
+    echo ""
+    echo -e "${GRN}Externalz-tcp UI address: ${NC}"
+    echo -e " ${YELL}Externalz-tcp:${NC} $DC3_EXTERNALZ_TCP_ADDR"
+    echo -e " ${YELL}Externalz-tcp:${NC} $DC3_EXTERNALZ_HTTP_ADDR"
+    echo -e ""
+    echo -e "${GRN}Sheol App UI addresses (External Services via TGW): ${NC}"
+    echo -e " ${YELL}Sheol-App:${NC} $DC4_SHEOL_ADDR"
+    echo -e " ${YELL}Sheol-App1:${NC} $DC4_SHEOL1_ADDR"
+    echo -e " ${YELL}Sheol-App2:${NC} $DC4_SHEOL2_ADDR"
+    echo -e ""
+    echo -e "${GRN}Consul API-GW LB Address: ${NC}"
+    echo -e " ${YELL}Consul APIG HTTP Listener:${NC} $DC3_CONSUL_API_GATEWAY_ADDR:1666"
+    echo -e "  ${YELL}Consul APIG HTTP Apps:${NC} $DC3_CONSUL_API_GATEWAY_ADDR:1666/unicorn-frontend/ui/"
+    echo -e "  ${YELL}Consul APIG HTTP Apps:${NC} $DC3_CONSUL_API_GATEWAY_ADDR:1666/unicorn-ssg-frontend/ui/"
+    echo -e "  ${YELL}Consul APIG HTTP Apps:${NC} $DC3_CONSUL_API_GATEWAY_ADDR:1666/externalz-http/ui/"
+    echo -e " ${YELL}Consul APIG TCP Listener:${NC} $DC3_CONSUL_API_GATEWAY_ADDR:1667/ui/"
+    echo -e ""
+    echo -e "${GRN}Paris App UI addresses (Permissive Mode): ${NC}"
+    echo -e " ${YELL}Pretty-Please:${NC} $DC3_P1_PARIS_PLEASE_ADDR"
+    echo -e " ${YELL}Leroy-Jenkins:${NC} $DC3_P1_PARIS_LEROY_ADDR"
+    echo ""
+fi
 
 # ----------------------------------------------
 #                  Footer
