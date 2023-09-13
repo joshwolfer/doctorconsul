@@ -123,32 +123,14 @@ CleanupTempStuff () {    # Delete temporary files and kill lingering processes
   echo ""
 }
 
-update_images() {   # Used in fakeservice_from_k3d()
-    local file="$1"
-    awk '/^ *image: .*/ { match($0, /^( *)image: .*/, arr); sub(/^ *image: .*/, arr[1] "image: k3d-doctorconsul.localhost:12345/nicholasjackson/fake-service:" ENVIRON["FAKESERVICE_VER"]); } {print}' "$file" > temp
-    mv temp "$file"
-}
-
-revert_images() {     # Used in fakeservice_from_internet()
-    local file="$1"
-    awk '/^ *image: k3d-doctorconsul\.localhost:12345\/nicholasjackson\/fake-service:.*/ { match($0, /^( *)image: .*/, arr); sub(/^ *image: k3d-doctorconsul\.localhost:12345\/nicholasjackson\/fake-service:.*/, arr[1] "image: nicholasjackson/fake-service:" ENVIRON["FAKESERVICE_VER"]); } {print}' "$file" > temp
-    mv temp "$file"
-}
-
 fakeservice_from_internet() {  # Pull fake service from the interwebz instead of local k3d registry (which doesn't exist when using EKS)
-  # find ./kube/configs/dc3/services/*.yaml -type f -exec sed -i "s/^\( *\)image: .*/\1image: nicholasjackson\/fake-service:$FAKESERVICE_VER/" {} \;
-  # find ./kube/configs/dc4/services/*.yaml -type f -exec sed -i "s/^\( *\)image: .*/\1image: nicholasjackson\/fake-service:$FAKESERVICE_VER/" {} \;
-
-  find ./kube/configs/dc3/services/*.yaml -type f -exec bash -c 'source ./scripts/functions.sh; revert_images "$0"' {} \;
-  find ./kube/configs/dc4/services/*.yaml -type f -exec bash -c 'source ./scripts/functions.sh; revert_images "$0"' {} \;
+  find ./kube/configs/dc3/services/*.yaml -type f -exec sed -i "s/^\( *\)image: .*/\1image: nicholasjackson\/fake-service:$FAKESERVICE_VER/" {} \;
+  find ./kube/configs/dc4/services/*.yaml -type f -exec sed -i "s/^\( *\)image: .*/\1image: nicholasjackson\/fake-service:$FAKESERVICE_VER/" {} \;
 }
 
 fakeservice_from_k3d() {  # Puts the files back to a local k3d registry if they were previously changed (same as checked into the repo)
-  # find ./kube/configs/dc3/services/*.yaml -type f -exec sed -i "s/^\( *\)image: .*/\1image: k3d-doctorconsul.localhost:12345\/nicholasjackson\/fake-service:$FAKESERVICE_VER/" {} \;
-  # find ./kube/configs/dc4/services/*.yaml -type f -exec sed -i "s/^\( *\)image: .*/\1image: k3d-doctorconsul.localhost:12345\/nicholasjackson\/fake-service:$FAKESERVICE_VER/" {} \;
-
-  find ./kube/configs/dc3/services/*.yaml -type f -exec bash -c 'source ./scripts/functions.sh; update_images "$0"' {} \;
-  find ./kube/configs/dc4/services/*.yaml -type f -exec bash -c 'source ./scripts/functions.sh; update_images "$0"' {} \;
+  find ./kube/configs/dc3/services/*.yaml -type f -exec sed -i "s/^\( *\)image: .*/\1image: k3d-doctorconsul.localhost:12345\/nicholasjackson\/fake-service:$FAKESERVICE_VER/" {} \;
+  find ./kube/configs/dc4/services/*.yaml -type f -exec sed -i "s/^\( *\)image: .*/\1image: k3d-doctorconsul.localhost:12345\/nicholasjackson\/fake-service:$FAKESERVICE_VER/" {} \;
 
 }
 
