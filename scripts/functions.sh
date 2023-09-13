@@ -124,14 +124,31 @@ CleanupTempStuff () {    # Delete temporary files and kill lingering processes
 }
 
 fakeservice_from_internet() {  # Pull fake service from the interwebz instead of local k3d registry (which doesn't exist when using EKS)
-  find ./kube/configs/dc3/services/*.yaml -type f -exec sed -i "s/^\( *\)image: .*/\1image: nicholasjackson\/fake-service:$FAKESERVICE_VER/" {} \;
-  find ./kube/configs/dc4/services/*.yaml -type f -exec sed -i "s/^\( *\)image: .*/\1image: nicholasjackson\/fake-service:$FAKESERVICE_VER/" {} \;
+
+  local OS_NAME=$(uname)
+
+  if [[ "$OS_NAME" == "Linux" ]]; then
+    find ./kube/configs/dc3/services/*.yaml -type f -exec sed -i "s/^\( *\)image: .*/\1image: nicholasjackson\/fake-service:$FAKESERVICE_VER/" {} \;
+    find ./kube/configs/dc4/services/*.yaml -type f -exec sed -i "s/^\( *\)image: .*/\1image: nicholasjackson\/fake-service:$FAKESERVICE_VER/" {} \;
+  elif [[ "$OS_NAME" == "Darwin" ]]; then
+    echo "Skipping image swap... MacOS!"
+  else
+    echo "Operating system not recognized."
+  fi
 }
 
 fakeservice_from_k3d() {  # Puts the files back to a local k3d registry if they were previously changed (same as checked into the repo)
-  find ./kube/configs/dc3/services/*.yaml -type f -exec sed -i "s/^\( *\)image: .*/\1image: k3d-doctorconsul.localhost:12345\/nicholasjackson\/fake-service:$FAKESERVICE_VER/" {} \;
-  find ./kube/configs/dc4/services/*.yaml -type f -exec sed -i "s/^\( *\)image: .*/\1image: k3d-doctorconsul.localhost:12345\/nicholasjackson\/fake-service:$FAKESERVICE_VER/" {} \;
 
+  local OS_NAME=$(uname)
+
+  if [[ "$OS_NAME" == "Linux" ]]; then
+    find ./kube/configs/dc3/services/*.yaml -type f -exec sed -i "s/^\( *\)image: .*/\1image: k3d-doctorconsul.localhost:12345\/nicholasjackson\/fake-service:$FAKESERVICE_VER/" {} \;
+    find ./kube/configs/dc4/services/*.yaml -type f -exec sed -i "s/^\( *\)image: .*/\1image: k3d-doctorconsul.localhost:12345\/nicholasjackson\/fake-service:$FAKESERVICE_VER/" {} \;
+  elif [[ "$OS_NAME" == "Darwin" ]]; then
+    echo "Skipping image swap... MacOS!"
+  else
+    echo "Operating system not recognized."
+  fi
 }
 
 wait_for_consul_connect_inject_service() {
