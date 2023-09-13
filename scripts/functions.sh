@@ -39,18 +39,41 @@ export GCP_REGION=us-east1
 # ==============================================================================================================================
 
 command_check() {
-    COMMAND=$1
+  COMMAND=$1
 
-    if command -v $COMMAND &> /dev/null; then
-        echo -e "${GRN}Present:${NC} ${YELL}$COMMAND${NC} ($(command -v $COMMAND))."
-    else
-        echo ""
-        echo -e "${RED}$COMMAND is required by Doctor Consul and could not be found. ${NC}"
-        echo -e "Please make sure it is installed and available in your PATH."
-        echo ""
-        exit 1
-    fi
+  if command -v $COMMAND &> /dev/null; then
+      echo -e "${GRN}Present:${NC} ${YELL}$COMMAND${NC} ($(command -v $COMMAND))."
+  else
+      echo ""
+      echo -e "${RED}$COMMAND is required by Doctor Consul and could not be found. ${NC}"
+      echo -e "Please make sure it is installed and available in your PATH."
+      echo ""
+      exit 1
+  fi
 }
+
+file_check() {
+  FILE=$1
+
+  if [ -f "$FILE" ]; then
+      echo -e "${GRN}Present:${NC} ${YELL}$FILE${NC} (Path: $(realpath $FILE))."
+  elif [ "$FILE" == "./license" ]; then
+      echo ""
+      echo -e "${RED}Not Found:${NC} $FILE."
+      echo ""
+      echo -e "${RED}The Consul Enterprise license must be stored in $FILE. ${NC}"
+      echo -e "Please add the license file to run Doctor Consul."
+      echo ""
+      exit 1
+  else
+      echo ""
+      echo -e "${RED}$FILE is required and could not be found. ${NC}"
+      echo -e "Please make sure the file exists at the specified location."
+      echo ""
+      exit 1
+  fi
+}
+
 
 consul_binary_check() {
   # Check if 'consul' command is available
@@ -74,27 +97,29 @@ doctorconsul_dependancies_check() {
   command_check sed
   command_check helm
   command_check kubectl
+  command_check consul-k8s
   consul_binary_check
+  file_check ./license
 }
 
 CleanupTempStuff () {    # Delete temporary files and kill lingering processes
 
   echo ""
-  echo -e "${RED}Nuking the Env Variables...${NC}"
+  echo -e "Nuking the Env Variables...${NC}"
   for var in $(env | grep -Eo '^DC[34][^=]*')
     do
         unset $var
     done
 
   if [[ $PWD == *"doctorconsul"* ]]; then
-    echo -e "${RED}Nuking the tokens...${NC}"
+    echo -e "Nuking the tokens...${NC}"
 
     rm -f ./tokens/*
   else
       echo -e "${RED}The kill script should only be executed from within the Doctor Consul Directory.${NC}"
   fi
 
-  echo -e "${RED}Nuking kubectl local port forwards...${NC}"
+  echo -e "Nuking kubectl local port forwards...${NC}"
   pkill kubectl
   echo ""
 }
