@@ -1,0 +1,78 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ice-cream
+  namespace: banana-split
+
+---
+
+apiVersion: consul.hashicorp.com/v1alpha1
+kind: ServiceDefaults
+metadata:
+  name: ice-cream
+  namespace: banana-split
+spec:
+  protocol: http
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: ice-cream
+  namespace: banana-split
+spec:
+  type: LoadBalancer
+  selector:
+    app: ice-cream
+  ports:
+    - name: ice-cream-port
+      protocol: TCP
+      port: 8993
+      targetPort: 10000     # This should line up with the FakeService LISTEN_ADDR: 0.0.0.0:10000
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ice-cream-chocolate
+  namespace: banana-split
+  labels:
+    app: ice-cream
+    version: chocolate
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ice-cream
+      version: chocolate
+  template:
+    metadata:
+      labels:
+        app: ice-cream
+        version: chocolate
+      annotations:
+        consul.hashicorp.com/connect-inject: 'true'
+        consul.hashicorp.com/transparent-proxy: 'true'
+        consul.hashicorp.com/service-tags: 'dc3-cernunnos'
+        consul.hashicorp.com/service-meta-version: chocolate
+    spec:
+      serviceAccountName: ice-cream
+      containers:
+        - name: ice-cream
+          image: nicholasjackson/fake-service:v0.26.0
+          ports:
+            - containerPort: 10000
+          env:
+            - name: 'LISTEN_ADDR'
+              value: '0.0.0.0:10000'
+            - name: 'NAME'
+              value: 'Chocolate Ice Cream (DC3 Cernunnos)'
+            - name: 'MESSAGE'
+              value: '<p><strong>The ice-cream Application</strong></p>'
+            - name: 'SERVER_TYPE'
+              value: 'http'
+            - name: 'HTTP_CLIENT_REQUEST_TIMEOUT'
+              value: '3s'
+
