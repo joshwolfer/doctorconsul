@@ -63,7 +63,7 @@ spec:
       serviceAccountName: sheol-app
       containers:
         - name: sheol-app
-          image: nicholasjackson/fake-service:v0.26.0
+          image: k3d-doctorconsul.localhost:12345/nicholasjackson/fake-service:v0.26.0
           ports:
             - containerPort: 10000
           env:

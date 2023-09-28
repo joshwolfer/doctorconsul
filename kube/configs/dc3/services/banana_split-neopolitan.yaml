@@ -59,7 +59,7 @@ spec:
       serviceAccountName: neopolitan
       containers:
         - name: neopolitan
-          image: nicholasjackson/fake-service:v0.26.0
+          image: k3d-doctorconsul.localhost:12345/nicholasjackson/fake-service:v0.26.0
           # imagePullPolicy: Always       # Probably don't need this
           ports:
             - containerPort: 10000

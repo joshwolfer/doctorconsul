@@ -337,7 +337,7 @@ update_aws_context() {
     echo -e "${YELL}EKSONLY_TF_STATE_FILE:${NC} Terraform EKSOnly state file is currently: $EKSONLY_TF_STATE_FILE"
     echo -e "${YELL}AWS_REGION:${NC} $AWS_REGION"
     echo ""
-    aws eks update-kubeconfig --region $AWS_REGION --name nEKS0 --alias $KDC3 || { echo -e "${RED}Did you specify the correct AWS region (AWS_REGION) and tfstate file (EKSONLY_TF_STATE_FILE)? ${NC}"; echo ""; exit 1; }
+    aws eks update-kubeconfig --region $AWS_REGION --name nEKS0 --alias $KDC3 || { echo -e "${RED}Did you specify the correct AWS region (AWS_REGION) and tfstate file (EKSONLY_TF_STATE_FILE)? ${NC}"; echo ""; echo -e "${RED}Is the date/time correct on your computer?${NC}"; echo ""; exit 1; }
     aws eks update-kubeconfig --region $AWS_REGION --name nEKS1 --alias $KDC3_P1
     aws eks update-kubeconfig --region $AWS_REGION --name nEKS2 --alias $KDC4
     aws eks update-kubeconfig --region $AWS_REGION --name nEKS3 --alias $KDC4_P1
