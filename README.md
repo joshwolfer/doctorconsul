@@ -2,6 +2,13 @@
 
 This repo contains a full featured environment for setting up and testing HashiCorp Consul Enterprise. While it is not directly intended to be used for Consul demos, the local environment (docker-compose + k3d) is consistently built in <10 minutes.
 
+NOTE!: The proper Doctor Consul manual (PDF) is located [HERE](docs/DoctorConsul-TheManual-Draft_SEPT_2023.pdf).
+
+ALL of the Kube side docs have been moved there. Go read it!!
+It is a far better way of consuming this information than this README.md.
+Currently it only covers the Kubernetes side of Doctor Consul, not the VM-based side.
+I'm phasing out this README. Until then, consult this READMe for the VM (DC1 / DC2) side and the PDF for the Kube (DC3 / DC4) side.
+
 **Details**:
 
 * Heavy focus on implementing and testing the latest Consul features.
@@ -37,70 +44,19 @@ This repo contains a full featured environment for setting up and testing HashiC
 
 # Environment Pre-Requirements
 
-### HashiCorp Consul Enterprise
+### Auth0 (Optional)* Create Auth0 account with appropriate configuration
 
-* HashiCorp Consul Enterprise license required.
-  * Place in `./license`
-* The `consul` enterprise binary must installed and in the PATH.
-* (VM-style only): Generate Consul PKI Root certs and Consul Server RPC certs
-  * Self-signed certificates have already been provided in this repo.
-  * If they need to be regenerated:
-    * From within `./certs`
-      ```
-      consul tls ca create -days=3650
-      consul tls cert create -server -dc=dc1 -additional-dnsname=consul-server1-dc1 -days=1825
-      consul tls cert create -server -dc=dc2 -additional-dnsname=consul-server1-dc2 -days=1825
-      chmod 644 *
-      ```
-
-### Auth0 (Optional)
-
-* Create Auth0 account with appropriate configuration
-  * Required only for the OIDC authentication in this Consul environment.
-  * Details on how to do that will come later. For now reference this [Learn Guide](https://developer.hashicorp.com/consul/tutorials/datacenter-operations/single-sign-on-auth0?in=consul%2Fdatacenter-operations).
-    * NOTE: The guide is outdated and Auth0 has since changed the locations for a few of the components. Everything is still possible to complete using this guide, but the locations of the config params are in different places on the leftside bar. Specifically:
-      * `Applications` > `Applications` > Default
-      * `Auth Pipeline` > `Rules`
+* Required only for the OIDC authentication in this Consul environment.
+* Details on how to do that will come later. For now reference this [Learn Guide](https://developer.hashicorp.com/consul/tutorials/datacenter-operations/single-sign-on-auth0?in=consul%2Fdatacenter-operations).
+  * NOTE: The guide is outdated and Auth0 has since changed the locations for a few of the components. Everything is still possible to complete using this guide, but the locations of the config params are in different places on the leftside bar. Specifically:
+    * `Applications` > `Applications` > Default
+    * `Auth Pipeline` > `Rules`
 
 ### Docker Compose (For VM style)
 
 * The VM-style Environment requires Docker-Compose
   * **!! MAC M1 USERS !!** : The Docker images referenced in the `docker-compose.yml` are AMD64, not ARM64.
   * M1 user will need to build your own ARM64 consul+envoy images using [https://github.com/joshwolfer/convoy-build](https://github.com/joshwolfer/convoy-build) and modify the `docker-compose.yml` file to reflect these new images.
-
-### K3d (For local Kube)
-
-* K3d is a dockerized version of K3s, which is a simple version of Rancher Kubernetes.
-* K3d can be used for the local Kubernetes portion of this environment.
-* Installation instructions [HERE](https://github.com/k3d-io/k3d#get)
-
-### Kubectl
-
-* Installation instructions [HERE](https://kubernetes.io/docs/tasks/tools/)
-
-### Helm
-
-* Helm is used to configure and install Consul into Kubernetes.
-* Installation instructions [HERE](https://helm.sh/docs/intro/install/)
-
-### k9s (Optional)
-
-* Highly recommended to get k9s to make navigating Kubernetes a lot easier.
-* [https://github.com/derailed/k9s/releases](https://github.com/derailed/k9s/releases)
-
-### AWS EKS + Terraform (Optional: Cloud Kubernetes)
-
-* Doctor Consul Supports using 4 AWS EKS clusters
-  * This is an alternative to using k3d locally.
-  * Requires using Terraform + [https://github.com/ramramhariram/EKSonly](https://github.com/ramramhariram/EKSonly) to provision the EKS clusters
-  * See specific "EKSOnly" instructions below.
-  * Requires:
-    * AWS CLI version 2 [HERE](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
-    * Terraform OSS [HERE](https://developer.hashicorp.com/terraform/tutorials/aws-get-started/install-cli)
-
-### HashiCorp consul-k8s CLI
-
-* Installation instructions [HERE](https://developer.hashicorp.com/consul/docs/k8s/installation/install-cli#install-the-latest-version)
 
 # Instructions to Execute Environment
 
@@ -133,61 +89,11 @@ The `-k3d` argument automatically runs `kube-config.sh -k3d-full` at completion.
 
 * This builds the local Kubernetes environment using k3d AND cluster peers the VM-style environment to the local Kube environment.
 
-## Kubernetes Environment
-
-### Kube configuration script (k3d local)
-
-* Build the K3d Kubernetes cluster using the `kube-config.sh` script:
-  * `./kube-config.sh` : Default Builds ONLY the k3d environment
-  * `./kube-config.sh -k3d-full` : Integrates k3d Kube clusters with the full VM-style environment.
-
-The kube-config on it's own has no reliance on the VM-style environment, meaning you can simply just run `./kube-config.sh` and build a working 4 cluster configuration of Consul in k3d locally.
-
-### Kube configuration script (AWS EKS "EKSOnly")
-
-* Instead of building Kubernetes clusters locally using k3d, Doctor Consul can install and configure Consul into 4 pre-existing AWS EKS clusters using the [EKSOnly](https://github.com/ramramhariram/EKSonly) repo.
-* The EKS clusters must be build in `us-east-1`.
-  * If a different region is used, the additional SANS HELM config will need to be updated to reflect the correct region.
-* This script will automatically map the Doctor Consul config to the the EKSOnly clusters using the following mapping:
-  * KDC3 > nEKS0
-  * KDC3_P1 > nEKS1
-  * KDC4 > nEKS2
-  * KDC4_P1 > nEKS3
-* Build the K3d Kubernetes cluster using the `kube-config.sh` script:
-  * `export EKSONLY_TF_STATE_FILE=<some-path>/terrform.tfstate`
-  * `./kube-config.sh -eks` : Builds Consul into 4 clusters that have previously been created using [EKSOnly](https://github.com/ramramhariram/EKSonly).
-
-The kube-config on it's own has no reliance on the VM-style environment, meaning you can simply just run `./kube-config.sh -eks` and build a working 4 cluster configuration of Consul in AWS EKS.
-
-Be sure to follow the instructions completely in [EKSOnly](https://github.com/ramramhariram/EKSonly) building a 4 cluster setup.
-
 # Delete Environment
 
 ## VM Style (docker-compose)
 
 When the docker-compose windows is sent control+c, most of the docker images will shutdown. The Kube environment continues to run.
-
-## Kubernetes Environment
-
-### Kube (k3d)
-
-Run the kill script to destroy varying levels of things:
-
-* `./kill.sh` : Destroys all docker containers including k3d, except for the k3d image registry
-
-I recommend leaving the registry intact, since it takes time to re-cache the images and the registry doesn't consume much in resources just sitting there. Also, if you pull too many images from dockerhub in a single day, you'll get cut off (the reason the registry was configured in the first place).
-
-### Kube (AWS EKS "EKSOnly")
-
-Run the kill script with the following option:
-
-* `./kill.sh -eks` : Deletes components out of the Kube environment preparring it for a `terraform destroy`.
-
-NOTE: The kill script does NOT delete the EKS clusters or other infrastructure provisioned by Terraform in the EKSOnly repo. If you do not first run `./kill.sh -eks`, a terraform delete will hang when it attempts to delete everything from AWS and you'll have to manually delete loadbalancers and EINs associated with the EKS clusters that are orphaned by Terraform.
-
-TLDR; run `./kill.sh -eks` and THEN run `terraform destroy` and all will be right in the world.
-
-IMPORTANT: The EKSOnly environment can only be built once by the `./kube-config -eks` script. There are orphaned resources left over by the `./kill.sh` script. I'm looking to have an option to completely clean up the EKS clusters so the `./kube-config -eks` script can be run additional times without having to rebuild the EKS clusters with terraform, but it's not there yet. Yay Devops'ing.
 
 # Documentation
 
@@ -200,17 +106,6 @@ The Doctor Consul architecture (including visual diagram) and details are [HERE]
 * Consul Client Details: [HERE](docs/consul-clients.md)
 * ACL Authentication, Policies, Roles, and ACL Tokens: [HERE](docs/acl-everything.md)
 * UI Visualizations (Prometheus): [HERE](docs/ui-viz.md)
-
-### Zork Control Script
-
-The `./zork.sh` script is a menu driven system to control various aspects of the Doctor Consul environment.
-Docs: [HERE](docs/zork.md)
-
-### Doctor Consul Applications
-
-Several "fake service" applications are deployed in the Doctor Consul environment. These applications are used to demonstrate and observe various Consul service mesh behaviors, such as advanced routing and service failover.
-
-Docs: [HERE](docs/fake-service.md)
 
 # Future Goals
 
@@ -240,6 +135,4 @@ HashiCorp Vault will eventually be implemented in the future as the Certificate 
 
 ### Requests from the field
 
-* Consul API Gateway
 * Vault as TLS CA in one of the clusters.
-* README's for each application and it's uses.
