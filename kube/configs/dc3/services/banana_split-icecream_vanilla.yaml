@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: ice-cream
+  name: vanilla
   namespace: banana-split
 
 ---
@@ -9,7 +9,7 @@ metadata:
 apiVersion: consul.hashicorp.com/v1alpha1
 kind: ServiceDefaults
 metadata:
-  name: ice-cream
+  name: vanilla
   namespace: banana-split
 spec:
   protocol: http
@@ -19,12 +19,15 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: ice-cream
+  name: vanilla
   namespace: banana-split
+  annotations:
+    consul.hashicorp.com/service-sync: 'false'
 spec:
   type: LoadBalancer
   selector:
     app: ice-cream
+    version: vanilla
   ports:
     - name: ice-cream-port
       protocol: TCP
@@ -36,7 +39,7 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ice-cream-vanilla
+  name: vanilla
   namespace: banana-split
   labels:
     app: ice-cream
@@ -58,7 +61,7 @@ spec:
         consul.hashicorp.com/service-tags: 'dc3-cernunnos'
         consul.hashicorp.com/service-meta-version: vanilla
     spec:
-      serviceAccountName: ice-cream
+      serviceAccountName: vanilla
       containers:
         - name: ice-cream
           image: nicholasjackson/fake-service:v0.26.0

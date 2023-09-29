@@ -154,6 +154,7 @@ The kube-config on it's own has no reliance on the VM-style environment, meaning
   * KDC4 > nEKS2
   * KDC4_P1 > nEKS3
 * Build the K3d Kubernetes cluster using the `kube-config.sh` script:
+  * `export EKSONLY_TF_STATE_FILE=<some-path>/terrform.tfstate`
   * `./kube-config.sh -eks` : Builds Consul into 4 clusters that have previously been created using [EKSOnly](https://github.com/ramramhariram/EKSonly).
 
 The kube-config on it's own has no reliance on the VM-style environment, meaning you can simply just run `./kube-config.sh -eks` and build a working 4 cluster configuration of Consul in AWS EKS.
