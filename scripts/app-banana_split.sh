@@ -3,10 +3,11 @@
 # The Banana split application is for showing route splitting across multiple upstreams (local and peered)
 
 # Banana Architecture
-#    Neopolitan/banana-split/cernunnos/dc3 (downstream)
-#       ice-cream(Vanilla)/banana-split/cernunnos/dc3     (34%)
-#       ice-cream(Strawberry)/banana-split/cernunnos/dc3  (33%)
-#       ice-cream(Chocolate)/banana-split/cernunnos/dc3   (33%)
+#    Neapolitan/banana-split/cernunnos/dc3 (downstream)
+#      ice-cream (virtual service w/ splitter)
+#        ice-cream-vanilla/banana-split/cernunnos/dc3     (34%)
+#        ice-cream-strawberry/banana-split/cernunnos/dc3  (33%)
+#        ice-cream-chocolate/banana-split/cernunnos/dc3   (33%)
 
 echo -e "${GRN}"
 echo -e "=========================================="
@@ -39,12 +40,12 @@ echo -e "    Launch Consul Service Configs"
 echo -e "------------------------------------------${NC}"
 
 # ----------------
-# neopolitan (downstream)
+# neapolitan (downstream)
 # ----------------
 
 echo -e ""
-echo -e "${GRN}DC3 (Cernunnos): Apply Neopolitan (downstream) serviceAccount, serviceDefaults, service, deployment ${NC}"
-kubectl apply --context $KDC3_P1 -f ./kube/configs/dc3/services/banana_split-neopolitan.yaml
+echo -e "${GRN}DC3 (Cernunnos): Apply Neapolitan (downstream) serviceAccount, serviceDefaults, service, deployment ${NC}"
+kubectl apply --context $KDC3_P1 -f ./kube/configs/dc3/services/banana_split-neapolitan.yaml
 
 # ----------------
 # Upstreams
@@ -55,11 +56,11 @@ echo -e "${GRN}DC3 (Cernunnos): Apply Ice Cream (Vanilla)  (upstream) serviceAcc
 kubectl apply --context $KDC3_P1 -f ./kube/configs/dc3/services/banana_split-icecream_vanilla.yaml
 
 echo -e ""
-echo -e "${GRN}DC4 (Cernunnos): Apply Ice Cream (Strawberry) (upstream) serviceAccount, serviceDefaults, service, deployment ${NC}"
+echo -e "${GRN}DC3 (Cernunnos): Apply Ice Cream (Strawberry) (upstream) serviceAccount, serviceDefaults, service, deployment ${NC}"
 kubectl apply --context $KDC3_P1 -f ./kube/configs/dc3/services/banana_split-icecream_strawberry.yaml
 
 echo -e ""
-echo -e "${GRN}DC4 (Cernunnos): Apply Ice Cream (Chocolate) (upstream) serviceAccount, serviceDefaults, service, deployment ${NC}"
+echo -e "${GRN}DC3 (Cernunnos): Apply Ice Cream (Chocolate) (upstream) serviceAccount, serviceDefaults, service, deployment ${NC}"
 kubectl apply --context $KDC3_P1 -f ./kube/configs/dc3/services/banana_split-icecream_chocolate.yaml
 
 
@@ -85,16 +86,17 @@ echo -e ""
 echo -e "${GRN}DC3 (default): Apply service-splitter: ice-cream ${NC}"
 kubectl apply --context $KDC3_P1 -f ./kube/configs/dc3/service-splitter/service-splitter-ice_cream.yaml
 
-echo -e "${GRN}DC3 (default): Apply service-resolver: ice-cream ${NC}"
-kubectl apply --context $KDC3_P1 -f ./kube/configs/dc3/service-resolver/service-resolver-ice_cream.yaml
+# echo -e "${GRN}DC3 (default): Apply service-resolver: ice-cream ${NC}"
+# kubectl apply --context $KDC3_P1 -f ./kube/configs/dc3/service-resolver/service-resolver-ice_cream.yaml
+
+# Service-resolver is not used in this case. See the manual for more details.
 
 
 # Delete command:
 
-# kubectl delete --context $KDC3_P1 -f ./kube/configs/dc3/services/banana_split-neopolitan.yaml
+# kubectl delete --context $KDC3_P1 -f ./kube/configs/dc3/services/banana_split-neapolitan.yaml
 # kubectl delete --context $KDC3_P1 -f ./kube/configs/dc3/services/banana_split-icecream_vanilla.yaml
 # kubectl delete --context $KDC3_P1 -f ./kube/configs/dc3/services/banana_split-icecream_strawberry.yaml
 # kubectl delete --context $KDC3_P1 -f ./kube/configs/dc3/services/banana_split-icecream_chocolate.yaml
 # kubectl delete --context $KDC3_P1 -f ./kube/configs/dc3/intentions/dc3-cernunnos-banana_split-ice_cream.yaml
 # kubectl delete --context $KDC3_P1 -f ./kube/configs/dc3/service-splitter/service-splitter-ice_cream.yaml
-# kubectl delete --context $KDC3_P1 -f ./kube/configs/dc3/service-resolver/service-resolver-ice_cream.yaml

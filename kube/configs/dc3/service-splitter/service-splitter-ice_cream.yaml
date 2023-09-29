@@ -6,8 +6,8 @@ metadata:
 spec:
   splits:
     - weight: 34
-      service: vanilla
+      service: ice-cream-vanilla      # The splitter splits directly to a different service. This is a better option in Kube than trying to split to a subset based on tags. See the doctor consul manual.
     - weight: 33
-      service: strawberry
+      service: ice-cream-strawberry
     - weight: 33
-      service: chocolate
+      service: ice-cream-chocolate

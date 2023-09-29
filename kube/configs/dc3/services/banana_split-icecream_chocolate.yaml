@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: chocolate
+  name: ice-cream-chocolate
   namespace: banana-split
 
 ---
@@ -9,7 +9,7 @@ metadata:
 apiVersion: consul.hashicorp.com/v1alpha1
 kind: ServiceDefaults
 metadata:
-  name: chocolate
+  name: ice-cream-chocolate
   namespace: banana-split
 spec:
   protocol: http
@@ -19,14 +19,14 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: chocolate
+  name: ice-cream-chocolate
   namespace: banana-split
   annotations:
     consul.hashicorp.com/service-sync: 'false'
 spec:
-  type: LoadBalancer
+  type: NodePort
   selector:
-    app: ice-cream
+    app: ice-cream-chocolate
     version: chocolate
   ports:
     - name: ice-cream-port
@@ -39,31 +39,31 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: chocolate
+  name: ice-cream-chocolate
   namespace: banana-split
   labels:
-    app: ice-cream
-    version: chocolate
+    app: ice-cream-chocolate
+    version: chocolate     # It doesn't appear that this Kube label is relevant at all.
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: ice-cream
+      app: ice-cream-chocolate
       version: chocolate
   template:
     metadata:
       labels:
-        app: ice-cream
+        app: ice-cream-chocolate
         version: chocolate
       annotations:
         consul.hashicorp.com/connect-inject: 'true'
         consul.hashicorp.com/transparent-proxy: 'true'
         consul.hashicorp.com/service-tags: 'dc3-cernunnos'
-        consul.hashicorp.com/service-meta-version: chocolate
+        consul.hashicorp.com/service-meta-version: chocolate      # This isn't currently used in any way for resolving / routing
     spec:
-      serviceAccountName: chocolate
+      serviceAccountName: ice-cream-chocolate
       containers:
-        - name: ice-cream
+        - name: ice-cream-chocolate
           image: nicholasjackson/fake-service:v0.26.0
           ports:
             - containerPort: 10000

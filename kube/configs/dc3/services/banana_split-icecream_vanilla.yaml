@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: vanilla
+  name: ice-cream-vanilla
   namespace: banana-split
 
 ---
@@ -9,7 +9,7 @@ metadata:
 apiVersion: consul.hashicorp.com/v1alpha1
 kind: ServiceDefaults
 metadata:
-  name: vanilla
+  name: ice-cream-vanilla
   namespace: banana-split
 spec:
   protocol: http
@@ -19,14 +19,14 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: vanilla
+  name: ice-cream-vanilla
   namespace: banana-split
   annotations:
     consul.hashicorp.com/service-sync: 'false'
 spec:
-  type: LoadBalancer
+  type: NodePort
   selector:
-    app: ice-cream
+    app: ice-cream-vanilla
     version: vanilla
   ports:
     - name: ice-cream-port
@@ -39,31 +39,31 @@ spec:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: vanilla
+  name: ice-cream-vanilla
   namespace: banana-split
   labels:
-    app: ice-cream
+    app: ice-cream-vanilla
     version: vanilla
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: ice-cream
+      app: ice-cream-vanilla
       version: vanilla
   template:
     metadata:
       labels:
-        app: ice-cream
+        app: ice-cream-vanilla
         version: vanilla
       annotations:
         consul.hashicorp.com/connect-inject: 'true'
         consul.hashicorp.com/transparent-proxy: 'true'
         consul.hashicorp.com/service-tags: 'dc3-cernunnos'
-        consul.hashicorp.com/service-meta-version: vanilla
+        consul.hashicorp.com/service-meta-version: vanilla           # This isn't currently used in any way for resolving / routing
     spec:
-      serviceAccountName: vanilla
+      serviceAccountName: ice-cream-vanilla
       containers:
-        - name: ice-cream
+        - name: ice-cream-vanilla
           image: nicholasjackson/fake-service:v0.26.0
           ports:
             - containerPort: 10000

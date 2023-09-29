@@ -1,14 +1,33 @@
-apiVersion: consul.hashicorp.com/v1alpha1
-kind: ServiceResolver
-metadata:
-  name: ice-cream
-  namespace: banana-split
-spec:
-  defaultSubset: vanilla
-  subsets:
-    vanilla:
-      filter: 'Service.Meta.version == vanilla'
-    strawberry:
-      filter: 'Service.Meta.version == strawberry'
-    chocolate:
-      filter: 'Service.Meta.version == chocolate'
+# apiVersion: consul.hashicorp.com/v1alpha1
+# kind: ServiceResolver
+# metadata:
+#   name: ice-cream
+#   namespace: banana-split
+# spec:
+#   defaultSubset: vanilla
+#   subsets:
+#     vanilla:
+#       filter: 'Service.Service == vanilla'
+#     strawberry:
+#       filter: 'Service.Service == strawberry'
+#     chocolate:
+#       filter: 'Service.Service == chocolate'
+
+# apiVersion: consul.hashicorp.com/v1alpha1
+# kind: ServiceResolver
+# metadata:
+#   name: ice-cream
+#   namespace: banana-split
+# spec:
+#   defaultSubset: vanilla
+#   subsets:
+#     vanilla:
+#       filter: 'Service.Meta.version == vanilla'
+#     strawberry:
+#       filter: 'Service.Meta.version == strawberry'
+#     chocolate:
+#       filter: 'Service.Meta.version == chocolate'
+
+
+
+

@@ -24,6 +24,8 @@ DC3_CONSUL_API_GATEWAY_ADDR=http://127.0.0.1
 DC3_P1_PARIS_LEROY_ADDR=http://127.0.0.1:8100/ui/
 DC3_P1_PARIS_PLEASE_ADDR=http://127.0.0.1:8101/ui/
 
+DC3_P1_NEAPOLITAN_ADDR=http://127.0.0.1:8007/ui/
+
 # ==============================================================================================================================
 #                                                      Outputs
 # ==============================================================================================================================
@@ -104,6 +106,7 @@ if $ARG_EKSONLY; then
     # wait_for_kube_service_w_port "consul-api-gateway" "consul" "$KDC3" 6 "" "DC3_CONSUL_API_GATEWAY_HOSTNAME" "DC3_CONSUL_API_GATEWAY_ADDR"    # APIG has two ports, can't use this function for now
     wait_for_kube_service_w_port "leroy-jenkins" "paris" "$KDC3_P1" 6 "/ui/" "DC3_P1_PARIS_LEROY_HOSTNAME" "DC3_P1_PARIS_LEROY_ADDR"
     wait_for_kube_service_w_port "pretty-please" "paris" "$KDC3_P1" 6 "/ui/" "DC3_P1_PARIS_PLEASE_HOSTNAME" "DC3_P1_PARIS_PLEASE_ADDR"
+    wait_for_kube_service_w_port "neapolitan" "banana-split" "$KDC3_P1" 6 "/ui/" "DC3_P1_NEAPOLITAN_HOSTNAME" "DC3_P1_NEAPOLITAN_ADDR"
   else
     echo "Skipping Application Detection (-no-apps)"
   fi
@@ -187,6 +190,7 @@ if $ARG_NO_APPS; then
     echo -e " kubectl -nsheol-app2 --context $KDC4 port-forward svc/sheol-app2 8006:8006 > /dev/null 2>&1 &"
     echo -e " kubectl -nparis --context $KDC3_P1 port-forward svc/leroy-jenkins 8100:8100 > /dev/null 2>&1 &"
     echo -e " kubectl -nparis --context $KDC3_P1 port-forward svc/pretty-please 8101:8101 > /dev/null 2>&1 &"
+    # Add forward for Neapolitan...
     echo -e ""
 fi
 
@@ -223,6 +227,8 @@ if $ARG_NO_APPS; then
     echo -e " ${YELL}Pretty-Please:${NC} $DC3_P1_PARIS_PLEASE_ADDR"
     echo -e " ${YELL}Leroy-Jenkins:${NC} $DC3_P1_PARIS_LEROY_ADDR"
     echo ""
+    echo -e "${GRN}BananaSplit App UI addresses (Service Splitting): ${NC}"
+    echo -e " ${YELL}Neapolitan:${NC} $DC3_P1_NEAPOLITAN_ADDR"
 fi
 
 # ----------------------------------------------

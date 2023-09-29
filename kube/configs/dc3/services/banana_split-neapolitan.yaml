@@ -1,0 +1,93 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: neapolitan
+  namespace: banana-split
+
+---
+
+apiVersion: consul.hashicorp.com/v1alpha1
+kind: ServiceDefaults
+metadata:
+  name: neapolitan
+  namespace: banana-split
+spec:
+  protocol: http
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: neapolitan
+  namespace: banana-split
+  annotations:
+    consul.hashicorp.com/service-sync: 'false'        # Don't sync with catalog sync
+spec:
+  type: LoadBalancer
+  selector:
+    app: neapolitan
+  ports:
+    - name: neapolitan-port
+      protocol: TCP
+      port: 8990            # Should be the port the Kube LB will listen on to forward to TCP/10000
+      targetPort: 10000     # This should line up with the FakeService LISTEN_ADDR: 0.0.0.0:10000
+
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: neapolitan
+  namespace: banana-split
+  labels:
+    app: neapolitan
+    version: v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: neapolitan
+  template:
+    metadata:
+      labels:
+        app: neapolitan
+      annotations:
+        consul.hashicorp.com/connect-inject: 'true'
+        consul.hashicorp.com/transparent-proxy: 'true'
+        consul.hashicorp.com/transparent-proxy-exclude-inbound-ports: '10000'
+        consul.hashicorp.com/service-tags: 'dc3-cernunnos'
+        consul.hashicorp.com/service-meta-version: v1
+    spec:
+      serviceAccountName: neapolitan
+      containers:
+        - name: neapolitan
+          image: nicholasjackson/fake-service:v0.26.0
+          # imagePullPolicy: Always       # Probably don't need this
+          ports:
+            - containerPort: 10000
+          env:
+            - name: 'LISTEN_ADDR'
+              value: '0.0.0.0:10000'
+            - name: 'UPSTREAM_URIS'
+              value: 'http://ice-cream.virtual.banana-split.ns.cernunnos.ap.dc3.dc.consul'
+            - name: 'NAME'
+              value: 'Neapolitan (DC3 Cernunnos)'
+            - name: 'MESSAGE'
+              value: '<p><strong>The neapolitan Application</strong></p>'
+            - name: 'SERVER_TYPE'
+              value: 'http'
+            - name: 'TIMING_50_PERCENTILE'
+              value: '30ms'
+            - name: 'TIMING_90_PERCENTILE'
+              value: '60ms'
+            - name: 'TIMING_99_PERCENTILE'
+              value: '90ms'
+            - name: 'TIMING_VARIANCE'
+              value: '10'
+            - name: 'HTTP_CLIENT_REQUEST_TIMEOUT'
+              value: '3s'
+            # - name: 'HTTP_CLIENT_APPEND_REQUEST'
+            #   value: 'true'
+            # - name: 'TRACING_ZIPKIN'
+            #   value: 'http://simplest-collector.default:9411'

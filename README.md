@@ -2,7 +2,7 @@
 
 This repo contains a full featured environment for setting up and testing HashiCorp Consul Enterprise. While it is not directly intended to be used for Consul demos, the local environment (docker-compose + k3d) is consistently built in <10 minutes.
 
-NOTE!: The proper Doctor Consul manual (PDF) is located [HERE](docs/DoctorConsul-TheManual-Draft_SEPT_2023.pdf).
+NOTE!: The proper Doctor Consul manual (PDF) is located [HERE](docs/DoctorConsul-TheManual-Draft.pdf).
 
 ALL of the Kube side docs have been moved there. Go read it!!
 It is a far better way of consuming this information than this README.md.
