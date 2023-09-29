@@ -1,18 +1,63 @@
 apiVersion: consul.hashicorp.com/v1alpha1
 kind: ServiceIntentions
 metadata:
-  name: paris
-  namespace: paris
+  name: ice-cream
+  namespace: banana-split
 spec:
   destination:
-    name: paris
-    namespace: paris
+    name: ice-cream
+    namespace: banana-split
   sources:
-    - name: leroy-jenkins
-      namespace: paris
+    - name: neopolitan
+      namespace: banana-split
       action: allow
     # - name: unicorn-ssg-frontend
     #   # partition: default
     #   namespace: unicorn
     #   samenessGroup: ssg-unicorn
     #   action: allow
+
+---
+apiVersion: consul.hashicorp.com/v1alpha1
+kind: ServiceIntentions
+metadata:
+  name: vanilla
+  namespace: banana-split
+spec:
+  destination:
+    name: vanilla
+    namespace: banana-split
+  sources:
+    - name: neopolitan
+      namespace: banana-split
+      action: allow
+
+---
+apiVersion: consul.hashicorp.com/v1alpha1
+kind: ServiceIntentions
+metadata:
+  name: strawberry
+  namespace: banana-split
+spec:
+  destination:
+    name: strawberry
+    namespace: banana-split
+  sources:
+    - name: neopolitan
+      namespace: banana-split
+      action: allow
+
+---
+apiVersion: consul.hashicorp.com/v1alpha1
+kind: ServiceIntentions
+metadata:
+  name: chocolate
+  namespace: banana-split
+spec:
+  destination:
+    name: chocolate
+    namespace: banana-split
+  sources:
+    - name: neopolitan
+      namespace: banana-split
+      action: allow

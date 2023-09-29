@@ -6,8 +6,8 @@ metadata:
 spec:
   splits:
     - weight: 34
-      serviceSubset: vanilla
+      service: vanilla
     - weight: 33
-      serviceSubset: strawberry
+      service: strawberry
     - weight: 33
-      serviceSubset: chocolate
+      service: chocolate

@@ -21,6 +21,8 @@ kind: Service
 metadata:
   name: neopolitan
   namespace: banana-split
+  annotations:
+    consul.hashicorp.com/service-sync: 'false'
 spec:
   type: LoadBalancer
   selector:
@@ -53,6 +55,7 @@ spec:
       annotations:
         consul.hashicorp.com/connect-inject: 'true'
         consul.hashicorp.com/transparent-proxy: 'true'
+        consul.hashicorp.com/transparent-proxy-exclude-inbound-ports: '10000'
         consul.hashicorp.com/service-tags: 'dc3-cernunnos'
         consul.hashicorp.com/service-meta-version: v1
     spec:
@@ -67,7 +70,7 @@ spec:
             - name: 'LISTEN_ADDR'
               value: '0.0.0.0:10000'
             - name: 'UPSTREAM_URIS'
-              value: 'http://virtual.neopolitan.banana-split.ns.cernunnos.ap.dc3.dc.consul,'
+              value: 'http://ice-cream.virtual.banana-split.ns.cernunnos.ap.dc3.dc.consul'
             - name: 'NAME'
               value: 'neopolitan (DC3 Cernunnos)'
             - name: 'MESSAGE'
