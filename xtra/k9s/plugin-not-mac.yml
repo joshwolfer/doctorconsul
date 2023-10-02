@@ -93,7 +93,7 @@ plugin:
     args:
     - -c
     - |
-      kubectl exec --context ${CONTEXT} -n ${NAMESPACE} ${NAME} -- /usr/bin/curl -s localhost:19000/stats | sort | code -
+      kubectl exec --context ${CONTEXT} -n ${NAMESPACE} ${NAME} -- /usr/bin/curl -s localhost:19000/stats | sort | vsc
   envoyClustersToVSC:
     shortCut: Shift-2
     confirm: false
@@ -105,7 +105,7 @@ plugin:
     args:
     - -c
     - |
-      kubectl exec --context ${CONTEXT} -n ${NAMESPACE} ${NAME} -- /usr/bin/curl -s localhost:19000/clusters | sort | code -
+      kubectl exec --context ${CONTEXT} -n ${NAMESPACE} ${NAME} -- /usr/bin/curl -s localhost:19000/clusters | sort | vsc
   envoyConfigDumpToVSC:
     shortCut: Shift-3
     confirm: false
@@ -117,7 +117,7 @@ plugin:
     args:
     - -c
     - |
-      kubectl exec --context ${CONTEXT} -n ${NAMESPACE} ${NAME} -- /usr/bin/curl -s localhost:19000/config_dump | code -
+      kubectl exec --context ${CONTEXT} -n ${NAMESPACE} ${NAME} -- /usr/bin/curl -s localhost:19000/config_dump | vsc json
   consul-k8s:
     shortCut: Shift-4
     confirm: false
@@ -129,7 +129,7 @@ plugin:
     args:
     - -c
     - |
-      consul-k8s proxy read ${NAME} -n ${NAMESPACE} --context ${CONTEXT} | code -
+      consul-k8s proxy read ${NAME} -n ${NAMESPACE} --context ${CONTEXT} | vsc
   consul-k8sClusters:
     shortCut: Shift-5
     confirm: false
