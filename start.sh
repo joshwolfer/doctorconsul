@@ -75,6 +75,10 @@ echo -e "${NC}"
 # $ uname -a
 # Darwin jessingrassellino-X96K5442NH 22.6.0 Darwin Kernel Version 22.6.0: Wed Jul  5 22:22:05 PDT 2023; root:xnu-8796.141.3~6/RELEASE_ARM64_T6000 arm64
 
+if [ "$OS_NAME" = "Darwin" ]; then
+    echo -e "${YELL}MacOS Detected: Using ARM64 Images ${NC}"
+fi
+
 if $ARG_ROOT; then
   if [ "$OS_NAME" = "Linux" ]; then
     echo -e "${YELL}docker-compose --env-file ./docker-configs/docker_vars/acl-root.env up ${NC}"
