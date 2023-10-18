@@ -1,7 +1,10 @@
 #!/bin/bash
 
+export OS_NAME=$(uname)      # Use this in various parts of the script to make Mac vs Linux decisions. "Darwin" vs "Linux"
+
 export CONSUL_HTTP_TOKEN=root
 export CONSUL_HTTP_SSL_VERIFY=false
+export CONSUL_HTTP_ADDR="http://127.0.0.1:8500"
 
 export RED='\033[1;31m'
 export BLUE='\033[1;34m'
@@ -125,7 +128,7 @@ CleanupTempStuff () {    # Delete temporary files and kill lingering processes
 
 fakeservice_from_internet() {  # Pull fake service from the interwebz instead of local k3d registry (which doesn't exist when using EKS)
 
-  local OS_NAME=$(uname)
+  # local OS_NAME=$(uname)   # Putting this at the top of the script so it's reusable accross all scripts and functions.
 
   if [[ "$OS_NAME" == "Linux" ]]; then
     find ./kube/configs/dc3/services/*.yaml -type f -exec sed -i "s/^\( *\)image: .*/\1image: nicholasjackson\/fake-service:$FAKESERVICE_VER/" {} \;
@@ -325,6 +328,54 @@ UpgradeConsulBinary() {
   )
 }
 
+wslClockSync() {
+
+  WSL=$(uname -a)
+
+  if [[ $WSL == *"WSL"* ]]; then
+    echo -e "${GRN}syncing the WSL clock to hardware...${NC}"
+    sudo hwclock -s
+  fi
+
+}
+
+dockerStart() {   # Start docker if it's not running
+  if [ "$OS_NAME" == "Linux" ]; then
+    echo ""
+    echo -e "${GRN}Checking that Docker is running - If not starting it. ${NC}"
+    pgrep dockerd || sudo service docker start
+    echo ""
+
+    sleep 2
+  else
+      # Eventually put in mac syntax to start docker, its not the same as linux
+      echo ""
+  fi
+}
+
+dockerContainersNuke() {   # Nukes existing Docker containers.
+  if [[ $(docker ps -aq) ]]; then
+      echo -e "${GRN}------------------------------------------"
+      echo -e "        Nuking all the things..."
+      echo -e "------------------------------------------"
+      echo -e "${NC}"
+      docker ps -a | grep -v CONTAINER | awk '{print $1}' | xargs docker stop; docker ps -a | grep -v CONTAINER | awk '{print $1}' | xargs docker rm; docker volume ls | grep -v DRIVER | awk '{print $2}' | xargs docker volume rm; docker network prune -f
+  else
+      echo ""
+      echo -e "${GRN}No containers to nuke.${NC}"
+      echo ""
+  fi
+}
+
+waitForConsulLeader() {    # Wait for Leaders to be elected (CONSUL_API_ADDR, Name of DC)
+  local CONSUL_ADDRESS=$1
+  local DC_NAME=$2
+
+  until curl -s -k ${CONSUL_ADDRESS}/v1/status/leader | grep 8300; do
+    echo -e "${RED}Waiting for ${DC_NAME} Consul to start${NC}"
+    sleep 1
+  done
+}
 
 # ==============================================================================================================================
 #                                                AWS (EKSOnly) Functions

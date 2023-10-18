@@ -74,6 +74,26 @@ InstallConsulDC3 () {
     --set tls.serverAdditionalDNSSANs=\['*.elb.amazonaws.com'\] $HELM_CHART_VER # > ./logs/dc3-helm-install.log 2>&1
 
     # Because Macs are evidently dumb and can't handle stdout redirection AND multi-line bash... Cause who needs install logs anyway?
+    #   The solution to this is far more complicated than I care to implement. If I were to do it, I could do a wrapper function.
+    #   Basically execute the helm install via function(original args, file_path) and have it do OS detection.
+    #   Something like this would probably work. but seriously, unless I'm bored, I'm just not going to worry about this.
+
+        # function run_command() {
+        # local original_command="$1"
+        # local filepath="$2"
+
+        # # Assuming OS_NAME is defined elsewhere
+
+        # if [ "$OS_NAME" == "Linux" ]; then
+        #     # Execute the original command and redirect STDOUT to filepath
+        #     eval "$original_command > $filepath"
+        # elif [ "$OS_NAME" == "Darwin" ]; then
+        #     # Execute the original command without redirecting
+        #     eval "$original_command"
+        # else
+        #     echo "Unsupported OS_NAME: $OS_NAME"
+        # fi
+        # }
 
     # Opening up the SANs to cover any AWS region.
 

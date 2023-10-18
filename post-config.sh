@@ -2,74 +2,74 @@
 
 set -e
 
-# export the variable to be used by the commands below
-export CONSUL_HTTP_TOKEN=root
-export CONSUL_HTTP_ADDR=127.0.0.1:8500
-export CONSUL_HTTP_SSL_VERIFY=false
+source ./scripts/functions.sh
+# # ^^^ Variables and shared functions
 
-DC1="http://127.0.0.1:8500"
-DC2="http://127.0.0.1:8501"
-DC3="http://127.0.0.1:8502"
+help () {
+  echo -e "Syntax: ./post-config.sh [OPTIONS]"
+  echo ""
+  echo "Options:"
+  echo "  -k3d      Include the default k3d configuration (doesn't accept additional kube-config.sh arguments)"
+  echo ""
+  exit 0
+}
 
-RED='\033[1;31m'
-BLUE='\033[1;34m'
-DGRN='\033[0;32m'
-GRN='\033[1;32m'
-YELL='\033[0;33m'
-NC='\033[0m' # No Color
+export ARG_HELP=false
+export ARG_K3D=false
 
-# Dark Gray     1;30
-# Light Red     1;31
-# Brown/Orange 0;33     Yellow        1;33
-# Purple       0;35     Light Purple  1;35
-# Cyan         0;36     Light Cyan    1;36
-# Light Gray   0;37     White         1;37
+if [ $# -gt 0 ]; then
+  for arg in "$@"; do
+    case $arg in
+      -help)
+        ARG_HELP=true
+        ;;
+      -k3d)
+        ARG_K3D=true
+        ;;
+      *)
+        echo -e "${RED}Invalid Argument... ${NC}"
+        echo ""
+        help
+        exit 1
+        ;;
+    esac
+  done
+fi
 
-# echo -e "  Consul versions: ${LINK}https://hub.docker.com/r/hashicorp/consul-enterprise/tags${NC}"
-
-if [[ "$*" == *"help"* ]]
-  then
-    echo -e "Syntax: ./post-config.sh [OPTIONS]"
-    echo ""
-    echo "Options:"
-    echo "  -k3d      Include the default k3d configuration (doesn't accept additional kube-config.sh arguments)"
-    echo ""
-    exit 0
+if $ARG_HELP; then
+  help
 fi
 
 clear
 
 mkdir -p ./tokens
 
-echo -e ""
-echo -e "${GRN}iptables: Blocking direct server to server access${NC}"
+# echo -e ""
+# echo -e "${GRN}iptables: Blocking direct server to server access${NC}"
 
-# Block traffic from consul-server1-dc1 to consul-server1-dc2
-docker exec -i -t consul-server1-dc1 sh -c "/sbin/iptables -I OUTPUT -d 192.169.7.4 -j DROP"
+#   This is to insure that cluster peering is indeed working over mesh gateways.
+#   Leaving them commented out so I make sure that other things aren't accidently blocked as we try new features.
+#   Specificaly I want to make sure that I can send DNS requests to the servers.
 
-# Block traffic from consul-server1-dc2 to consul-server-dc1
-docker exec -i -t consul-server1-dc2 sh -c "/sbin/iptables -I OUTPUT -d 192.169.7.2 -j DROP"
-# ^^^ This is to insure that cluster peering is indeed working over mesh gateways.
+# docker exec -i -t consul-server1-dc1 sh -c "/sbin/iptables -I OUTPUT -d 192.169.7.4 -j DROP"  # Block traffic from consul-server1-dc1 to consul-server1-dc2
+# docker exec -i -t consul-server1-dc2 sh -c "/sbin/iptables -I OUTPUT -d 192.169.7.2 -j DROP"  # Block traffic from consul-server1-dc2 to consul-server-dc1
 
-echo "success"  # If the script didn't error out here, it worked.
+# echo "success"  # If the script didn't error out here, it worked.
 
 # Wait for both DCs to electe a leader before starting resource provisioning
 echo -e ""
 echo -e "${GRN}Wait for both DCs to electer a leader before starting resource provisioning${NC}"
 
-until curl -s -k ${DC1}/v1/status/leader | grep 8300; do
-  echo -e "${RED}Waiting for DC1 Consul to start${NC}"
-  sleep 1
-done
-
-until curl -s -k ${DC2}/v1/status/leader | grep 8300; do
-  echo -e "${RED}Waiting for DC2 Consul to start${NC}"
-  sleep 1
-done
+# Wait for Leaders to be elected (CONSUL_API_ADDR, Name of DC)
+waitForConsulLeader "$DC1" "DC1"
+waitForConsulLeader "$DC2" "DC2"
 
 # ==========================================
 #            Admin Partitions
 # ==========================================
+
+# To prevent possible timing issues in the setup of resources, all admin partitions for all Doctor Consul resources are immediately added first.
+# The rest of the application resources, can be found in their respective scripts. 
 
 echo -e "${GRN}"
 echo -e "=========================================="
@@ -91,42 +91,13 @@ consul partition create -name unicorn -http-addr="$DC2"
 consul partition create -name heimdall -http-addr="$DC2"
 consul partition create -name chunky -http-addr="$DC2"
 
-# ==========================================
-#                Namespaces
-# ==========================================
+# ==============================================================================================================================
+#                                                 Baphomet Application
+# ==============================================================================================================================
 
-echo -e "${GRN}"
-echo -e "=========================================="
-echo -e "                Namespaces"
-echo -e "==========================================${NC}"
+echo -e "${YELL}Running the Baphomet script:${NC} ./docker-configs/scripts/app-baphomet.sh"
+./docker-configs/scripts/app-baphomet.sh
 
-echo -e ""
-echo -e "${GRN}Create Unicorn NSs in DC1${NC}"
-# Create Unicorn NSs in DC1
-consul namespace create -name frontend -partition=unicorn -http-addr="$DC1"
-consul namespace create -name backend -partition=unicorn -http-addr="$DC1"
-
-echo -e ""
-echo -e "${GRN}Create Unicorn NSs in DC2${NC}"
-# Create Unicorn NSs in DC2
-consul namespace create -name frontend -partition=unicorn -http-addr="$DC2"
-consul namespace create -name backend -partition=unicorn -http-addr="$DC2"
-
-# ==========================================
-#       Register External Services
-# ==========================================
-
-echo -e "${GRN}"
-echo -e "=========================================="
-echo -e "      Register External Services"
-echo -e "==========================================${NC}"
-
-# DC1/proj1/virtual-baphomet
-
-echo ""
-echo -e "${GRN}DC1/Proj1/default/baphomet0:${NC} $(curl -s --request PUT --data @./docker-configs/configs/services/dc1-proj1-baphomet0.json --header "X-Consul-Token: root" "${DC1}/v1/catalog/register")"
-echo -e "${GRN}DC1/Proj1/default/baphomet1:${NC} $(curl -s --request PUT --data @./docker-configs/configs/services/dc1-proj1-baphomet1.json --header "X-Consul-Token: root" "${DC1}/v1/catalog/register")"
-echo -e "${GRN}DC1/Proj1/default/baphomet2:${NC} $(curl -s --request PUT --data @./docker-configs/configs/services/dc1-proj1-baphomet2.json --header "X-Consul-Token: root" "${DC1}/v1/catalog/register")"
 
   # ------------------------------------------
   #           proxy-defaults
@@ -146,10 +117,7 @@ echo -e "${GRN}proxy-defaults:${NC}"
 echo -e ""
 
 echo -e "${GRN}(DC1) default Partition:${NC} $(consul config write -http-addr="$DC1" ./docker-configs/configs/proxy-defaults/dc1-default-proxydefaults.hcl)"
-echo -e "${GRN}(DC1) unicorn Partition:${NC} $(consul config write -http-addr="$DC1" ./docker-configs/configs/proxy-defaults/dc1-unicorn-proxydefaults.hcl)"
 echo -e "${GRN}(DC2) default Partition:${NC} $(consul config write -http-addr="$DC2" ./docker-configs/configs/proxy-defaults/dc2-default-proxydefaults.hcl)"
-echo -e "${GRN}(DC2) unicorn Partition:${NC} $(consul config write -http-addr="$DC2" ./docker-configs/configs/proxy-defaults/dc2-unicorn-proxydefaults.hcl)"
-echo -e "${GRN}(DC2) chunky Partition:${NC}  $(consul config write -http-addr="$DC2" ./docker-configs/configs/proxy-defaults/dc2-chunky-proxydefaults.hcl)"
 
 # ==========================================
 #             ACLs / Auth N/Z
@@ -161,40 +129,17 @@ echo -e "=========================================="
 echo -e "            ACLs / Auth N/Z"
 echo -e "==========================================${NC}"
 
-
-
 # ------------------------------------------
 # Update the anonymous token so DNS isn't horked
 # ------------------------------------------
+
+# (1.17) Adds a DNS token so we only need to modify that instead. NMD.
 
 echo -e ""
 echo -e "${GRN}Add service:read to the anonymous token (enabling DNS Service Discovery):${NC}"
 
 consul acl policy create -name dns-discovery -rules @./docker-configs/acl/dns-discovery.hcl -http-addr="$DC1"
 consul acl token update -id 00000000-0000-0000-0000-000000000002 -policy-name dns-discovery -http-addr="$DC1"
-
-# ------------------------------------------
-#   DC1/unicorn cross namespace discovery
-# ------------------------------------------
-
-echo -e ""
-echo -e "${GRN}Add DC1/unicorn cross-namespace discovery${NC}"
-
-consul acl policy create \
-  -name "cross-namespace-sd" \
-  -description "cross-namespace service discovery" \
-  -rules @./docker-configs/acl/cross-namespace-discovery.hcl \
-  -partition=unicorn \
-  -namespace=default \
-  -http-addr="$DC1"
-
-consul namespace update -name frontend \
-  -default-policy-name="cross-namespace-sd" \
-  -partition=unicorn \
-  -http-addr="$DC1"
-
-# We need this to make is so unicorn-frontend can read unicorn-backend (discovery).
-# But this still doesn't grant read into imported services aross partitions. What a pain in the ass.
 
 # ------------------------------------------
 #         Create ACL tokens in DC1
@@ -232,203 +177,33 @@ consul acl token create \
     -accessor="00000000-0000-0000-0000-000000003333" \
     -http-addr="$DC1"
 
-# Service Token for Node: web-dc1_envoy
-
-echo -e ""
-echo -e "${GRN}ACL Token: 000000007777 (web:dc1):${NC}"
-
-consul acl token create \
-    -service-identity=web:dc1 \
-    -partition=default \
-    -namespace=default \
-    -secret="00000000-0000-0000-0000-000000007777" \
-    -accessor="00000000-0000-0000-0000-000000007777" \
-    -http-addr="$DC1"
-
-# Service Token for Node: web-dc1_envoy
-
-echo -e ""
-echo -e "${GRN}ACL Token: 000000008888 (web-upstream:dc1):${NC}"
-
-consul acl token create \
-    -service-identity=web-upstream:dc1 \
-    -partition=default \
-    -namespace=default \
-    -secret="00000000-0000-0000-0000-000000008888" \
-    -accessor="00000000-0000-0000-0000-000000008888" \
-    -http-addr="$DC1"
-
-# Service Token for Node: unicorn-frontend-dc1_envoy
-
-echo -e ""
-echo -e "${GRN}ACL Token: 000000004444 (-policy-name=unicorn):${NC}"
-
-consul acl policy create -name unicorn -partition=unicorn -namespace=default -rules @./docker-configs/acl/dc1-unicorn-frontend.hcl
-
-# consul acl token create \
-#     -partition=unicorn \
-#     -namespace=default \
-#     -secret="00000000-0000-0000-0000-000000004444" \
-#     -accessor="00000000-0000-0000-0000-000000004444" \
-#     -policy-name=unicorn \
-#     -http-addr="$DC1"
-
-### ^^^ Temporary scoping of the token to the default namespace to figure out what's broken in cluster peering
-
-consul acl token create \
-    -service-identity=unicorn-frontend:dc1 \
-    -partition=unicorn \
-    -namespace=frontend \
-    -secret="00000000-0000-0000-0000-000000004444" \
-    -accessor="00000000-0000-0000-0000-000000004444" \
-    -http-addr="$DC1"
-
-# Service Token for Node: unicorn-backend-dc1_envoy. Still broken with SD of peer endpoints. Keep using the temp one above. 
-
-echo -e ""
-echo -e "${GRN}ACL Token: 000000005555 (unicorn-backend:dc1):${NC}"
-
-consul acl token create \
-    -service-identity=unicorn-backend:dc1 \
-    -partition=unicorn \
-    -namespace=backend \
-    -secret="00000000-0000-0000-0000-000000005555" \
-    -accessor="00000000-0000-0000-0000-000000005555" \
-    -http-addr="$DC1"
-
-
 # ------------------------------------------
-#        Create ACL tokens in DC2
-# ------------------------------------------
-
-# Service Token for Node: unicorn-backend-dc2_envoy
-
-echo -e ""
-echo -e "${GRN}ACL Token: 000000006666 (unicorn-backend:dc2):${NC}"
-
-consul acl token create \
-    -service-identity=unicorn-backend:dc2 \
-    -partition=unicorn \
-    -namespace=backend \
-    -secret="00000000-0000-0000-0000-000000006666" \
-    -accessor="00000000-0000-0000-0000-000000006666" \
-    -http-addr="$DC2"
-
-# Service Token for Node: web-chunky_envoy
-
-echo -e ""
-echo -e "${GRN}ACL Token: 000000009999 (web-chunky:dc2):${NC}"
-
-consul acl token create \
-    -service-identity=web-chunky:dc2 \
-    -partition=chunky \
-    -namespace=default \
-    -secret="00000000-0000-0000-0000-000000009999" \
-    -accessor="00000000-0000-0000-0000-000000009999" \
-    -http-addr="$DC2"
-
-# ------------------------------------------
-#          Partition proj1 RBAC
+#         Conul-Admins Role (God Mode)
 # ------------------------------------------
 
 echo -e "${GRN}"
 echo -e "------------------------------------------"
-echo -e "         Partition proj1 RBAC"
-echo -e "------------------------------------------${NC}"
-echo -e ""
-
-echo -e "${GRN}ACL Policy+Role: DC1/proj1/team-proj1-rw${NC}"
-consul acl policy create -name team-proj1-rw -rules @./docker-configs/acl/team-proj1-rw.hcl -http-addr="$DC1"
-consul acl role create -name team-proj1-rw -policy-name team-proj1-rw -http-addr="$DC1"
-echo -e ""
-echo -e "${GRN}ACL Token: 000000002222${NC}"
-consul acl token create \
-    -partition=default \
-    -role-name=team-proj1-rw \
-    -secret="00000000-0000-0000-0000-000000002222" \
-    -accessor="00000000-0000-0000-0000-000000002222" \
-    -http-addr="$DC1"
-
-# ------------------------------------------
-#             Consul-Admins
-# ------------------------------------------
-
-echo -e "${GRN}"
-echo -e "------------------------------------------"
-echo -e "         Consul-Admins"
+echo -e "      Consul-Admins Role (God Mode)"
 echo -e "------------------------------------------${NC}"
 echo -e ""
 
 consul acl role create -name consul-admins -policy-name global-management -http-addr="$DC1"
 
-# ==========================================
-#              OIDC Auth
-# ==========================================
+# ==============================================================================================================================
+#                                                     OIDC Auth
+# ==============================================================================================================================
 
-echo -e "${GRN}"
-echo -e "=========================================="
-echo -e "            OIDC Auth"
-echo -e "==========================================${NC}"
+echo -e "${YELL}Running the Auth0 OIDC script:${NC} ./docker-configs/scripts/oidc-auth0.sh"
+./docker-configs/scripts/oidc-auth0.sh
 
-# Enable OIDC in Consul
-echo -e ""
-echo -e "${GRN}Enable OIDC in Consul w/ Auth0 ${NC}"
+# ==============================================================================================================================
+#                                                     JWT Auth
+# ==============================================================================================================================
 
-consul acl auth-method create -type oidc \
-  -name auth0 \
-  -max-token-ttl=30m \
-  -config=@./docker-configs/auth/oidc-auth.json \
-  -http-addr="$DC1"
+# Coming soon: I haven't figured out JWT auth yet. One day.
 
-# ------------------------------------------
-# Binding rule to map Auth0 groups to Consul roles
-# ------------------------------------------
-
-echo -e "${GRN}"
-echo -e "------------------------------------------"
-echo -e "Binding rules to map Auth0 groups to Consul roles"
-echo -e "------------------------------------------${NC}"
-
-# DC1/Proj1 Admins
-
-echo -e ""
-echo -e "${GRN}DC1 team-proj1-rw${NC}"
-
-consul acl binding-rule create \
-  -method=auth0 \
-  -bind-type=role \
-  -bind-name=team-proj1-rw \
-  -selector='proj1 in list.groups' \
-  -http-addr="$DC1"
-
-# DC1 Admins
-
-echo -e ""
-echo -e "${GRN}DC1 consul-admins${NC}"
-
-consul acl binding-rule create \
-  -method=auth0 \
-  -bind-type=role \
-  -bind-name=consul-admins \
-  -selector='admins in list.groups' \
-  -http-addr="$DC1"
-
-# ==========================================
-#                JWT Auth
-# ==========================================
-
-  # Enable JWT auth in Consul  - (Coming soon)
-
-  # consul acl auth-method create -type jwt \
-  #   -name jwt \
-  #   -max-token-ttl=30m \
-  #   -config=@./docker-configs/auth/oidc-auth.json
-
-  # consul acl binding-rule create \
-  #   -method=auth0 \
-  #   -bind-type=role \
-  #   -bind-name=team-proj1-rw \
-  #   -selector='proj1 in list.groups'
+# echo -e "${YELL}Running the JWT script:${NC} ./docker-configs/scripts/jwt.sh"
+# ./docker-configs/scripts/jwt.sh
 
 
 # ==========================================
@@ -440,8 +215,9 @@ echo -e "=========================================="
 echo -e "            Cluster Peering"
 echo -e "==========================================${NC}"
 
-
 # Set peering to use Mesh Gateways for peering control plane traffic. This must be set BEFORE peering tokens are created.
+# Because of the potential timing issues. I have not peered partitions for specific apps (like unicorn / web) in their respective scripts.
+# This seemed like a better option. 
 
 echo -e ""
 echo -e "${GRN}Set peering to use Mesh Gateways for peering control plane traffic.${NC}"
@@ -481,34 +257,6 @@ echo -e "${GRN}Peer DC1/unicorn <- DC2/unicorn${NC}"
 consul peering generate-token -name dc2-unicorn -partition="unicorn" -http-addr="$DC1" > tokens/peering-dc1_unicorn-dc2-unicorn.token
 consul peering establish -name dc1-unicorn -partition="unicorn" -http-addr="$DC2" -peering-token $(cat tokens/peering-dc1_unicorn-dc2-unicorn.token)
 
-# ==========================================
-#          Service Mesh Configs
-# ==========================================
-
-echo -e "${GRN}"
-echo -e "=========================================="
-echo -e "          Service Mesh Configs"
-echo -e "==========================================${NC}"
-
-# Service Defaults are first, then exports. Per Derek, it's better to set the default before exporting services.
-
-  # ------------------------------------------
-  #           service-defaults
-  # ------------------------------------------
-
-echo -e ""
-echo -e "${GRN}service-defaults:${NC}"
-
-consul config write -http-addr="$DC1" ./docker-configs/configs/service-defaults/web-defaults.hcl
-consul config write -http-addr="$DC1" ./docker-configs/configs/service-defaults/web-upstream-defaults.hcl
-consul config write -http-addr="$DC2" ./docker-configs/configs/service-defaults/web-chunky-defaults.hcl
-
-      # Something funky is going on with service-defaults. Must enable the first to get static peer connections working. Can't get service-resolver to work
-      # Will leave these commented out for now.
-
-consul config write -http-addr="$DC1" ./docker-configs/configs/service-defaults/unicorn-frontend-defaults.hcl
-consul config write -http-addr="$DC1" ./docker-configs/configs/service-defaults/unicorn-backend-defaults.hcl
-consul config write -http-addr="$DC2" ./docker-configs/configs/service-defaults/unicorn-backend-defaults.hcl
 
   # ------------------------------------------
   # Export services across Peers
@@ -519,65 +267,45 @@ echo -e "${GRN}exported-services:${NC}"
 
 # Exported services are scoped to the PARTITION. Only 1 monolithic config can exist per partition.
 # Multiple written configs to the same partition will stomp each other. Good times!
+# This is addressed in the Consul V2 API
 
 # Export the DC1/Donkey/default/Donkey service to DC1/default/default
 consul config write -http-addr="$DC1" ./docker-configs/configs/exported-services/exported-services-donkey.hcl
 
-# Export the DC1/unicorn/backend/unicorn-backend service to DC1/default/default
-# This is the only example of a mesh service being exported on a local partition
-consul config write -http-addr="$DC1" ./docker-configs/configs/exported-services/exported-services-dc1-unicorn.hcl
 
 # Export the default partition services to various peers
 consul config write -http-addr="$DC1" ./docker-configs/configs/exported-services/exported-services-dc1-default.hcl
 consul config write -http-addr="$DC2" ./docker-configs/configs/exported-services/exported-services-dc2-default.hcl
 
-consul config write -http-addr="$DC2" ./docker-configs/configs/exported-services/exported-services-dc2-webchunky.hcl
+# ==============================================================================================================================
+#                                                 Unicorn Application
+# ==============================================================================================================================
 
-# Export the DC1/unicorn/backend/unicorn-backend service to DC1/unicorn/backend
+echo -e "${YELL}Running the Unicorn script:${NC} ./docker-configs/scripts/app-unicorn.sh"
+./docker-configs/scripts/app-unicorn.sh
 
-consul config write -http-addr="$DC2" ./docker-configs/configs/exported-services/exported-services-dc2-unicorn_backend.hcl
+# ==============================================================================================================================
+#                                                   Web Application
+# ==============================================================================================================================
 
-
-
-  # ------------------------------------------
-  #              Intentions
-  # ------------------------------------------
-
-echo -e ""
-echo -e "${GRN}Service Intentions:${NC}"
-
-consul config write -http-addr="$DC1" ./docker-configs/configs/intentions/web_upstream-allow.hcl
-consul config write -http-addr="$DC2" ./docker-configs/configs/intentions/web_chunky-allow.hcl
-
-consul config write -http-addr="$DC1" ./docker-configs/configs/intentions/dc1-unicorn_frontend-allow.hcl
-consul config write -http-addr="$DC2" ./docker-configs/configs/intentions/dc2-unicorn_frontend-allow.hcl
-
-consul config write -http-addr="$DC1" ./docker-configs/configs/intentions/dc1-unicorn_backend_failover-allow.hcl
-
-  # ------------------------------------------
-  #            Service-Resolvers
-  # ------------------------------------------
-
-echo -e ""
-echo -e "${GRN}Service-resolvers:${NC}"
-
-consul config write -http-addr="$DC1" ./docker-configs/configs/service-resolver/dc1-unicorn-backend-failover.hcl
-echo -e ""
+echo -e "${YELL}Running the Web script:${NC} ./docker-configs/scripts/app-web.sh"
+./docker-configs/scripts/app-web.sh
 
 # ==========================================
 #               k3d config
 # ==========================================
 
-if [[ "$*" == *"-k3d"* ]]
-  then
-    echo -e "${GRN} Launching k3d configuration script (kube-config.sh) ${NC}"
-    ./kube-config.sh -k3d-full
-    echo ""
+if $ARG_K3D; then
+  echo -e "${GRN} Launching k3d configuration script (kube-config.sh) ${NC}"
+  ./kube-config.sh -k3d-full
+  echo ""
 fi
 
+# ==============================================================================================================================
+#                                                          Outputs
+# ==============================================================================================================================
 
-
-
+./docker-configs/scripts/vm-outputs.sh
 
 # ------------------------------------------
 # Test STUFF

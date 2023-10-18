@@ -2,9 +2,6 @@
 
 set -e
 
-
-
-
 if [[ -z "${AWS_REGION}" ]]; then
   export AWS_REGION=us-east-1
   # export AWS_REGION=eu-west-2      # London
@@ -71,9 +68,7 @@ export ARG_GKE_CONTEXT=false
 export ARG_OUTPUTS=false
 export ARG_VAULT=false
 
-if [ $# -eq 0 ]; then
-  echo ""
-else
+if [ $# -gt 0 ]; then
   for arg in "$@"; do
     case $arg in
       -k3d-full)
