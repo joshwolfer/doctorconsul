@@ -201,10 +201,5 @@ curl $DC1/v1/query \
 
 
 
-docker update --restart=no web-chunky
-docker stop web-chunky
-
-
-
 
   
