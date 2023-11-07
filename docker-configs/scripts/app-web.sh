@@ -104,3 +104,35 @@ echo -e "${GRN}Service Intentions:${NC}"
 
 consul config write -http-addr="$DC1" ./docker-configs/configs/intentions/web_upstream-allow.hcl
 consul config write -http-addr="$DC2" ./docker-configs/configs/intentions/web_chunky-allow.hcl
+
+# ------------------------------------------
+#              Sameness Groups
+# ------------------------------------------
+
+echo -e ""
+echo -e "${GRN}Sameness Group 'Web':${NC}"
+consul config write -http-addr="$DC1" ./docker-configs/configs/sameness-groups/dc1-default-ssg-web.hcl
+
+# consul config list -kind sameness-group
+# consul config read -kind sameness-group -name web
+
+# ------------------------------------------
+#             Prepared Query
+# ------------------------------------------
+
+curl $DC1/v1/query \
+    --request POST \
+    --header "X-Consul-Token: root" \
+    --data @./docker-configs/configs/prepared_queries/pq-web-chunky-sg.json
+
+
+curl $DC1/v1/query \
+    --request POST \
+    --header "X-Consul-Token: root" \
+    --data @./docker-configs/configs/prepared_queries/pq-web-chunky-peer.json
+
+
+# list PQs
+# curl -s $DC1/v1/query --header "X-Consul-Token: root" | jq -r '.[].Name'
+
+

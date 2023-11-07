@@ -1,0 +1,7 @@
+{
+  "Template": {
+    "Type": "name_prefix_match",
+    "Regexp": "^geo-db-(.*?)-([^\\-]+?)$",
+    "RemoveEmptyTags": false
+  }
+}

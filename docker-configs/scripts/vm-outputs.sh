@@ -21,6 +21,12 @@ DC1_PROMETHEUS=http://localhost:9090/
 #               Consul Addresses
 # ----------------------------------------------
 
+echo ""
+echo -e "${GRN}------------------------------------------"
+echo -e "             VM-Style Outputs"
+echo -e "------------------------------------------${NC}"
+echo ""
+
 echo -e "${GRN}Consul UI Addresses: ${NC}"
 echo -e " ${YELL}DC1${NC}: $DC1_ADDR/ui/"
 echo -e " ${YELL}DC2${NC}: $DC2_ADDR/ui/"

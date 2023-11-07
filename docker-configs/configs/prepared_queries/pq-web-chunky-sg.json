@@ -1,0 +1,8 @@
+{
+  "Name": "web-chunky-sg",
+  "Service": {
+    "Service": "web-chunky",
+    "Namespace": "default",
+    "SamenessGroup": "web"
+  }
+}

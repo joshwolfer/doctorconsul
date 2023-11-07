@@ -1,0 +1,8 @@
+{
+  "Name": "web-chunky-peer",
+  "Service": {
+    "Service": "web-chunky",
+    "Namespace": "default",
+    "Peer": "dc2-chunky"
+  }
+}

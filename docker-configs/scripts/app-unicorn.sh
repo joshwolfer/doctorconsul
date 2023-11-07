@@ -170,3 +170,41 @@ echo -e "${GRN}Service-resolvers:${NC}"
 
 consul config write -http-addr="$DC1" ./docker-configs/configs/service-resolver/dc1-unicorn-backend-failover.hcl
 echo -e ""
+
+# ------------------------------------------
+#              Sameness Groups
+# ------------------------------------------
+
+echo -e ""
+echo -e "${GRN}Sameness Group 'Unicorn':${NC}"
+consul config write -http-addr="$DC1" ./docker-configs/configs/sameness-groups/dc1-unicorn-ssg-unicorn.hcl
+
+# consul config list -kind sameness-group
+# consul config read -kind sameness-group -name unicorn
+# consul config delete -kind sameness-group -name unicorn
+
+
+# ------------------------------------------
+#             Prepared Query
+# ------------------------------------------
+
+curl $DC1/v1/query \
+    --request POST \
+    --header "X-Consul-Token: root" \
+    --data @./docker-configs/configs/prepared_queries/pq-unicorn-sg.json
+
+
+curl $DC1/v1/query \
+    --request POST \
+    --header "X-Consul-Token: root" \
+    --data @./docker-configs/configs/prepared_queries/pq-unicorn-targets.json
+
+
+
+docker update --restart=no web-chunky
+docker stop web-chunky
+
+
+
+
+  

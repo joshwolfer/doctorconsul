@@ -1,0 +1,39 @@
+{
+  "Name": "unicorn-targets",
+  "Service": {
+    "Service": "unicorn-backend",
+    "namespace": "backend",
+    "partition": "unicorn",
+    "Failover": {
+      "Targets": [
+        {
+          "Peer": "dc2-unicorn",
+          "Namespace": "backend",
+          "Partition": "unicorn"
+        },
+        {
+          "Peer": "dc3-default",
+          "Namespace": "unicorn",
+          "Partition": "unicorn"
+        },
+        {
+          "Peer": "dc3-cernunnos",
+          "Namespace": "unicorn",
+          "Partition": "unicorn"
+        },
+        {
+          "Peer": "dc4-default",
+          "Namespace": "unicorn",
+          "Partition": "unicorn"
+        },
+        {
+          "Peer": "dc4-taranis",
+          "Namespace": "unicorn",
+          "Partition": "unicorn"
+        }
+      ]
+    }
+  }
+}
+
+

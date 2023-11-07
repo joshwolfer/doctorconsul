@@ -288,6 +288,7 @@ echo -e "${YELL}Running the Unicorn script:${NC} ./docker-configs/scripts/app-un
 #                                                   Web Application
 # ==============================================================================================================================
 
+echo ""
 echo -e "${YELL}Running the Web script:${NC} ./docker-configs/scripts/app-web.sh"
 ./docker-configs/scripts/app-web.sh
 

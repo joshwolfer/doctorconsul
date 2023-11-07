@@ -1,0 +1,9 @@
+{
+  "Name": "unicorn-sameness",
+  "Service": {
+    "Service": "unicorn-backend",
+    "namespace": "backend",
+    "partition": "unicorn",
+    "SamenessGroup": "unicorn"
+  }
+}
